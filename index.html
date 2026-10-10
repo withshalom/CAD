@@ -925,7 +925,7 @@ async function boot() {
   bindInput();
   try {
     core = await Core.load("core.wasm");
-    $("#welcome-version").textContent = `${core.version} · School for drafting, school for shop`;
+    $("#welcome-version").textContent = core.version;
   } catch (e) {
     $("#welcome-version").textContent = `The core could not be loaded: ${e.message}`;
     document.querySelectorAll(".welcome-actions button").forEach((b) => (b.disabled = true));
