@@ -130,6 +130,7 @@ svg { display: block; }
 .welcome-card h1 { color: #000; -webkit-text-stroke: 3px #fff; paint-order: stroke fill; }
 .welcome-card h1 .w { color: #fff; -webkit-text-stroke: 0; font-family: "Segoe Print", "Bradley Hand", "Chalkboard SE", "Marker Felt", "Comic Sans MS", cursive; font-weight: 400; font-size: 1.1em; letter-spacing: .02em; filter: url(#chalk); text-shadow: 0 0 1px rgba(255, 255, 255, .5); }
 .welcome-card .sub { margin: 8px 0 30px; color: #fff; font: 12px/1.4 var(--mono); }
+.welcome-card #welcome-version { margin: 6px 0 28px; font-size: 22px; line-height: 1.2; letter-spacing: .04em; }
 .welcome-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
 .big { position: relative; text-align: left; padding: 16px 16px 15px; min-height: 84px; border: 1px solid var(--edge); border-radius: 12px; background: linear-gradient(180deg, var(--panel2), var(--panel)); display: flex; flex-direction: column; justify-content: space-between; gap: 6px; transition: border-color .15s, transform .15s, box-shadow .15s; }
 .big:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
@@ -925,7 +926,7 @@ async function boot() {
   bindInput();
   try {
     core = await Core.load("core.wasm");
-    $("#welcome-version").textContent = core.version;
+    $("#welcome-version").textContent = core.version.replace(/^\S+\s+/, "");
   } catch (e) {
     $("#welcome-version").textContent = `The core could not be loaded: ${e.message}`;
     document.querySelectorAll(".welcome-actions button").forEach((b) => (b.disabled = true));
