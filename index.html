@@ -330,6 +330,7 @@ pre.summary { white-space: pre-wrap; font: 11.5px/1.5 var(--mono); color: var(--
 /* chalk buttons inside the text column */
 #board .chalkbtn { margin: 6px 10px 0 0; padding: 4px 14px 5px; font: 400 17px var(--hand); color: var(--chalk); border: 2px solid rgba(238, 240, 232, .8); border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; }
 #board .chalkbtn:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); }
+#board .chalkbtn.on { border-color: var(--amber); color: var(--amber); }
 #board .chalkbtn:disabled { opacity: .35; }
 #board .chalkbtn:focus-visible { outline: 1px dashed var(--blue); outline-offset: 3px; }
 
@@ -3374,7 +3375,7 @@ const Board = (() => {
   const f1 = (x) => +(+x).toFixed(1);
 
   // ---- numbers (kept in millimetres; the unit switch only changes the display)
-  const DEF = { T: 3, R: 3, K: 0.4, ang: 90, A: 50, B: 30, W: 40, h: 8, f: 15 };
+  const DEF = { T: 3, R: 3, K: 0.4, ang: 90, A: 50, B: 30, W: 40, h: 8, f: 15, d: 6, g: 3, sl: 12, w: 2, dp: 5 };
   const CTL = {
     T: { sym: "T", label: "Thickness", mm: [0.5, 12, 0.1], in: [0.02, 0.5, 0.001] },
     R: { sym: "R", label: "Inside radius", mm: [0, 30, 0.5], in: [0, 1.2, 0.01] },
@@ -3385,9 +3386,15 @@ const Board = (() => {
     W: { sym: "W", label: "Part width", mm: [10, 200, 1], in: [0.4, 8, 0.05] },
     h: { sym: "h", label: "Hole edge to bend", mm: [0, 40, 0.5], in: [0, 1.6, 0.02] },
     f: { sym: "f", label: "Flange length", mm: [0, 60, 0.5], in: [0, 2.4, 0.02] },
+    d: { sym: "d", label: "Hole diameter", mm: [1, 40, 0.5], in: [0.04, 1.6, 0.02] },
+    g: { sym: "g", label: "Web between cuts", mm: [0, 20, 0.5], in: [0, 0.8, 0.02] },
+    sl: { sym: "s", label: "Slot edge to bend", mm: [0, 50, 0.5], in: [0, 2, 0.02] },
+    w: { sym: "w", label: "Relief width", mm: [0, 12, 0.5], in: [0, 0.5, 0.02] },
+    dp: { sym: "p", label: "Relief depth", mm: [0, 30, 0.5], in: [0, 1.2, 0.02] },
   };
-  const s = { ...DEF, unit: "mm" };
+  const s = { ...DEF, unit: "mm", proc: "laser" };
   let view = "index";
+  let savedView = null;
   let step = 0;
   let open = false;
   let lastFocus = null;
@@ -3399,8 +3406,9 @@ const Board = (() => {
       if (Number.isFinite(v)) s[k] = Math.min(CTL[k].mm[1], Math.max(CTL[k].mm[0], v));
     }
     if (o.v?.unit === "in") s.unit = "in";
-    if (o.view === "bend") view = "bend";
-    if (Number.isInteger(o.step)) step = Math.max(0, Math.min(4, o.step));
+    if (o.v?.proc === "plasma") s.proc = "plasma";
+    savedView = o.view;
+    if (Number.isInteger(o.step)) step = Math.max(0, o.step);
   } catch (_) {}
   function save() {
     try {
@@ -3427,7 +3435,7 @@ const Board = (() => {
     const q = s.R / s.T;
     return q < 1 ? 0.33 : q < 3 ? 0.4 : 0.5;
   }
-  const minHole = () => 2.5 * s.T + s.R; // hole edge to the start of the bend
+  const holeBend = () => 2.5 * s.T + s.R; // hole edge to the start of the bend
   const minFlange = () => 4 * s.T; // shortest flange the die can hold, as a first guess
 
   // ---- chalk drawing helpers (each call numbers its delay so a figure draws in order)
@@ -3559,7 +3567,7 @@ const Board = (() => {
 
   function fig5() {
     const BL = 450, pp = 7, top = 56, bot = 236, hy = 146, r = 21;
-    const need = minHole();
+    const need = holeBend();
     const hx = BL - s.h * pp - r;
     const okH = s.h >= need - 1e-9;
     const cH = okH ? "g" : "r";
@@ -3588,8 +3596,243 @@ const Board = (() => {
 
   const indexFig = () => fig4();
 
+  // ---------------------------------------------------------------- lesson 2: holes, slots and reliefs
+
+  /** Starting multiples of thickness by cutting process. Shops tune these to their table's cut chart. */
+  const PROC = {
+    laser: { name: "Laser", hole: 1.0, web: 1.0 },
+    plasma: { name: "Plasma", hole: 1.5, web: 2.0 },
+  };
+  const minDia = () => PROC[s.proc].hole * s.T; // smallest hole diameter
+  const minWeb = () => PROC[s.proc].web * s.T; // smallest strip between cuts, or cut and edge
+  const minSlot = () => 4 * s.T + s.R; // slot edge to the start of the bend
+  const minRelW = () => s.T; // relief width along the bend
+  const minRelD = () => s.R + s.T; // relief depth into the flat, from the bend line
+  const ok = (v, need) => v >= need - 1e-9;
+  const col = (good) => (good ? "g" : "r");
+  const cls = (good) => (good ? "ok" : "bad");
+
+  const procButtons = () =>
+    Object.entries(PROC)
+      .map(([k, p]) => `<button class="chalkbtn${s.proc === k ? " on" : ""}" data-act="proc" data-proc="${k}" aria-pressed="${s.proc === k}">${p.name}</button>`)
+      .join("");
+
+  /** A plate seen from above: bend line at x = BL, the hatched strip is the bend zone. */
+  const plate = (x0, y0, x1, y1, BL) => path(`M ${x0} ${y0} H ${x1} V ${y1} H ${x0} Z`, "w") + fill(`M ${BL} ${y0} h 34 V ${y1} h -34 Z`, "a") + path(`M ${BL} ${y0 - 10} V ${y1 + 10}`, "a");
+
+  function hfig1() {
+    const BL = 400, pp = 7, need = holeBend();
+    const r = (s.d / 2) * pp;
+    const hx = BL - s.h * pp - r;
+    const good = ok(s.h, need);
+    const stretch = good ? 0 : Math.min(1, (need - s.h) / need) * 0.9;
+    let g = label(60, 46, "flat pattern", "b", 21);
+    g += plate(60, 56, BL, 176, BL);
+    g += `<rect class="fl" style="--d:.8s" x="${f1(BL - need * pp)}" y="56" width="${f1(need * pp)}" height="120" fill="url(#bb-hatch)"/>`;
+    g += `<circle class="ch c-${col(good)}" pathLength="1" ${D()} cx="${f1(hx)}" cy="116" r="${f1(r)}"/>`;
+    g += dim(hx + r, 150, BL, 150, col(good));
+    g += label(hx + r + (BL - hx - r) / 2, 168, `h ${num(s.h)}`, col(good), 19, "middle");
+    g += label(BL + 44, 126, "bend", "a", 19);
+    g += label(60, 246, "after forming", "b", 21);
+    g += plate(60, 256, BL, 376, BL);
+    g += `<ellipse class="ch c-${col(good)}" pathLength="1" ${D()} cx="${f1(hx + stretch * r * 0.6)}" cy="316" rx="${f1(r * (1 + stretch))}" ry="${f1(r * (1 - 0.25 * stretch))}"/>`;
+    g += label(BL + 44, 326, good ? "stays round" : "pulled oval", good ? "g" : "r", 19);
+    return svg(g, "Two top views of a plate with a hole near a bend line: the flat pattern, and the hole after forming, which stays round if it is far enough away and stretches into an oval if it is not.", "30 20 540 380");
+  }
+
+  function hfig2() {
+    const BL = 440, pp = 5, y0 = 70, y1 = 300, sw = 42, sr = sw / 2;
+    const slotNeed = minSlot(), holeNeed = holeBend();
+    const good = ok(s.sl, slotNeed);
+    const x1 = BL - s.sl * pp, x0 = x1 - sw;
+    let g = plate(60, y0, BL, y1, BL);
+    g += `<rect class="fl" style="--d:.8s" x="${f1(BL - slotNeed * pp)}" y="${y0}" width="${f1(slotNeed * pp)}" height="${y1 - y0}" fill="url(#bb-hatch)"/>`;
+    g += dash(`M ${f1(BL - holeNeed * pp)} ${y0} V ${y1}`, "b");
+    g += path(`M ${f1(x0)} ${120 + sr} A ${sr} ${sr} 0 0 1 ${f1(x1)} ${120 + sr} V ${250 - sr} A ${sr} ${sr} 0 0 1 ${f1(x0)} ${250 - sr} Z`, col(good));
+    g += dim(x1, 185, BL, 185, col(good));
+    g += label((x1 + BL) / 2, 168, `s ${num(s.sl)}`, col(good), 19, "middle");
+    g += label(BL - slotNeed * pp, y1 + 28, `slot  4T + R = ${num(slotNeed)}`, "r", 19, "middle");
+    g += label(BL - holeNeed * pp, y1 + 54, `hole  2.5T + R = ${num(holeNeed)}`, "b", 19, "start");
+    g += label(BL + 44, 186, "bend", "a", 19);
+    return svg(g, "Top view of a plate with a long slot beside a bend line. The red band is how far a slot must stay from the bend, and the blue dashed line is the smaller distance that is enough for a hole.", "40 40 540 360");
+  }
+
+  function hfig3() {
+    const pp = Math.min(9, 400 / (3 * s.d + 2 * s.g + 1)), x0 = 50, x1 = 590, y0 = 60, y1 = 280, cy = 170;
+    const r = (s.d / 2) * pp, web = s.g * pp;
+    const goodD = ok(s.d, minDia()), goodW = ok(s.g, minWeb());
+    let g = path(`M ${x0} ${y0} H ${x1} V ${y1} H ${x0} Z`, "w");
+    const a = x0 + 40 + r, b = a + 2 * r + web, e = x1 - web - r;
+    for (const x of [a, b, e]) g += `<circle class="ch c-${col(goodD)}" pathLength="1" ${D()} cx="${f1(x)}" cy="${cy}" r="${f1(r)}"/>`;
+    g += dim(a + r, cy + r + 24, b - r, cy + r + 24, col(goodW));
+    g += label((a + b) / 2, cy + r + 50, `web ${num(s.g)}`, col(goodW), 19, "middle");
+    g += dim(e + r, cy + r + 24, x1, cy + r + 24, col(goodW));
+    g += label(x1, cy + r + 50, `edge ${num(s.g)}`, col(goodW), 19, "end");
+    g += dim(a - r, cy - r - 20, a + r, cy - r - 20, col(goodD));
+    g += label(a, cy - r - 30, `dia ${num(s.d)}`, col(goodD), 19, "middle");
+    g += label(x0, y1 + 36, `${PROC[s.proc].name}: smallest hole ${num(minDia())}, thinnest web ${num(minWeb())}`, "a", 19);
+    return svg(g, "Top view of a plate with three holes. The gap between two holes and the gap between a hole and the edge are marked as webs, and the hole diameter is marked.", "30 30 580 300");
+  }
+
+  function hfig4() {
+    const BL = 420, pp = 10, T = 50, B = 400, y1 = 190, y2 = 250, tab = 130;
+    const w = Math.max(s.w, 0) * pp, dp = Math.max(s.dp, 0) * pp;
+    const goodW = ok(s.w, minRelW()), goodD = ok(s.dp, minRelD()), good = goodW && goodD;
+    const o = `M 100 ${T} H ${BL} V ${f1(y1 - w)} H ${f1(BL - dp)} V ${y1} H ${BL + tab} V ${y2} H ${f1(BL - dp)} V ${f1(y2 + w)} H ${BL} V ${B} H 100 Z`;
+    let g = fill(o, "b") + path(o, "w");
+    g += fill(`M ${BL} ${y1} h ${tab} V ${y2} h ${-tab} Z`, "a");
+    g += path(`M ${BL} ${y1} V ${y2}`, "a", "thick");
+    g += dim(BL - dp, y1 - w - 22, BL, y1 - w - 22, col(goodD));
+    g += label(BL - dp / 2, y1 - w - 32, `depth ${num(s.dp)}`, col(goodD), 19, "middle");
+    g += dim(BL - dp - 24, y1 - w, BL - dp - 24, y1, col(goodW));
+    g += label(BL - dp - 34, y1 - w / 2 + 6, `w ${num(s.w)}`, col(goodW), 19, "end");
+    g += label(BL + tab / 2, (y1 + y2) / 2 + 6, "flange", "a", 21, "middle");
+    g += label(BL + tab / 2, y2 + 44, good ? "room to move" : "may tear here", good ? "g" : "r", 20, "middle");
+    return svg(g, "Top view of a plate with a narrower flange tab. A relief notch is cut into the plate at each end of the bend, and its width and depth are marked.", "40 20 560 400");
+  }
+
+  function hfig5() {
+    const BL = 340;
+    let g = plate(60, 70, BL, 300, BL);
+    const c = (x, y, r, k) => `<circle class="ch c-${k}" pathLength="1" ${D()} cx="${x}" cy="${y}" r="${r}"/>`;
+    g += c(92, 102, 5, "r") + c(110, 200, 20, "r") + c(156, 200, 20, "r") + c(BL - 40, 150, 20, "r") + c(290, 250, 20, "g");
+    g += label(106, 108, "too small", "r", 19);
+    g += label(133, 244, "too close together", "r", 19, "middle");
+    g += label(BL - 40, 196, "too near the bend", "r", 18, "end");
+    g += label(290, 322, "fine", "g", 19, "middle");
+    g += label(BL + 44, 190, "BEND layer", "a", 19);
+    return svg(g, "A plate with five circles. Three are marked as problems: one too small, two too close together and one too near the bend line on the BEND layer. One is marked fine.", "30 40 520 300");
+  }
+
+  // ---- checking the open drawing against these rules
+  let checked = null;
+  function dist2seg(px, py, [ax, ay, bx, by]) {
+    const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+    const t = L ? Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L)) : 0;
+    return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+  }
+  function runCheck() {
+    if (!doc) return toast("Open or start a drawing first.", true);
+    const u = doc.info.insunits === 1 ? 1 / 25.4 : 1;
+    const holes = [], bends = [];
+    const styles = doc.disp.styles;
+    for (const it of doc.disp.items) {
+      if (it.dead) continue;
+      const bend = String(styles[it.style].layer || "").toUpperCase() === "BEND";
+      const ops = it.ops;
+      for (let i = it.start; i < it.end; i += opLength(ops, i)) {
+        const c = ops[i];
+        if (bend) {
+          if (c === 2) bends.push([ops[i + 1], ops[i + 2], ops[i + 3], ops[i + 4]]);
+          else if (c === 4) {
+            const m = ops[i + 1], P = (k) => [ops[i + 3 + 2 * k], ops[i + 4 + 2 * k]];
+            for (let k = 0; k + 1 < m; k++) bends.push([...P(k), ...P(k + 1)]);
+            if (ops[i + 2] && m > 2) bends.push([...P(m - 1), ...P(0)]);
+          }
+        } else if (c === 3 && Math.abs(ops[i + 5] - ops[i + 4] - TAU) < 1e-9) holes.push({ h: it.handle, x: ops[i + 1], y: ops[i + 2], r: ops[i + 3] });
+      }
+    }
+    const small = new Set(), close = new Set(), near = new Set();
+    const dia = minDia() * u, web = minWeb() * u, nearBend = holeBend() * u;
+    holes.forEach((a, i) => {
+      if (2 * a.r < dia - 1e-9) small.add(a.h);
+      for (let j = i + 1; j < holes.length; j++) {
+        const b = holes[j];
+        if (Math.hypot(a.x - b.x, a.y - b.y) - a.r - b.r < web - 1e-9) close.add(a.h).add(b.h);
+      }
+      for (const sg of bends) if (dist2seg(a.x, a.y, sg) - a.r < nearBend - 1e-9) near.add(a.h);
+    });
+    checked = { holes: holes.length, bends: bends.length, small, close, near, all: new Set([...small, ...close, ...near]), T: s.T, R: s.R, proc: s.proc };
+    renderMath();
+    renderExtra();
+  }
+  function showOffenders() {
+    if (!checked?.all.size) return;
+    selection.clear();
+    for (const h of checked.all) selection.add(h);
+    selectionChanged();
+    needsDraw = true;
+    log(`Blackboard: ${checked.all.size} hole${checked.all.size === 1 ? "" : "s"} selected.`, "ok");
+    close();
+    toast(`${checked.all.size} hole${checked.all.size === 1 ? "" : "s"} selected. Move or resize them, then check again.`);
+  }
+  function checkMath() {
+    if (!checked) return `<div class="ln dim">Set the numbers, then press Check my drawing.</div><div class="ln dim">Limits now: hole at least <span class="v">${num(minDia())}</span>, web at least <span class="v">${num(minWeb())}</span>, hole to bend at least <span class="v">${num(holeBend())}</span>.</div>`;
+    const c = checked, n = (set, text) => (set.size ? `<div class="ln"><span class="bad">${set.size}</span> ${text}</div>` : "");
+    if (!c.holes) return `<div class="ln bad">No holes found.</div><div class="ln dim">Draw circles with CIRCLE, then check again.</div>`;
+    let h = `<div class="ln dim">${c.holes} hole${c.holes === 1 ? "" : "s"} checked · ${PROC[c.proc].name} · T ${num(c.T)} · R ${num(c.R)}</div>`;
+    h += n(c.small, `smaller than ${num(minDia())}`) + n(c.close, `closer than ${num(minWeb())} to another hole`) + n(c.near, `within ${num(holeBend())} of a bend`);
+    if (!c.all.size) h += `<div class="ln ok">All clear.</div>`;
+    if (!c.bends) h += `<div class="ln dim">No lines on a layer named BEND, so bend distances were skipped.</div>`;
+    return h;
+  }
+  const checkExtra = () =>
+    `<div>${procButtons()}</div><div><button class="chalkbtn" data-act="check">Check my drawing</button>` +
+    (checked?.all.size ? `<button class="chalkbtn" data-act="show">Show them on the drawing</button>` : "") +
+    `</div>`;
+
+  const HOLES = {
+    id: "holes",
+    title: "Holes, slots and reliefs",
+    blurb: "Keep features out of the bend zone and give bends room to move",
+    steps: [
+      {
+        t: "A hole near a bend stretches out of round",
+        p: "Metal near a bend flows as it folds. A hole inside that zone pulls into an oval, and the pin or bolt it was drawn for stops fitting. Keep the hole edge at least 2.5 × thickness + radius from where the bend starts.",
+        ctl: ["T", "R", "h"],
+        fig: hfig1,
+        math: () => {
+          const good = ok(s.h, holeBend());
+          return `<div class="ln dim">limit = 2.5·T + R = <span class="v">${len(holeBend())}</span></div><div class="ln"><span class="${cls(good)}">${good ? "Clear" : "Too close"}</span>: ${num(s.h)} of ${num(holeBend())} needed</div>`;
+        },
+        note: "The lower view exaggerates the stretch so you can see it.",
+      },
+      {
+        t: "Slots need more room than holes",
+        p: "A slot is long, so more of it sits in the bend zone and it distorts more. Hold slot edges at least 4 × thickness + radius from the bend. A slot that crosses the bend line will distort: move it, or cut it after forming.",
+        ctl: ["T", "R", "sl"],
+        fig: hfig2,
+        math: () => {
+          const good = ok(s.sl, minSlot());
+          return `<div class="ln dim">hole limit = 2.5·T + R = <span class="v">${len(holeBend())}</span></div><div class="ln dim">slot limit = 4·T + R = <span class="v">${len(minSlot())}</span></div><div class="ln"><span class="${cls(good)}">${good ? "Slot is clear" : "Slot is too close"}</span>: ${num(s.sl)} of ${num(minSlot())} needed</div>`;
+        },
+      },
+      {
+        t: "Smallest hole, thinnest web",
+        p: "Cuts need a minimum size and a minimum wall between them, and the limit depends on the process. A web is the strip left between two cuts, or between a cut and the edge. Thin webs warp and burn through.",
+        ctl: ["T", "d", "g"],
+        fig: hfig3,
+        math: () => {
+          const gd = ok(s.d, minDia()), gw = ok(s.g, minWeb());
+          return `<div class="ln dim">${PROC[s.proc].name}: hole ≥ ${PROC[s.proc].hole} × T = <span class="v">${len(minDia())}</span></div><div class="ln dim">web ≥ ${PROC[s.proc].web} × T = <span class="v">${len(minWeb())}</span></div><div class="ln"><span class="${cls(gd)}">${gd ? "Hole is big enough" : "Hole is too small"}</span></div><div class="ln"><span class="${cls(gw)}">${gw ? "Web holds" : "Web is too thin"}</span></div>`;
+        },
+        extra: procButtons,
+        note: "These are starting multiples. Your table's cut chart for each material and thickness has the final say.",
+      },
+      {
+        t: "Bend reliefs let the corner move",
+        p: "When a bend stops short of the edge, the metal at its end has nowhere to go and tears. A relief cut at each end of the bend gives it room. Make it at least as wide as the thickness and as deep as radius plus thickness.",
+        ctl: ["T", "R", "w", "dp"],
+        fig: hfig4,
+        math: () => {
+          const gw = ok(s.w, minRelW()), gd = ok(s.dp, minRelD());
+          return `<div class="ln dim">width ≥ T = <span class="v">${len(minRelW())}</span> · depth ≥ R + T = <span class="v">${len(minRelD())}</span></div><div class="ln"><span class="${cls(gw)}">${gw ? "Width holds" : "Too narrow"}</span>: ${num(s.w)}</div><div class="ln"><span class="${cls(gd)}">${gd ? "Depth holds" : "Too shallow"}</span>: ${num(s.dp)}</div>`;
+        },
+      },
+      {
+        t: "Check my drawing",
+        p: "Put your bend lines on a layer named BEND. This check finds circles that are too small, too close together or too close to a bend, using the thickness, radius and process set here.",
+        ctl: ["T", "R"],
+        fig: hfig5,
+        math: checkMath,
+        extra: checkExtra,
+        note: "Draw this flat, in the bend allowance lesson, already puts its bend lines on BEND.",
+      },
+    ],
+  };
+
   // ---- lessons
-  const LESSON = {
+  const BEND = {
     id: "bend",
     title: "Bend allowance",
     blurb: "How a flat pattern gets its length",
@@ -3639,9 +3882,9 @@ const Board = (() => {
         ctl: ["h", "f"],
         fig: fig5,
         math: () => {
-          const okH = s.h >= minHole() - 1e-9, okF = s.f >= minFlange() - 1e-9;
+          const okH = s.h >= holeBend() - 1e-9, okF = s.f >= minFlange() - 1e-9;
           return (
-            `<div class="ln"><span class="${okH ? "ok" : "bad"}">${okH ? "Hole is clear" : "Hole is too close"}</span>: ${num(s.h)} of ${num(minHole())} needed</div>` +
+            `<div class="ln"><span class="${okH ? "ok" : "bad"}">${okH ? "Hole is clear" : "Hole is too close"}</span>: ${num(s.h)} of ${num(holeBend())} needed</div>` +
             `<div class="ln"><span class="${okF ? "ok" : "bad"}">${okF ? "Flange holds" : "Flange is too short"}</span>: ${num(s.f)} of ${num(minFlange())} needed</div>` +
             `<div class="ln dim">Relief cuts at least <span class="v">${num(s.T)}</span> wide where a bend meets an edge.</div>`
           );
@@ -3649,11 +3892,13 @@ const Board = (() => {
       },
     ],
   };
-  const COMING = [
-    { title: "Holes, slots and reliefs", blurb: "Not built yet" },
-    { title: "Grain direction", blurb: "Not built yet" },
-    { title: "Reading a bend table", blurb: "Not built yet" },
-  ];
+  const LESSONS = [BEND, HOLES];
+  let LESSON = BEND;
+  if (LESSONS.some((l) => l.id === savedView)) {
+    view = savedView;
+    LESSON = LESSONS.find((l) => l.id === savedView);
+    step = Math.min(step, LESSON.steps.length - 1);
+  }
 
   // ---- rendering
   function sliderHtml(k) {
@@ -3678,12 +3923,18 @@ const Board = (() => {
     const d = textEl.querySelector('[data-act="draw"]');
     if (d) d.disabled = calc().leg1 < 0 || calc().leg2 < 0;
   }
+  const extraHtml = (st) => (typeof st.extra === "function" ? st.extra() : st.extra || "");
+  function renderExtra() {
+    const e = $("#bb-extra");
+    if (e && view !== "index") e.innerHTML = extraHtml(LESSON.steps[step]);
+    renderMath();
+  }
   function renderText() {
     if (view === "index") {
       textEl.innerHTML =
         `<h2>Sheet metal, from the flat up</h2><p class="lede">Pick a lesson. Every one works on numbers you can change, and the drawing on the left changes with them.</p>` +
-        `<ul class="lessons"><li><button class="lesson" data-lesson="bend"><b>${LESSON.title}</b><span>${LESSON.blurb} · ${LESSON.steps.length} steps</span></button></li>` +
-        COMING.map((c) => `<li><button class="lesson" disabled><b>${c.title}</b><span>${c.blurb}</span></button></li>`).join("") +
+        `<ul class="lessons">` +
+        LESSONS.map((l) => `<li><button class="lesson" data-lesson="${l.id}"><b>${l.title}</b><span>${l.blurb} · ${l.steps.length} steps</span></button></li>`).join("") +
         `</ul>`;
       return;
     }
@@ -3691,7 +3942,7 @@ const Board = (() => {
     textEl.innerHTML =
       `<h2>${st.t}</h2><p class="lede">${st.p}</p><div class="math" id="bb-math"></div>` +
       st.ctl.map(sliderHtml).join("") +
-      (st.extra ? `<div>${st.extra}</div>` : "") +
+      `<div id="bb-extra">${extraHtml(st)}</div>` +
       (st.note ? `<p class="note">${st.note}</p>` : "");
     renderMath();
   }
@@ -3720,8 +3971,9 @@ const Board = (() => {
     render();
     textEl.scrollTop = 0;
   }
-  function openLesson(i = 0) {
-    view = "bend";
+  function openLesson(id, i = 0) {
+    LESSON = LESSONS.find((l) => l.id === id) || BEND;
+    view = LESSON.id;
     go(i);
   }
   function drawFlat() {
@@ -3733,14 +3985,24 @@ const Board = (() => {
     const th = doc.info.insunits === 1 ? 0.125 : 3.5;
     try {
       core.exec(doc.id, `rect 0 0 ${N(L)} ${N(W)}`);
+      core.exec(doc.id, `text 0 ${N(-th * 2)} ${N(th)} 0 FLAT ${num(c.flat)} ${inch() ? "IN" : "MM"}  T ${num(s.T)}  R ${num(s.R)}  K ${s.K.toFixed(2)}  ${Math.round(s.ang)} DEG`);
+      // bend lines go on a layer named BEND (made if the drawing has none), then the current layer is put back
+      const find = () => doc.info.layers.find((l) => l.name.toUpperCase() === "BEND");
+      const prev = doc.info.layers.find((l) => l.current);
+      if (!find()) {
+        core.exec(doc.id, "layer-add BEND");
+        refresh(doc);
+        core.exec(doc.id, `layer-color ${find().handle} 2`);
+      }
+      core.exec(doc.id, `layer-current ${find().handle}`);
       core.exec(doc.id, `line ${N(x1)} 0 ${N(x1)} ${N(W)}`);
       core.exec(doc.id, `line ${N(x2)} 0 ${N(x2)} ${N(W)}`);
-      core.exec(doc.id, `text 0 ${N(-th * 2)} ${N(th)} 0 FLAT ${num(c.flat)} ${inch() ? "IN" : "MM"}  T ${num(s.T)}  R ${num(s.R)}  K ${s.K.toFixed(2)}  ${Math.round(s.ang)} DEG`);
+      if (prev && prev.handle !== find().handle) core.exec(doc.id, `layer-current ${prev.handle}`);
       refresh(doc);
       zoomExtents();
-      log(`Blackboard: flat blank ${num(c.flat)} ${inch() ? "in" : "mm"} drawn, bend lines at the tangents.`, "ok");
+      log(`Blackboard: flat blank ${num(c.flat)} ${inch() ? "in" : "mm"} drawn, bend lines on the BEND layer.`, "ok");
       close();
-      toast("Flat pattern drawn. Bend lines mark where each bend starts and ends.");
+      toast("Flat pattern drawn. The bend lines are on the BEND layer.");
     } catch (e) {
       if (e instanceof CoreCrash) throw e;
       toast(e.message || String(e), true);
@@ -3781,7 +4043,17 @@ const Board = (() => {
   textEl.addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b) return;
-    if (b.dataset.lesson) return openLesson(0);
+    if (b.dataset.lesson) return openLesson(b.dataset.lesson, 0);
+    if (b.dataset.act === "proc") {
+      s.proc = b.dataset.proc;
+      checked = null;
+      renderText();
+      renderFig(true);
+      save();
+      return;
+    }
+    if (b.dataset.act === "check") return runCheck();
+    if (b.dataset.act === "show") return showOffenders();
     if (b.dataset.act === "suggest") {
       s.K = suggestK();
       renderText();
@@ -3836,7 +4108,7 @@ const Board = (() => {
 
   return {
     open: (lesson) => {
-      if (lesson === "bend") view = "bend";
+      if (LESSONS.some((l) => l.id === lesson)) openLesson(lesson, 0);
       setOpen(true);
     },
     close,
