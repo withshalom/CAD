@@ -279,7 +279,7 @@ pre.summary { white-space: pre-wrap; font: 11.5px/1.5 var(--mono); color: var(--
 #app.board-open #board-scrim { opacity: 1; pointer-events: auto; }
 
 #board {
-  --chalk: #eef0e8; --blue: #86b9ff; --amber: #f2a93b; --green: #8fe0a6; --rose: #ff8fa3;
+  --chalk: #eef0e8; --blue: #86b9ff; --amber: #f2a93b; --green: #8fe0a6; --rose: #ff8fa3; --yellow: #f3e27a; --cyan: #84e3ef;
   --slate: #0f1514;
   --hand: "Segoe Print", "Bradley Hand", "Chalkboard SE", "Chalkboard", "Marker Felt", "Comic Sans MS", "Patrick Hand", cursive;
   position: absolute; z-index: 8; top: 0; left: 50%;
@@ -396,6 +396,27 @@ pre.summary { white-space: pre-wrap; font: 11.5px/1.5 var(--mono); color: var(--
 #board .lesson.later em { color: rgba(242, 169, 59, .7); }
 #board .lesson:focus-visible { outline: 1px dashed var(--blue); outline-offset: 2px; }
 
+/* exercises: "Your turn" */
+#board .task { margin: 10px 0 8px; padding: 8px 12px 10px; border: 2px solid rgba(143, 224, 166, .55); border-radius: 14px 5px 14px 5px / 5px 14px 5px 14px; font-size: 16px; line-height: 1.45; }
+#board .task > b { display: block; font-weight: 400; color: var(--green); font-size: 15px; letter-spacing: .03em; }
+#board .task ol { margin: 4px 0 2px; padding-left: 22px; }
+#board .task li { margin: 2px 0; }
+#board .task .res { margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(238, 240, 232, .2); }
+#board kbd { font: 15px var(--mono, ui-monospace, monospace); color: var(--amber); background: rgba(0, 0, 0, .35); border: 1px solid rgba(242, 169, 59, .45); border-radius: 4px; padding: 0 5px; white-space: nowrap; }
+/* not in BlackCAD yet */
+#board .gaps { margin: 8px 0; padding: 7px 12px 8px; border: 2px dashed rgba(242, 169, 59, .6); border-radius: 10px; font-size: 15px; line-height: 1.4; }
+#board .gaps > b { display: block; font-weight: 400; color: var(--amber); font-size: 14px; letter-spacing: .03em; }
+#board .gap { margin: 3px 0; }
+#board .gap .gn { color: var(--amber); }
+#board .gap .gu { color: rgba(238, 240, 232, .8); }
+#board .gap .gw { color: rgba(134, 185, 255, .9); }
+#board .gaplist { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 14px; }
+#board .gaplist li { padding: 6px 10px; border: 2px dashed rgba(242, 169, 59, .35); border-radius: 10px; display: flex; flex-direction: column; gap: 1px; }
+#board .gaplist b { font-weight: 400; color: var(--amber); font-size: 17px; }
+#board .gaplist code { font: 12px var(--mono, ui-monospace, monospace); color: rgba(242, 169, 59, .8); }
+#board .gaplist span { font-size: 14px; color: rgba(238, 240, 232, .72); }
+#board .gaplist em { font-style: normal; font-size: 13px; color: rgba(134, 185, 255, .85); }
+
 /* shop settings */
 #board .sets { margin: 10px 0 6px; }
 #board .set { display: grid; grid-template-columns: minmax(0, 1fr) 88px 74px; align-items: center; gap: 2px 10px; padding: 3px 0; border-bottom: 1px dashed rgba(238, 240, 232, .1); font-size: 16px; }
@@ -424,6 +445,8 @@ pre.summary { white-space: pre-wrap; font: 11.5px/1.5 var(--mono); color: var(--
 #board .bb-fig .fl { stroke: none; }
 #board .bb-fig .lb { font-family: var(--hand); }
 #board .c-w { stroke: var(--chalk); } #board .c-b { stroke: var(--blue); } #board .c-a { stroke: var(--amber); } #board .c-g { stroke: var(--green); } #board .c-r { stroke: var(--rose); }
+#board .c-y { stroke: var(--yellow); } #board .c-c { stroke: var(--cyan); }
+#board .c-yt { fill: var(--yellow); } #board .c-ct { fill: var(--cyan); }
 #board .c-wt { fill: var(--chalk); } #board .c-bt { fill: var(--blue); } #board .c-at { fill: var(--amber); } #board .c-gt { fill: var(--green); } #board .c-rt { fill: var(--rose); }
 #board .fl.c-bf { fill: rgba(134, 185, 255, .12); } #board .fl.c-af { fill: rgba(242, 169, 59, .22); } #board .fl.c-rf { fill: rgba(255, 143, 163, .14); } #board .fl.c-gf { fill: rgba(143, 224, 166, .14); } #board .fl.c-wf { fill: rgba(15, 21, 20, .95); }
 
@@ -435,7 +458,8 @@ pre.summary { white-space: pre-wrap; font: 11.5px/1.5 var(--mono); color: var(--
 @keyframes bb-fade { to { opacity: 1; } }
 
 /* high contrast: no chalk grain on text, brighter and larger */
-#board.hc { --chalk: #ffffff; --blue: #a9cfff; --amber: #ffbd52; --green: #a6f0bb; --rose: #ffa9b9; }
+#board.hc { --chalk: #ffffff; --blue: #a9cfff; --amber: #ffbd52; --green: #a6f0bb; --rose: #ffa9b9; --yellow: #fff08f; --cyan: #a4f0f8; }
+#board.hc .task, #board.hc .gaps { font-size: 17px; }
 #board.hc .bb-text { filter: none; }
 #board.hc .lede, #board.hc .math, #board.hc .ctl { font-size: 18px; }
 #board.hc .lede, #board.hc .note, #board.hc .lesson span, #board.hc .ctl .nm, #board.hc .set .nm { color: #fff; }
@@ -558,6 +582,8 @@ pre.summary { white-space: pre-wrap; font: 11.5px/1.5 var(--mono); color: var(--
   #print-sheet .fl { stroke: none; }
   #print-sheet .lb { font-family: Georgia, serif; }
   #print-sheet .c-w { stroke: #111; } #print-sheet .c-b { stroke: #2f5f9e; } #print-sheet .c-a { stroke: #b06d00; } #print-sheet .c-g { stroke: #17803d; } #print-sheet .c-r { stroke: #b3263b; }
+  #print-sheet .c-y { stroke: #9a8400; } #print-sheet .c-c { stroke: #0e7c8c; } #print-sheet .c-yt { fill: #9a8400; } #print-sheet .c-ct { fill: #0e7c8c; }
+  #print-sheet kbd { font: 9.5pt ui-monospace, monospace; border: 1px solid #bbb; border-radius: 3pt; padding: 0 3pt; }
   #print-sheet .c-wt { fill: #111; } #print-sheet .c-bt { fill: #2f5f9e; } #print-sheet .c-at { fill: #b06d00; } #print-sheet .c-gt { fill: #17803d; } #print-sheet .c-rt { fill: #b3263b; }
   #print-sheet .fl.c-bf { fill: rgba(47, 95, 158, .1); } #print-sheet .fl.c-af { fill: rgba(176, 109, 0, .15); } #print-sheet .fl.c-rf { fill: rgba(179, 38, 59, .1); } #print-sheet .fl.c-gf { fill: rgba(23, 128, 61, .1); } #print-sheet .fl.c-wf { fill: #fff; }
   #print-sheet { --slate: #fff; }
@@ -3542,8 +3568,9 @@ const Board = (() => {
     h: 8, f: 15, d: 6, g: 3, sl: 12, w: 2, dp: 5, cr: 8, jog: 20,
     phi: 90, rot: 0, sw: 1.5, e: 10, br: 3, tw: 6, tl: 40, tq: 0.2, Ln: 50,
     n: 5, pt: 25, tol: 0.2, nb: 1, fl: 100, gap: 1.5, inc: 60, rf: 1.5, tabw: 20, leg: 4,
+    px: 30, py: 20, pdx: 40, pdy: 25, pl: 60, pa: 30, vL: 80, vW: 40, vH: 30, vd: 16, dec: 2, sL: 300, nseg: 4,
   };
-  const s = { ...DEF, unit: "mm", proc: "laser", mat: "crs", wside: "arrow" };
+  const s = { ...DEF, unit: "mm", proc: "laser", mat: "crs", wside: "arrow", proj: "third", sheet: "A3" };
   const PR = () => shop.procs[s.proc];
   const MAT = () => shop.mats[s.mat];
 
@@ -3587,6 +3614,20 @@ const Board = (() => {
     rf: { sym: "f", label: "Root face", mm: [0, 6, 0.1], in: [0, 0.24, 0.005] },
     tabw: { sym: "w", label: "Tab width", mm: [5, 80, 1], in: [0.2, 3, 0.05] },
     leg: { sym: "z", label: "Fillet weld leg", mm: [1, 20, 0.5], in: [0.04, 0.8, 0.02] },
+    // drafting
+    px: { sym: "x", label: "X of the point", mm: [-100, 100, 1], in: [-4, 4, 0.05] },
+    py: { sym: "y", label: "Y of the point", mm: [-80, 90, 1], in: [-3, 3.5, 0.05] },
+    pdx: { sym: "Δx", label: "Across from the last point", mm: [-80, 80, 1], in: [-3, 3, 0.05] },
+    pdy: { sym: "Δy", label: "Up from the last point", mm: [-45, 80, 1], in: [-1.75, 3, 0.05] },
+    pl: { sym: "L", label: "Length", mm: [5, 90, 1], in: [0.2, 3.5, 0.05] },
+    pa: { sym: "θ", label: "Angle", mm: [0, 360, 1], plain: true, show: (v) => `${Math.round(v)}°` },
+    vL: { sym: "L", label: "Length", mm: [20, 200, 1], in: [0.8, 8, 0.05] },
+    vW: { sym: "W", label: "Depth", mm: [10, 120, 1], in: [0.4, 4.5, 0.05] },
+    vH: { sym: "H", label: "Height", mm: [5, 100, 1], in: [0.2, 4, 0.05] },
+    vd: { sym: "d", label: "Hole diameter", mm: [2, 60, 1], in: [0.1, 2.4, 0.02] },
+    dec: { sym: "n", label: "Decimal places shown", mm: [0, 4, 1], plain: true, show: (v) => String(Math.round(v)) },
+    sL: { sym: "L", label: "Part's longest size", mm: [20, 5000, 10], in: [1, 200, 0.5] },
+    nseg: { sym: "n", label: "Steps along the part", mm: [2, 6, 1], plain: true, show: (v) => String(Math.round(v)) },
     // bound to shop settings
     k: { sym: "k", label: "Kerf width", mm: [0.05, 5, 0.05], in: [0.002, 0.2, 0.001], get: () => PR().kerf, set: (v) => (PR().kerf = v), shop: true },
     bev: { sym: "β", label: "Edge bevel", mm: [0, 10, 0.5], plain: true, show: (v) => `${v.toFixed(1)}°`, get: () => PR().bevel, set: (v) => (PR().bevel = v), shop: true },
@@ -3602,7 +3643,7 @@ const Board = (() => {
   }
 
   // ---- views: a subject's index ("tab:shop"), "settings", or a lesson id
-  let view = "tab:shop";
+  let view = "tab:drafting";
   let step = 0;
   let open = false;
   let lastFocus = null;
@@ -3620,6 +3661,8 @@ const Board = (() => {
     if (o.v?.proc in PROCESSES) s.proc = o.v.proc;
     if (o.v?.mat in MATERIALS) s.mat = o.v.mat;
     if (o.v?.wside === "other") s.wside = "other";
+    if (o.v?.proj === "first") s.proj = "first";
+    if (["A4", "A3", "Letter", "Tabloid"].includes(o.v?.sheet)) s.sheet = o.v.sheet;
     savedView = o.view;
     if (Number.isInteger(o.step)) step = Math.max(0, o.step);
     hc = !!o.hc;
@@ -5503,6 +5546,1762 @@ const Board = (() => {
     ],
   };
 
+
+  // ================================================================ DRAFTING
+  // Lessons written around BlackCAD itself: its commands, layers, panels and
+  // keys. Steps that teach a drafting habit BlackCAD can't do yet name the
+  // missing tool (see GAPS) and give the workaround, so the board stays honest
+  // and shows what to build next. When a command is added, its flag clears by
+  // itself: GAPS is checked against the live command list.
+
+  // ---------------------------------------------------------------- what BlackCAD can do today
+  const hasCmd = (name) => COMMANDS.some((c) => c.name === name || c.aliases.includes(name));
+  const aliasOf = (name) => {
+    const c = COMMANDS.find((c) => c.name === name);
+    return c ? c.aliases[0] || c.name : name;
+  };
+  /** Drafting tools the lessons lean on. `cmds` are the command names that
+   *  would close the gap; any one of them counts. */
+  const GAPS = {
+    OFFSET: { name: "Offset", cmds: ["OFFSET"], use: "parallel lines at a set distance: wall thickness, edges, construction", work: "COPY the line and type the second point as a distance, such as @0,10." },
+    TRIM: { name: "Trim and Extend", cmds: ["TRIM", "EXTEND"], use: "cleaning construction back to the finished outline", work: "Drag the line's end grip onto the intersection (type INT first), or erase and redraw with snaps." },
+    FILLET: { name: "Fillet and Chamfer", cmds: ["FILLET", "CHAMFER"], use: "rounded and bevelled corners", work: "Draw the round with ARC through three snapped points, and a chamfer as a short LINE; then grip the straight edges back to meet it." },
+    ARRAY: { name: "Array", cmds: ["ARRAY", "ARRAYRECT", "ARRAYPOLAR"], use: "rows and circles of identical holes", work: "COPY keeps asking for second points: type @25,0, then @50,0, and so on." },
+    SCALE: { name: "Scale and Stretch", cmds: ["SCALE", "STRETCH"], use: "resizing finished geometry", work: "Type new sizes in Properties, or drag grips with a typed point." },
+    XLINE: { name: "Construction lines", cmds: ["XLINE", "RAY"], use: "carrying edges from one view into the next", work: "Draw long LINEs on a layer named CONSTRUCTION, then turn that layer off with its eye." },
+    HATCH: { name: "Hatch", cmds: ["HATCH", "BHATCH"], use: "marking the cut material in a section", work: "Draw thin lines at 45° (Polar, F10) about 3 mm apart on a layer of their own." },
+    DIMANGULAR: { name: "Angular dimensions", cmds: ["DIMANGULAR"], use: "dimensioning angles", work: "DIST reports the angle between two points; write it as TEXT, with %%d for the degree sign." },
+    DIMBASELINE: { name: "Baseline and continued dimensions", cmds: ["DIMBASELINE", "DIMCONTINUE"], use: "rows of dimensions from one datum", work: "Run DIMLINEAR for each one, starting every one on the datum edge." },
+    LEADER: { name: "Leaders", cmds: ["LEADER", "MLEADER", "QLEADER"], use: "pointing a note at a feature", work: "A short LINE from the feature to a TEXT note. DIMDIAMETER already carries the Ø size." },
+    MTEXT: { name: "Multiline text", cmds: ["MTEXT"], use: "notes that run over several lines", work: "One TEXT per line, each 1.6 × the text height below the last." },
+    LAYOUT: { name: "Layouts (paper space)", cmds: ["LAYOUT", "MVIEW", "VPORTS"], use: "placing the full-size model on a sheet at a scale", work: "Put the sheet border in model space, scaled up by the drawing scale. Draw full size lesson: Try it does this for you." },
+    PLOT: { name: "Print to scale and PDF", cmds: ["PLOT", "PRINT", "EXPORTPDF"], use: "printing or sending a sheet", work: "Export SVG and print it from the browser, or save .dwg for someone who can plot it." },
+    BLOCK: { name: "Blocks and attributes", cmds: ["BLOCK", "INSERT", "ATTDEF"], use: "a reusable title block with fill-in fields", work: "Keep a title-block drawing and COPY it in; change the words in Properties." },
+    UNITS: { name: "Change units and precision", cmds: ["UNITS"], use: "switching mm and inches, decimals or fractions after the drawing starts", work: "Start the right kind of drawing from the welcome screen: Metric or Imperial." },
+    LTYPE: { name: "Linetype and lineweight settings", cmds: ["LINETYPE", "LTYPE", "LTSCALE", "LWEIGHT"], use: "setting a layer's linetype and weight, and scaling dashes", work: "Use the starting layers: VISIBLE, CENTER, HIDDEN and DIMENSION already carry the right linetype and weight." },
+  };
+  const missing = (id) => !GAPS[id].cmds.some(hasCmd);
+  const gapNames = (ids) => ids.filter(missing).map((id) => GAPS[id].name);
+  function gapsHtml(ids = []) {
+    const miss = ids.filter(missing);
+    if (!miss.length) return "";
+    return `<div class="gaps"><b>Not in BlackCAD yet</b>${miss.map((id) => `<div class="gap"><span class="gn">${GAPS[id].name}</span> <span class="gu">for ${GAPS[id].use}.</span> <span class="gw">For now: ${GAPS[id].work}</span></div>`).join("")}</div>`;
+  }
+
+  // ---------------------------------------------------------------- chalk for layer styles
+  /** A full circle as a path: two half arcs, so the centre is never ambiguous. */
+  const circD = (cx, cy, r) => `M ${f1(cx - r)} ${f1(cy)} A ${f1(r)} ${f1(r)} 0 1 0 ${f1(cx + r)} ${f1(cy)} A ${f1(r)} ${f1(r)} 0 1 0 ${f1(cx - r)} ${f1(cy)}`;
+  const nu = (mm) => `${nt(mm)} ${U()}`;
+  const layerChalk = (aci) => ({ 1: "r", 2: "y", 3: "g", 4: "c", 5: "b", 6: "r" })[aci] || "w";
+  const ltKind = (name = "") => (/CENTER|CENTRE/i.test(name) ? "center" : /HIDDEN|DASH/i.test(name) ? "hidden" : /PHANTOM/i.test(name) ? "phantom" : "cont");
+  /** A path in a linetype: dashed kinds fade in, continuous ones draw. */
+  const lt = (d, c = "w", kind = "cont", w = 2.4) => {
+    const da = { hidden: "9 6", center: "26 6 6 6", phantom: "26 6 6 6 6 6" }[kind];
+    const delay = (n++ * 0.11).toFixed(2);
+    return da ? `<path class="dsh c-${c}" style="--d:${delay}s;stroke-dasharray:${da};stroke-width:${w}" d="${d}"/>` : `<path class="ch c-${c}" pathLength="1" style="--d:${delay}s;stroke-width:${w}" d="${d}"/>`;
+  };
+  const DEFAULT_LAYERS = [
+    { name: "0", aci: 7, linetype: "Continuous", weight: 0.25 },
+    { name: "VISIBLE", aci: 7, linetype: "Continuous", weight: 0.5, current: true },
+    { name: "CENTER", aci: 2, linetype: "CENTER", weight: 0.25 },
+    { name: "HIDDEN", aci: 1, linetype: "HIDDEN", weight: 0.25 },
+    { name: "DIMENSION", aci: 3, linetype: "Continuous", weight: 0.25 },
+    { name: "NOTES", aci: 4, linetype: "Continuous", weight: 0.25 },
+  ];
+  const layerList = () => (doc?.info.layers?.length ? doc.info.layers : DEFAULT_LAYERS);
+  const LAYER_MEANS = {
+    0: "the base layer every drawing has; keep your own work off it",
+    VISIBLE: "edges you can see: the part itself, drawn thick",
+    CENTER: "axes of holes and round features",
+    HIDDEN: "edges behind a surface, dashed",
+    DIMENSION: "sizes; dimensions land here by themselves",
+    NOTES: "words: notes, labels and the title block",
+  };
+  /** A snap marker, shaped as BlackCAD draws it. */
+  function smark(kind, x, y, c = "a", r = 9) {
+    const d = {
+      END: `M ${x - r} ${y - r} h ${2 * r} v ${2 * r} h ${-2 * r} Z`,
+      MID: `M ${x} ${y - r} L ${x + r} ${y + r * 0.8} L ${x - r} ${y + r * 0.8} Z`,
+      CEN: `${circD(x, y, r)} M ${x - 5} ${y} h 10 M ${x} ${y - 5} v 10`,
+      QUA: `M ${x} ${y - r} L ${x + r} ${y} L ${x} ${y + r} L ${x - r} ${y} Z`,
+      INT: `M ${x - r} ${y - r} L ${x + r} ${y + r} M ${x + r} ${y - r} L ${x - r} ${y + r}`,
+      NEA: `M ${x - r} ${y - r} H ${x + r} L ${x - r} ${y + r} H ${x + r} Z`,
+      NOD: `${circD(x, y, r)} M ${x - 6} ${y - 6} l 12 12 M ${x + 6} ${y - 6} l -12 12`,
+    }[kind];
+    return path(d, c);
+  }
+
+  // ---------------------------------------------------------------- numbers as the learner types them
+  /** A length shown as it would be typed, in the board's units. */
+  const nt = (v) => String(+(inch() ? v / 25.4 : v).toFixed(inch() ? 3 : 1));
+  /** The drawing's own units for exercises: the open drawing's, else the board's. */
+  const du = () => (doc ? (doc.info.insunits === 1 ? "in" : "mm") : s.unit);
+  const xv = (mm, inches) => (du() === "in" ? inches : mm);
+  const xs = (v) => String(+(+v).toFixed(4));
+  const xtol = () => (du() === "in" ? 0.0006 : 0.015);
+  const xf = (v) => `${xs((+v).toFixed(du() === "in" ? 3 : 2))}${du() === "in" ? " in" : " mm"}`;
+  const kbd = (t) => `<kbd>${t}</kbd>`;
+
+  // ---------------------------------------------------------------- reading the open drawing
+  function entities() {
+    if (!doc) return [];
+    const out = [];
+    for (const [h, idxs] of doc.disp.byHandle) {
+      if (idxs.every((k) => doc.disp.items[k]?.dead)) continue;
+      const g = core.query(doc.id, `get ${h}`);
+      if (g) out.push(g);
+    }
+    return out;
+  }
+  const same = (a, b, t = xtol()) => Math.abs(a - b) <= t;
+  const samePt = (p, q, t = xtol()) => same(p[0], q[0], t) && same(p[1], q[1], t);
+  const lay = (g) => String(g.layer || "").toUpperCase();
+  /** Axis-aligned rectangles, from closed four-corner polylines or from four lines. */
+  function rectsOf(es) {
+    const t = xtol(), out = [];
+    for (const g of es) {
+      if (g.type !== "LWPOLYLINE" || !g.points) continue;
+      let pts = g.points.slice();
+      if (pts.length === 5 && samePt(pts[0], pts[4])) pts = pts.slice(0, 4);
+      if (pts.length !== 4 || !(g.closed || pts.length === 4)) continue;
+      const xs_ = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+      const x0 = Math.min(...xs_), x1 = Math.max(...xs_), y0 = Math.min(...ys), y1 = Math.max(...ys);
+      if (!pts.every((p) => (same(p[0], x0) || same(p[0], x1)) && (same(p[1], y0) || same(p[1], y1)))) continue;
+      if (!g.closed) continue;
+      out.push({ x0, y0, x1, y1, w: x1 - x0, h: y1 - y0, layer: lay(g), handles: [g.handle] });
+    }
+    const lines = es.filter((g) => g.type === "LINE");
+    const H = lines.filter((g) => same(g.start[1], g.end[1]) && !same(g.start[0], g.end[0])).map((g) => ({ g, y: g.start[1], a: Math.min(g.start[0], g.end[0]), b: Math.max(g.start[0], g.end[0]) }));
+    const V = lines.filter((g) => same(g.start[0], g.end[0]) && !same(g.start[1], g.end[1])).map((g) => ({ g, x: g.start[0], a: Math.min(g.start[1], g.end[1]), b: Math.max(g.start[1], g.end[1]) }));
+    for (let i = 0; i < H.length; i++)
+      for (let j = i + 1; j < H.length; j++) {
+        const p = H[i], q = H[j];
+        if (!same(p.a, q.a, t) || !same(p.b, q.b, t) || same(p.y, q.y, t)) continue;
+        const y0 = Math.min(p.y, q.y), y1 = Math.max(p.y, q.y);
+        const side = (x) => V.find((v) => same(v.x, x, t) && same(v.a, y0, t) && same(v.b, y1, t));
+        const l = side(p.a), r = side(p.b);
+        if (l && r) out.push({ x0: p.a, y0, x1: p.b, y1, w: p.b - p.a, h: y1 - y0, layer: lay(p.g), handles: [p.g.handle, q.g.handle, l.g.handle, r.g.handle] });
+      }
+    return out;
+  }
+  const sizeIs = (r, w, h) => same(r.w, w) && same(r.h, h);
+
+  // ---------------------------------------------------------------- exercises
+  // A step's `task` asks the learner to draw something in BlackCAD, then reads
+  // the drawing to check it. `setup` puts down the starting shapes and
+  // remembers where; `show` draws a finished answer beside the work.
+  const tasks = {};
+  const taskKey = () => `${LESSON.id}:${step}`;
+  const tstate = () => (tasks[taskKey()] ||= {});
+  let printing = false;
+  /** Where the exercise's starting shapes are; a printed sheet assumes 0,0. */
+  const T0 = () => tstate().o || (printing ? [0, 0] : null);
+  function runSetup(st) {
+    const t = tstate();
+    const o = st.task.setup.run();
+    // what's there now is the starting point; anything newer is the learner's
+    if (o) Object.assign(t, { o, before: new Set(doc.disp.byHandle.keys()), res: null });
+  }
+  function runTaskCheck(st) {
+    const t = tstate();
+    if (!doc) t.res = [{ ok: false, t: "Open or start a drawing first." }];
+    else
+      try {
+        t.res = st.task.check(t);
+      } catch (e) {
+        t.res = [{ ok: false, t: `Couldn't read the drawing: ${esc(e.message || String(e))}` }];
+      }
+    if (t.res.every((r) => r.ok)) log(`Blackboard: ${LESSON.title}, exercise checked: all correct.`, "ok");
+  }
+  function taskHtml(st) {
+    if (!st.task) return "";
+    const t = tstate();
+    const k = st.task;
+    const steps = k.do().map((x) => `<li>${x}</li>`).join("");
+    const btns =
+      (k.setup ? `<button class="chalkbtn try" data-act="task-setup">${k.setup.label}</button>` : "") +
+      `<button class="chalkbtn" data-act="task-check">Check my work</button>` +
+      (k.show ? `<button class="chalkbtn" data-act="task-show">Show me</button>` : "");
+    const res = t.res ? `<div class="res">${t.res.map((r) => `<div class="${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "✗"} ${r.t}</div>`).join("")}${t.res.every((r) => r.ok) ? `<div class="ok">Well drawn.</div>` : ""}</div>` : "";
+    return `<div class="task"><b>Your turn${du() === "in" ? " · inches" : " · millimetres"}</b><ol>${steps}</ol><div class="bb-row">${btns}</div>${res}</div>`;
+  }
+  /** The new objects since the exercise was set up, or all of them. */
+  const fresh = (t, es) => (t.before ? es.filter((g) => !t.before.has(g.handle)) : es);
+  const at = (o, x, y) => `${xs(o[0] + x)},${xs(o[1] + y)}`;
+  const needSetup = (label) => `Press ${kbd(label)} first; then the numbers to type appear here.`;
+
+  // ================================================================ LESSON: THE COMMAND LINE
+
+  function cmdFig1() {
+    const m = COMMANDS.filter((c) => !c.hidden && (c.name.startsWith("C") || c.aliases.some((a) => a.startsWith("C")))).slice(0, 5);
+    let g = path(rectD(50, 60, 500, 70)) + path(rectD(50, 140, 500, 30 + m.length * 34), "b");
+    label(70, 104, "Command:", "b", 24);
+    label(190, 104, "C", "a", 26);
+    g += path("M 210 82 v 30", "a");
+    m.forEach((c, i) => {
+      label(72, 176 + i * 34, esc(c.aliases[0] || c.name), "a", 21);
+      label(150, 176 + i * 34, `${c.name} · ${esc(c.desc)}`, "w", 18);
+    });
+    label(50, 140 + 30 + m.length * 34 + 34, "start typing anywhere · Enter or Space runs it", "b", 19);
+    return svg(g, "The command line with the letter C typed and a list of matching commands below it.", `30 40 540 ${140 + m.length * 34 + 90}`);
+  }
+
+  function cmdFig2() {
+    let g = path(rectD(40, 60, 520, 64));
+    label(58, 101, "CIRCLE  Specify radius [Diameter]:", "w", 21);
+    label(440, 101, "D", "a", 24);
+    g += arrow(372, 150, 372, 116, "a");
+    label(300, 172, "options: type the capital letter", "a", 18);
+    const cx = 200, cy = 280, r = 70;
+    g += circle(cx, cy, r, "w") + path(`M ${cx} ${cy} L ${cx + r} ${cy}`, "b") + smark("CEN", cx, cy, "b", 7);
+    label(cx + r / 2, cy - 12, "radius", "b", 18, "middle");
+    label(330, 250, "Enter · done, or take the default", "w", 18);
+    label(330, 280, "Esc · cancel", "w", 18);
+    label(330, 310, "right-click · Enter", "w", 18);
+    return svg(g, "The prompt line asking for a radius with a Diameter option, and a circle drawn below it.", "20 40 560 330");
+  }
+
+  function cmdFig3() {
+    const d = xv(40, 1.5);
+    const cx = 300, cy = 200, r = 90;
+    let g = path(`M ${cx - 150} ${cy} H ${cx + 150} M ${cx} ${cy - 130} V ${cy + 130}`, "b") + circle(cx, cy, r, "w");
+    g += dim(cx - r * 0.707, cy + r * 0.707, cx + r * 0.707, cy - r * 0.707, "a");
+    label(cx + r * 0.707 + 10, cy - r * 0.707 - 6, `Ø${xs(d)}`, "a", 22);
+    label(cx + 10, cy + 24, "0,0", "b", 18);
+    return svg(g, "A circle centred on the origin with its diameter marked.", "120 50 360 300");
+  }
+
+  const CMD = {
+    id: "d-cmd",
+    title: "The command line",
+    q: "How do I tell BlackCAD what to draw?",
+    blurb: "Typing commands, prompts, options, undo",
+    src: "BlackCAD's own command line and command list.",
+    steps: [
+      {
+        t: "Type a command, from anywhere",
+        p: "You don't have to click into the command line first. Start typing and the letters go there, and matching commands show as you type. Enter or Space runs the one you want. Every tool button does the same as typing its name.",
+        ctl: [],
+        fig: cmdFig1,
+        math: () => ["LINE", "PLINE", "CIRCLE", "ARC", "RECTANGLE", "TEXT", "DIM", "MOVE", "COPY", "ROTATE", "MIRROR", "ERASE", "DIST"].filter(hasCmd).map((c) => ln(`${V_(aliasOf(c))} ${c}`)).join(""),
+        basis: "The short names are the aliases BlackCAD knows today. Type the full name if you forget one.",
+      },
+      {
+        t: "One question at a time",
+        p: "A running command asks one thing at a time on the prompt line. Words in square brackets are options: type the capital letter to pick one. A value in angle brackets is the default, and Enter takes it. Esc cancels.",
+        ctl: [],
+        fig: cmdFig2,
+        math: () => ln(`CIRCLE asks for a radius; type ${V_("D")} to give a diameter instead`) + ln("Space works like Enter, except while you type text") + ln("Enter on an empty command line repeats the last command", "dim"),
+      },
+      {
+        t: "Your first part: a circle",
+        p: "Draw a circle by typing every value, then let the board check it. If anything goes wrong, Undo (Ctrl+Z or U) takes back the whole command in one step, and Redo (Ctrl+Y) puts it back.",
+        ctl: [],
+        fig: cmdFig3,
+        math: () => ln(`centre ${V_("0,0")} · diameter ${V_(xs(xv(40, 1.5)))}`) + ln("Start a Metric or Imperial drawing first, if none is open.", "dim"),
+        task: {
+          do: () => [`Type ${kbd("C")} and press Enter.`, `For the centre, type ${kbd("0,0")} and Enter.`, `Type ${kbd("D")} and Enter, then ${kbd(xs(xv(40, 1.5)))} and Enter.`],
+          check: () => {
+            const d = xv(40, 1.5);
+            const cs = entities().filter((g) => g.type === "CIRCLE");
+            if (!cs.length) return [{ ok: false, t: "No circle in the drawing yet." }];
+            const good = cs.find((g) => samePt(g.center, [0, 0]) && same(2 * g.radius, d));
+            if (good) return [{ ok: true, t: `Circle at 0,0` }, { ok: true, t: `Diameter ${xf(d)}` }];
+            const atO = cs.find((g) => samePt(g.center, [0, 0]));
+            if (atO) return [{ ok: true, t: "Circle at 0,0" }, { ok: false, t: `Diameter is ${xf(2 * atO.radius)}; it should be ${xf(d)}. Select it and type ${xs(d)} as its Diameter in Properties.` }];
+            const right = cs.find((g) => same(2 * g.radius, d));
+            if (right) return [{ ok: false, t: `The centre is at ${xs(right.center[0].toFixed(3))},${xs(right.center[1].toFixed(3))}; type 0,0 for it.` }, { ok: true, t: `Diameter ${xf(d)}` }];
+            return [{ ok: false, t: `No circle of diameter ${xf(d)} at 0,0 yet.` }];
+          },
+          show: () => placeOnDrawing("circle", (d) => d.circle(0, 0, xv(40, 1.5)), { at: [0, 0], raw: true }),
+        },
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: POINTS BY THE NUMBERS
+
+  const GX = 300, GY = 220, GK = 1.9;
+  const gx = (x) => GX + x * GK, gy = (y) => GY - y * GK;
+  function axes() {
+    let g = `<path class="dsh c-b" style="--d:0s;opacity:.3;stroke-dasharray:2 7" d="${[-4, -3, -2, -1, 1, 2, 3, 4, 5].map((i) => `M ${f1(gx(i * 20))} ${f1(gy(-90))} V ${f1(gy(95))}`).join(" ")} ${[-4, -3, -2, -1, 1, 2, 3, 4].map((i) => `M ${f1(gx(-120))} ${f1(gy(i * 20))} H ${f1(gx(125))}`).join(" ")}"/>`;
+    g += arrow(gx(-125), GY, gx(130), GY, "w") + arrow(GX, gy(-92), GX, gy(100), "w");
+    label(gx(130) + 6, GY + 22, "X", "w", 20);
+    label(GX + 10, gy(100) + 10, "Y", "w", 20);
+    label(GX - 8, GY + 22, "0,0", "b", 17, "end");
+    return g;
+  }
+  function coordFig1() {
+    const P = [gx(s.px), gy(s.py)];
+    let g = axes() + dash(`M ${f1(P[0])} ${GY} V ${f1(P[1])} M ${GX} ${f1(P[1])} H ${f1(P[0])}`, "b");
+    g += circle(P[0], P[1], 6, "a");
+    label(P[0] + (s.px >= 0 ? 12 : -12), P[1] + (s.py >= 0 ? -12 : 26), `${nt(s.px)},${nt(s.py)}`, "a", 24, s.px >= 0 ? "start" : "end");
+    label(P[0], GY + (s.py >= 0 ? 22 : -10), `x ${nt(s.px)}`, "b", 17, "middle");
+    label(GX + (s.px >= 0 ? -8 : 8), P[1] + 6, `y ${nt(s.py)}`, "b", 17, s.px >= 0 ? "end" : "start");
+    return svg(g, "X and Y axes with a point marked; dashed lines show its X and Y distances from the origin.", "40 20 520 400");
+  }
+  const A_REL = [-60, -40];
+  function coordFig2() {
+    const A = [gx(A_REL[0]), gy(A_REL[1])], B = [gx(A_REL[0] + s.pdx), gy(A_REL[1] + s.pdy)];
+    let g = axes() + dash(`M ${f1(A[0])} ${f1(A[1])} H ${f1(B[0])} V ${f1(B[1])}`, "b");
+    g += circle(A[0], A[1], 6, "w") + arrow(A[0], A[1], B[0], B[1], "a") + circle(B[0], B[1], 5, "a");
+    label(A[0] - 10, A[1] + (s.pdy >= 0 ? -12 : 26), "last point", "w", 18, "end");
+    label(B[0] + (s.pdx >= 0 ? 12 : -12), B[1] + (s.pdy >= 0 ? -10 : 26), `@${nt(s.pdx)},${nt(s.pdy)}`, "a", 24, s.pdx >= 0 ? "start" : "end");
+    label((A[0] + B[0]) / 2, A[1] + (s.pdy >= 0 ? 24 : -12), `Δx ${nt(s.pdx)}`, "b", 17, "middle");
+    label(B[0] + (s.pdx >= 0 ? 10 : -10), (A[1] + B[1]) / 2 + 6, `Δy ${nt(s.pdy)}`, "b", 17, s.pdx >= 0 ? "start" : "end");
+    return svg(g, "From the last point, an arrow to a new point; dashed legs show the distance across and up.", "40 20 520 400");
+  }
+  function coordFig3() {
+    const a = rad(s.pa);
+    const B = [GX + Math.cos(a) * s.pl * GK, GY - Math.sin(a) * s.pl * GK];
+    let g = axes();
+    const r = 46, large = s.pa % 360 > 180 ? 1 : 0;
+    if (s.pa % 360 > 0.5) g += path(`M ${GX + r} ${GY} A ${r} ${r} 0 ${large} 0 ${f1(GX + r * Math.cos(a))} ${f1(GY - r * Math.sin(a))}`, "b");
+    g += arrow(GX, GY, B[0], B[1], "a") + circle(B[0], B[1], 5, "a");
+    label(GX + (r + 16) * Math.cos(a / 2), GY - (r + 16) * Math.sin(a / 2) + 6, `${Math.round(s.pa)}°`, "b", 19, "middle");
+    label(B[0] + (Math.cos(a) >= 0 ? 12 : -12), B[1] + (Math.sin(a) >= 0 ? -10 : 26), `@${nt(s.pl)}&lt;${Math.round(s.pa)}`, "a", 24, Math.cos(a) >= 0 ? "start" : "end");
+    label(gx(118), GY - 8, "0°", "b", 16, "end");
+    label(GX - 10, gy(88), "90°", "b", 16, "end");
+    label(gx(-118), GY - 8, "180°", "b", 16);
+    label(GX + 8, gy(-86), "270°", "b", 16);
+    return svg(g, "From the last point, an arrow at an angle measured counter-clockwise from the X direction.", "40 20 520 400");
+  }
+  function unitsFig() {
+    const x0 = 60, k = 4.6;
+    let g = path(`M ${x0} 120 H ${x0 + 100 * k}`, "w");
+    for (let i = 0; i <= 100; i += 5) g += path(`M ${f1(x0 + i * k)} 120 v ${i % 10 ? -10 : -20}`, "w");
+    for (let i = 0; i <= 100; i += 20) label(x0 + i * k, 90, String(i), "w", 17, "middle");
+    label(x0 + 100 * k + 12, 126, "mm", "w", 18);
+    g += path(`M ${x0} 190 H ${f1(x0 + 101.6 * k)}`, "a");
+    for (let i = 0; i <= 16; i++) g += path(`M ${f1(x0 + i * 6.35 * k)} 190 v ${i % 4 ? 10 : 22}`, "a");
+    for (let i = 0; i <= 4; i++) label(x0 + i * 25.4 * k, 236, String(i), "a", 17, "middle");
+    label(x0 + 101.6 * k + 12, 196, "in", "a", 18);
+    g += dash(`M ${x0 + 38.1 * k} 120 V 190`, "g");
+    label(x0 + 38.1 * k + 8, 160, `1-1/2" = 38.1 mm`, "g", 18);
+    label(x0, 300, "type the unit and BlackCAD converts:", "b", 19);
+    label(x0, 330, `1"   1-1/2"   3/8in   1'2"   25.4mm   2.5cm`, "w", 19);
+    return svg(g, "A millimetre ruler above an inch ruler, with one and a half inches marked at 38.1 millimetres.", "40 60 530 290");
+  }
+  function plateTypedFig() {
+    const W = xv(100, 4), H = xv(50, 2);
+    const x0 = 130, y0 = 290, k = 340 / W;
+    const pts = [[x0, y0], [x0 + W * k, y0], [x0 + W * k, y0 - H * k], [x0, y0 - H * k]];
+    let g = path(poly(pts));
+    const tags = ["0,0", `@${xs(W)},0`, `@0,${xs(H)}`, `@-${xs(W)},0`];
+    tags.forEach((t, i) => (g += circle(pts[(i + 0) % 4][0], pts[i % 4][1], 4, "a")));
+    label(x0 - 10, y0 + 26, tags[0], "a", 20, "end");
+    label(x0 + W * k + 10, y0 + 26, tags[1], "a", 20);
+    label(x0 + W * k + 10, y0 - H * k - 10, tags[2], "a", 20);
+    label(x0 - 10, y0 - H * k - 10, tags[3], "a", 20, "end");
+    label(x0 + 10, y0 - (H * k) / 2 + 6, "C closes it", "b", 18);
+    return svg(g, "A rectangle with the typed coordinates written at each corner, starting at 0,0.", "30 60 560 280");
+  }
+
+  const COORDS = {
+    id: "d-coords",
+    title: "Points by the numbers",
+    q: "How do I draw something exactly 100 long?",
+    blurb: "Absolute, relative and polar points, in any unit",
+    src: "BlackCAD's point input: x,y, @dx,dy, @length<angle, <angle and a length along the cursor; lengths parsed by the core with units.",
+    steps: [
+      {
+        t: "x,y: measured from the origin",
+        p: "Every point has an X and a Y, measured from 0,0. Type them with a comma and no space, such as 30,20. X goes right and Y goes up; negative values go left and down. The status bar shows the cursor's X and Y as you move.",
+        ctl: ["px", "py"],
+        fig: coordFig1,
+        math: () => ln(`type ${V_(`${nt(s.px)},${nt(s.py)}`)}`) + ln("Use it for the first point of a part, often 0,0.", "dim"),
+      },
+      {
+        t: "@dx,dy: measured from the last point",
+        p: "Usually you know how far to go, not where you'll end up. Put @ in front and the two numbers are measured from the last point instead of from 0,0: across, then up.",
+        ctl: ["pdx", "pdy"],
+        fig: coordFig2,
+        math: () => ln(`type ${V_(`@${nt(s.pdx)},${nt(s.pdy)}`)}`) + ln(`from ${nt(A_REL[0])},${nt(A_REL[1])} that lands on ${nt(A_REL[0] + s.pdx)},${nt(A_REL[1] + s.pdy)}`, "dim"),
+      },
+      {
+        t: "@length&lt;angle: a distance in a direction",
+        p: "For a slanted line, give a length and an angle with < between them. Angles start at 0°, pointing right along X, and turn counter-clockwise: 90° is up, 180° left and 270° down.",
+        ctl: ["pl", "pa"],
+        fig: coordFig3,
+        math: () => {
+          const a = rad(s.pa);
+          return ln(`type ${V_(`@${nt(s.pl)}&lt;${Math.round(s.pa)}`)}`) + ln(`the same as @${nt(s.pl * Math.cos(a))},${nt(s.pl * Math.sin(a))}`, "dim");
+        },
+        note: "A length on its own goes that far toward the cursor. Typing <45 at a prompt locks the next pick to 45°.",
+      },
+      {
+        t: "Type in any unit",
+        p: "A plain number is in the drawing's own units. Add a unit and BlackCAD converts it, so inches and fractions work in a metric drawing and millimetres work in an inch drawing. A space ends what you type, so write 1-1/2\", not 1 1/2\".",
+        ctl: [],
+        fig: unitsFig,
+        math: () => ln(`${V_('1"')} = 25.4 mm · ${V_('1-1/2"')} = 38.1 mm · ${V_("3/8in")} = 9.525 mm`) + ln(`${V_(`1'2"`)} = 355.6 mm · ${V_("25.4mm")} = 1 in · ${V_("2.5cm")} = 25 mm`) + ln("Angles are in degrees unless you add r (radians) or g (grads).", "dim"),
+      },
+      {
+        t: "Your turn: a plate by the numbers",
+        p: "Draw a plate with LINE, typing the first corner as a point and every other corner from the last one. Close it with the C option. Then check it.",
+        ctl: [],
+        fig: plateTypedFig,
+        math: () => ln(`${V_(xs(xv(100, 4)))} × ${V_(xs(xv(50, 2)))}, lower-left corner at 0,0`),
+        task: {
+          do: () => {
+            const W = xs(xv(100, 4)), H = xs(xv(50, 2));
+            return [`Type ${kbd("L")} and Enter.`, `First point: ${kbd("0,0")}.`, `Then ${kbd(`@${W},0`)}, ${kbd(`@0,${H}`)} and ${kbd(`@-${W},0`)}, each followed by Enter.`, `Type ${kbd("C")} and Enter to close.`];
+          },
+          check: () => {
+            const W = xv(100, 4), H = xv(50, 2);
+            const rs = rectsOf(entities());
+            const good = rs.find((r) => sizeIs(r, W, H) && same(r.x0, 0) && same(r.y0, 0));
+            if (good) return [{ ok: true, t: `${xf(W)} × ${xf(H)} plate` }, { ok: true, t: "Lower-left corner at 0,0" }];
+            const sz = rs.find((r) => sizeIs(r, W, H));
+            if (sz) return [{ ok: true, t: `${xf(W)} × ${xf(H)} plate` }, { ok: false, t: `Its lower-left corner is at ${xs(sz.x0.toFixed(3))},${xs(sz.y0.toFixed(3))}; start at 0,0.` }];
+            const lines = entities().filter((g) => g.type === "LINE").length;
+            return [{ ok: false, t: lines ? `${lines} line${lines === 1 ? "" : "s"} found, but they don't make a closed ${xf(W)} × ${xf(H)} rectangle yet.` : "No lines in the drawing yet." }];
+          },
+          show: () =>
+            placeOnDrawing(
+              "plate",
+              (d) => {
+                const W = xv(100, 4), H = xv(50, 2);
+                d.line(0, 0, W, 0), d.line(W, 0, W, H), d.line(W, H, 0, H), d.line(0, H, 0, 0);
+              },
+              { at: [0, 0], raw: true }
+            ),
+        },
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: SNAPS, ORTHO AND POLAR
+
+  function snapFig1() {
+    const a = [90, 290], b = [520, 110], c = [430, 215], r = 72;
+    let g = path(`M ${a[0]} ${a[1]} L ${b[0]} ${b[1]}`) + circle(c[0], c[1], r);
+    // where the line crosses the circle
+    const d = [b[0] - a[0], b[1] - a[1]], f = [a[0] - c[0], a[1] - c[1]];
+    const A = d[0] * d[0] + d[1] * d[1], B = 2 * (f[0] * d[0] + f[1] * d[1]), C = f[0] * f[0] + f[1] * f[1] - r * r;
+    const disc = Math.sqrt(Math.max(B * B - 4 * A * C, 0));
+    const ints = [(-B - disc) / (2 * A), (-B + disc) / (2 * A)].map((t) => [a[0] + d[0] * t, a[1] + d[1] * t]);
+    g += smark("END", a[0], a[1]) + smark("END", b[0], b[1]) + smark("MID", (a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 1);
+    g += smark("CEN", c[0], c[1]) + smark("QUA", c[0], c[1] + r) + smark("QUA", c[0] + r, c[1]);
+    for (const p of ints) g += smark("INT", p[0], p[1]);
+    label(a[0] + 4, a[1] + 34, "END", "a", 18, "middle");
+    label((a[0] + b[0]) / 2 + 14, (a[1] + b[1]) / 2 + 26, "MID", "a", 18);
+    label(c[0] + 16, c[1] + 6, "CEN", "a", 18);
+    label(c[0], c[1] + r + 28, "QUA", "a", 18, "middle");
+    label(ints[0][0] - 4, ints[0][1] - 18, "INT", "a", 18, "middle");
+    return svg(g, "A line crossing a circle, with snap markers at the ends, the midpoint, the centre, two quadrants and the two intersections.", "50 70 520 320");
+  }
+  function snapFig2() {
+    const c = [380, 210], r = 80, from = [100, 300];
+    let g = path(rectD(40, 50, 520, 50));
+    label(56, 84, "LINE  Specify next point:", "w", 20);
+    label(330, 84, "CEN", "a", 22);
+    g += circle(c[0], c[1], r) + circle(from[0], from[1], 5, "w");
+    g += path(`M ${from[0]} ${from[1]} L ${c[0]} ${c[1]}`, "a") + smark("CEN", c[0], c[1]);
+    g += path(`M ${c[0] + r * 0.7 + 6} ${c[1] + r * 0.7 + 6} l 16 18 l -4 -12 l 12 2 Z`, "w");
+    label(c[0] + r * 0.7 + 30, c[1] + r * 0.7 + 30, "cursor anywhere on the circle", "w", 17);
+    label(60, 360, "only CEN for this pick; Tab cycles when snaps overlap", "b", 18);
+    return svg(g, "The prompt with CEN typed, and a line ending exactly at a circle's centre while the cursor is on the circle's edge.", "30 30 540 350");
+  }
+  function polarFig() {
+    const o = [300, 220], R = 150;
+    let g = "";
+    for (let a = 0; a < 360; a += 15) g += `<path class="dsh c-b" style="--d:0s;opacity:${a % 90 ? 0.28 : 0.6};stroke-dasharray:3 7" d="M ${o[0]} ${o[1]} L ${f1(o[0] + R * Math.cos(rad(a)))} ${f1(o[1] - R * Math.sin(rad(a)))}"/>`;
+    const tracked = (Math.round(s.pa / 15) * 15) % 360;
+    const cur = [o[0] + 130 * Math.cos(rad(s.pa)), o[1] - 130 * Math.sin(rad(s.pa))];
+    const tp = [o[0] + 130 * Math.cos(rad(tracked)) * Math.cos(rad(s.pa - tracked)), o[1] - 130 * Math.sin(rad(tracked)) * Math.cos(rad(s.pa - tracked))];
+    g += path(`M ${o[0]} ${o[1]} L ${f1(tp[0])} ${f1(tp[1])}`, "a", "thick") + circle(o[0], o[1], 5, "w");
+    g += path(`M ${f1(cur[0])} ${f1(cur[1])} l 14 16 l -4 -11 l 11 2 Z`, "w");
+    label(tp[0] + (Math.cos(rad(tracked)) >= 0 ? 14 : -14), tp[1] - 12, `Polar ${tracked}°`, "a", 20, Math.cos(rad(tracked)) >= 0 ? "start" : "end");
+    label(60, 405, "Polar tracks every 15° · Ortho locks to 0, 90, 180, 270", "b", 18);
+    return svg(g, "Faint rays every 15 degrees around a point, with the line locked onto the ray nearest the cursor.", "40 50 520 370");
+  }
+  function snapTaskFig() {
+    const x0 = 80, y0 = 300, W = 220, H = 110, c = [440, y0 - H / 2], r = 46;
+    let g = path(rectD(x0, y0 - H, W, H)) + circle(c[0], c[1], r);
+    const m = [x0 + W / 2, y0 - H];
+    g += path(`M ${m[0]} ${m[1]} L ${c[0]} ${c[1]}`, "a") + smark("MID", m[0], m[1] - 1) + smark("CEN", c[0], c[1]);
+    label(m[0], m[1] - 20, "MID", "a", 18, "middle");
+    label(c[0] + 14, c[1] - 14, "CEN", "a", 18);
+    return svg(g, "A rectangle and a circle joined by a line from the midpoint of the rectangle's top edge to the circle's centre.", "50 120 500 220");
+  }
+  const snapSetupVals = () => ({ W: xv(80, 3), H: xv(40, 1.5), cx: xv(130, 5), d: xv(20, 0.75) });
+
+  const SNAPS = {
+    id: "d-snaps",
+    title: "Snaps, Ortho and Polar",
+    q: "How do I land exactly on the end of a line?",
+    blurb: "Object snaps, one-shot snaps, Tab, Ortho and Polar",
+    src: "BlackCAD's snap kinds (END, MID, CEN, QUA, INT, NEA, NOD, INS), drawing aids F3, F7, F8, F9, F10 and 15° polar tracking.",
+    steps: [
+      {
+        t: "Object snaps find exact points",
+        p: "With OSNAP on (F3, and on by default), the cursor jumps to exact points near it and a marker shows which kind. A snapped point is exact however far you're zoomed out. In a good drawing, almost every point is snapped or typed.",
+        ctl: [],
+        fig: snapFig1,
+        math: () => ln(`${V_("□")} endpoint · ${V_("△")} midpoint · ${V_("⊕")} centre`) + ln(`${V_("◇")} quadrant · ${V_("✕")} intersection · ${V_("⊗")} node`) + ln("Nearest is off unless you ask for it.", "dim"),
+      },
+      {
+        t: "Ask for one snap, or press Tab",
+        p: "At any point prompt, type END, MID, CEN, QUA, INT, NEA or NOD and press Enter, and the next pick uses only that snap. Where several snaps sit close together, Tab steps through them. NON switches snaps off for one pick.",
+        ctl: [],
+        fig: snapFig2,
+        math: () => ln(`${V_("CEN")} then click the circle's edge: the line ends at its centre`) + ln("The command line notes the one-shot snap until you pick.", "dim"),
+      },
+      {
+        t: "Ortho and Polar keep lines straight",
+        p: "Polar (F10, on by default) tracks every 15°, so lines lock to 0°, 15°, 30° and so on as you near them. Ortho (F8) locks to straight across or straight up and down only. Turning one on turns the other off. Grid (F7) shows the grid and Snap (F9) steps the cursor along it.",
+        ctl: ["pa"],
+        fig: polarFig,
+        math: () => {
+          const tr = (Math.round(s.pa / 15) * 15) % 360, or = (Math.round(s.pa / 90) * 90) % 360;
+          return ln(`cursor at ${Math.round(s.pa)}° → Polar locks to ${V_(`${tr}°`)}`) + ln(`with Ortho instead: ${V_(`${or}°`)}`) + ln("Typed points ignore both: @50&lt;37 goes to exactly 37°.", "dim");
+        },
+      },
+      {
+        t: "Your turn: midpoint to centre",
+        p: "Join the middle of a plate's top edge to the centre of a hole beside it, using one-shot snaps. The board puts the plate and hole down for you.",
+        ctl: [],
+        fig: snapTaskFig,
+        math: () => ln("Snap both ends; don't eyeball them."),
+        task: {
+          setup: {
+            label: "Set up the plate and hole",
+            run: () => {
+              const v = snapSetupVals();
+              return placeOnDrawing("plate and hole for the snap exercise", (d) => {
+                d.rect(0, 0, v.W, v.H);
+                d.circle(v.cx, v.H / 2, v.d);
+              }, { raw: true });
+            },
+          },
+          do: () => [`Type ${kbd("L")} and Enter.`, `Type ${kbd("MID")}, Enter, and click near the top edge of the plate.`, `Type ${kbd("CEN")}, Enter, and click on the circle.`, `Press Enter to finish the line.`],
+          check: (t) => {
+            const es = entities();
+            const rs = rectsOf(es), cs = es.filter((g) => g.type === "CIRCLE");
+            const lines = fresh(t, es).filter((g) => g.type === "LINE");
+            if (!rs.length || !cs.length) return [{ ok: false, t: "Set up the plate and hole first, or draw a rectangle and a circle." }];
+            const mids = rs.map((r) => [(r.x0 + r.x1) / 2, r.y1]);
+            for (const g of lines) {
+              const ends = [g.start, g.end];
+              const m = mids.some((p) => ends.some((e) => samePt(e, p)));
+              const c = cs.some((cc) => ends.some((e) => samePt(e, cc.center)));
+              if (m && c) return [{ ok: true, t: "Starts exactly at the top edge's midpoint" }, { ok: true, t: "Ends exactly at the circle's centre" }];
+            }
+            const someMid = lines.some((g) => mids.some((p) => samePt(g.start, p) || samePt(g.end, p)));
+            const someCen = lines.some((g) => cs.some((cc) => samePt(g.start, cc.center) || samePt(g.end, cc.center)));
+            return [
+              { ok: someMid, t: someMid ? "A line starts at the top edge's midpoint" : "No line starts exactly at the top edge's midpoint. Type MID before the pick." },
+              { ok: someCen, t: someCen ? "A line ends at the circle's centre" : "No line ends exactly at the circle's centre. Type CEN before the pick." },
+            ];
+          },
+          show: () => {
+            const v = snapSetupVals();
+            placeOnDrawing("snap exercise answer", (d) => {
+              d.rect(0, 0, v.W, v.H);
+              d.circle(v.cx, v.H / 2, v.d);
+              d.line(v.W / 2, v.H, v.cx, v.H / 2);
+            }, { raw: true });
+          },
+        },
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: SELECT, GRIP AND CHANGE
+
+  function selectFig() {
+    let g = "";
+    // window, left to right
+    g += circle(120, 200, 40, "b", "thick") + path("M 150 140 L 250 260", "w");
+    g += path(rectD(70, 140, 140, 120), "b");
+    g += arrow(70, 290, 210, 290, "b");
+    label(140, 120, "window", "b", 20, "middle");
+    label(70, 324, "left → right: only what's inside", "b", 17);
+    // crossing, right to left
+    g += circle(390, 200, 40, "g", "thick") + path("M 420 140 L 520 260", "g", "thick");
+    g += dash(rectD(340, 160, 130, 90), "g");
+    g += arrow(470, 290, 340, 290, "g");
+    label(405, 120, "crossing", "g", 20, "middle");
+    label(330, 324, "right → left: anything it touches", "g", 17);
+    return svg(g, "Two selection boxes. A solid window dragged left to right selects only the circle fully inside it. A dashed crossing box dragged right to left selects the circle and the line it touches.", "40 90 520 260");
+  }
+  function gripFig() {
+    let g = path("M 80 250 L 260 130", "b") + dash("M 80 250 L 300 190", "a");
+    const sq = (x, y) => path(`M ${x - 7} ${y - 7} h 14 v 14 h -14 Z`, "b");
+    g += sq(80, 250) + sq(260, 130) + sq(170, 190);
+    g += arrow(266, 140, 296, 182, "a");
+    label(100, 300, "drag an end grip: stretch", "a", 18);
+    g += circle(430, 200, 60, "b") + `<circle class="dsh c-a" style="--d:.4s" cx="430" cy="200" r="85"/>`;
+    g += sq(430, 200) + sq(490, 200) + sq(430, 140) + sq(370, 200) + sq(430, 260);
+    g += arrow(497, 200, 512, 200, "a");
+    label(360, 316, "drag an edge grip: resize", "a", 18);
+    return svg(g, "A selected line with grips at its ends and middle, one end dragged to a new place; a selected circle with grips, its edge grip dragged to make it bigger.", "50 100 510 240");
+  }
+  function propsFig() {
+    let g = path(rectD(120, 60, 360, 260), "w");
+    label(140, 96, "PROPERTIES", "b", 17);
+    label(140, 128, "Circle", "w", 22);
+    const rows = [["Layer", "VISIBLE"], ["Center X", "50.00"], ["Center Y", "30.00"], ["Radius", "10.00"], ["Diameter", null]];
+    rows.forEach(([k, v], i) => {
+      label(140, 170 + i * 30, k, "b", 18);
+      if (v) label(460, 170 + i * 30, v, "w", 18, "end");
+    });
+    g += path(rectD(330, 272, 136, 30), "a");
+    label(460, 294, '3/4"', "a", 20, "end");
+    g += arrow(520, 287, 472, 287, "a");
+    label(526, 293, "type, Enter", "a", 17);
+    return svg(g, "The Properties panel for a circle, with a new diameter being typed into the Diameter row.", "100 40 520 300");
+  }
+  function mirrorFig() {
+    const c = 300;
+    const L = [[150, 300], [270, 300], [270, 270], [190, 270], [190, 140], [150, 140]];
+    let g = path(poly(L)) + dash(poly(L.map(([x, y]) => [2 * c - x, y])), "a");
+    g += lt(`M ${c} 110 V 330`, "y", "center", 2.2);
+    g += smark("END", c, 110, "b", 7) + smark("END", c, 330, "b", 7);
+    label(c + 12, 106, "mirror line: END, END", "b", 17);
+    label(150, 356, "original stays", "w", 18);
+    label(330, 356, "mirrored copy", "a", 18);
+    return svg(g, "An L-shaped bracket on the left of a yellow centre line and its mirrored copy on the right.", "100 80 420 300");
+  }
+  function moreToolsFig() {
+    const tools = [["OFFSET", "parallel copy"], ["TRIM", "cut back"], ["FILLET", "round a corner"], ["ARRAY", "rows of holes"], ["SCALE", "resize"]];
+    let g = "";
+    tools.forEach(([c, what], i) => {
+      const y = 90 + i * 56, have = hasCmd(c);
+      g += path(rectD(80, y - 30, 420, 44), have ? "g" : "a");
+      label(100, y, c, have ? "g" : "a", 21);
+      label(240, y, what, "w", 18);
+      label(486, y, have ? "in BlackCAD" : "not yet", have ? "g" : "a", 17, "end");
+    });
+    return svg(g, "A list of five drafting tools, each marked as in BlackCAD or not yet.", "60 40 460 330");
+  }
+  const MIRROR_PTS = () => {
+    const u = xv(1, 1 / 25);
+    return [[0, 0], [30, 0], [30, 8], [10, 8], [10, 40], [0, 40]].map(([x, y]) => [x * u, y * u]);
+  };
+  const MIRROR_C = () => xv(45, 1.8);
+
+  const EDIT = {
+    id: "d-edit",
+    title: "Select, grip and change",
+    q: "How do I change what I've already drawn?",
+    blurb: "Selection boxes, grips, Properties and the edit commands",
+    src: "BlackCAD's selection (window and crossing), grips, Properties panel and MOVE, COPY, ROTATE, MIRROR, ERASE.",
+    steps: [
+      {
+        t: "Click, window and crossing",
+        p: "Click an object to select it. Drag a box from left to right to take only what's fully inside (a window), or from right to left to take anything the box touches (a crossing). Shift-click removes one from the selection. Esc clears it, and Ctrl+A takes everything that isn't locked.",
+        ctl: [],
+        fig: selectFig,
+        math: () => ln("Selected objects show in the selection colour, with grips.") + ln("Delete erases the selection.", "dim"),
+      },
+      {
+        t: "Grips: drag to change",
+        p: "Selected objects show small squares called grips. Drag an end grip to stretch a line, a circle's edge grip to resize it, and the middle or centre grip to move it. Snaps work while you drag. Click a grip without dragging and it stays live, so you can type a point such as @20,0.",
+        ctl: [],
+        fig: gripFig,
+        math: () => ln("Each grip drag is one Undo step."),
+      },
+      {
+        t: "Type the exact value",
+        p: "The Properties panel (Ctrl+1) lists the selected object's numbers. Click one, type a new value in any unit, and press Enter. A line's length, a circle's diameter and a text's height all change this way. On a phone, tap the value for a number pad.",
+        ctl: [],
+        fig: propsFig,
+        math: () => ln(`type ${V_('3/4"')} in a metric drawing and it becomes ${V_("19.05 mm")}`) + ln("Layer is changed here too: click it and pick one.", "dim"),
+      },
+      {
+        t: "Move, Copy, Rotate and Mirror",
+        p: "These take the selection, or ask you to pick objects and press Enter. Then they ask for a base point and where it goes. Snap the base point to the part, and type the second point as @distance for exact moves. Mirror asks whether to keep the original.",
+        ctl: [],
+        fig: mirrorFig,
+        math: () => ["MOVE", "COPY", "ROTATE", "MIRROR", "ERASE"].filter(hasCmd).map((c) => ln(`${V_(aliasOf(c))} ${c}`)).join(""),
+        task: {
+          setup: {
+            label: "Set up the bracket",
+            run: () =>
+              placeOnDrawing("bracket and centre line for the mirror exercise", (d) => {
+                d.pline(MIRROR_PTS());
+                d.layer("CENTER", 2, () => d.line(MIRROR_C(), xv(-5, -0.2), MIRROR_C(), xv(45, 1.8)));
+              }, { raw: true }),
+          },
+          do: () => [`Select the bracket by clicking it.`, `Type ${kbd("MI")} and Enter.`, `For the mirror line, snap to both ends of the yellow centre line.`, `Answer ${kbd("N")} to keep the original.`],
+          check: (t) => {
+            const es = entities();
+            const cl = es.filter((g) => g.type === "LINE" && lay(g) === "CENTER" && same(g.start[0], g.end[0]));
+            const pls = es.filter((g) => g.type === "LWPOLYLINE" && g.points?.length === 6);
+            if (!cl.length || !pls.length) return [{ ok: false, t: "Set up the bracket first." }];
+            const r3 = (v) => (Math.round(v * 1000) / 1000 + 0).toFixed(3);
+            const key = (pts) => pts.map((p) => `${r3(p[0])},${r3(p[1])}`).sort().join(";");
+            for (const c of cl) {
+              const x = c.start[0];
+              for (const a of pls)
+                for (const b of pls)
+                  if (a !== b && key(b.points) === key(a.points.map(([px, py]) => [2 * x - px, py]))) return [{ ok: true, t: "Mirrored copy across the centre line" }, { ok: true, t: "Original kept" }];
+            }
+            const fr = fresh(t, es).filter((g) => g.type === "LWPOLYLINE");
+            return [{ ok: false, t: fr.length ? "There's a new bracket, but it isn't an exact mirror across the centre line. Snap both ends of the line." : "No mirrored copy yet." }];
+          },
+          show: () =>
+            placeOnDrawing("mirror exercise answer", (d) => {
+              const c = MIRROR_C();
+              d.pline(MIRROR_PTS());
+              d.pline(MIRROR_PTS().map(([x, y]) => [2 * c - x, y]));
+              d.layer("CENTER", 2, () => d.line(c, xv(-5, -0.2), c, xv(45, 1.8)));
+            }, { raw: true }),
+        },
+      },
+      {
+        t: "Tools drafters reach for next",
+        p: "Drafters also lean on Offset for parallel lines, Trim to cut lines back to a corner, Fillet for rounds, Array for rows of holes and Scale for resizing. The board marks the ones BlackCAD doesn't have yet and gives the workaround.",
+        ctl: [],
+        fig: moreToolsFig,
+        needs: ["OFFSET", "TRIM", "FILLET", "ARRAY", "SCALE"],
+        math: () => {
+          const m = gapNames(["OFFSET", "TRIM", "FILLET", "ARRAY", "SCALE"]);
+          return m.length ? ln(`<span class="warn">${m.length} not in BlackCAD yet</span>: workarounds below.`) : ln("All of them are in BlackCAD.", "ok");
+        },
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: LAYERS MEAN SOMETHING
+
+  function layersFig() {
+    const ls = layerList();
+    let g = "";
+    ls.slice(0, 8).forEach((l, i) => {
+      const y = 70 + i * 44, c = layerChalk(l.aci);
+      label(60, y + 7, esc(l.name), c, 21);
+      g += lt(`M 220 ${y} H 400`, c, ltKind(l.linetype), 1.4 + (l.weight || 0.25) * 6);
+      label(420, y + 6, `${esc(l.linetype || "Continuous")} · ${(l.weight || 0.25).toFixed(2)}`, "w", 15);
+      if (l.current) label(220, y - 9, "CURRENT", "a", 13);
+    });
+    label(60, 70 + Math.min(ls.length, 8) * 44 + 10, doc ? "from your drawing" : "a new drawing starts with these", "b", 17);
+    return svg(g, "Each layer's name beside a sample of its line in its colour, linetype and weight.", "40 40 540 " + (60 + Math.min(layerList().length, 8) * 44 + 20));
+  }
+  function currentFig() {
+    let g = path(rectD(60, 60, 220, 250));
+    label(76, 90, "LAYERS", "b", 16);
+    ["0", "VISIBLE", "CENTER", "HIDDEN", "DIMENSION", "NOTES"].forEach((nm_, i) => {
+      const y = 126 + i * 30, cur = nm_ === "NOTES";
+      label(80, y, nm_, cur ? "a" : "w", 18);
+      if (cur) label(190, y, "CURRENT", "a", 13);
+    });
+    g += arrow(300, 276, 400, 276, "c");
+    label(410, 282, "TEXT", "c", 20);
+    g += arrow(300, 216, 400, 216, "g");
+    label(410, 222, "DIM → DIMENSION", "g", 18);
+    label(410, 240, "by itself", "g", 15);
+    g += arrow(300, 120, 400, 120, "w");
+    label(410, 126, "LINE, CIRCLE…", "w", 18);
+    label(410, 144, "→ current layer", "w", 15);
+    return svg(g, "The layers panel with NOTES current. New lines, circles and text go on the current layer; dimensions go on DIMENSION by themselves.", "40 40 540 290");
+  }
+  function plateLayersFig({ dims = true, note = true } = {}) {
+    const x0 = 100, y0 = 300, W = 300, H = 180, cx = x0 + W / 2, cy = y0 - H / 2, r = 40;
+    let g = lt(rectD(x0, y0 - H, W, H), "w", "cont", 4) + lt(circD(cx, cy, r), "w", "cont", 4);
+    g += lt(`M ${cx - r - 16} ${cy} H ${cx + r + 16}`, "y", "center", 1.8) + lt(`M ${cx} ${cy - r - 16} V ${cy + r + 16}`, "y", "center", 1.8);
+    if (dims) {
+      g += dim(x0, y0 + 34, x0 + W, y0 + 34, "g") + dim(x0 + W + 34, y0, x0 + W + 34, y0 - H, "g");
+      label(x0 + W / 2, y0 + 26, xs(xv(100, 4)), "g", 18, "middle");
+      label(x0 + W + 42, y0 - H / 2 + 6, xs(xv(60, 2.5)), "g", 18);
+      g += path(`M ${cx + r * 0.7} ${cy - r * 0.7} l 40 -50 h 30`, "g", "");
+      label(cx + r * 0.7 + 74, cy - r * 0.7 - 44, `Ø${xs(xv(20, 0.75))}`, "g", 18);
+    }
+    if (note) label(x0, y0 + 76, "NOTE: BREAK SHARP EDGES", "c", 17);
+    return svg(g, "A plate with a hole drawn on the right layers: thick white outline, yellow centre lines, green dimensions and a cyan note.", "60 60 500 360");
+  }
+  function plateLayersTaskVals() {
+    return { W: xv(100, 4), H: xv(60, 2.5), d: xv(20, 0.75), e: xv(5, 0.25) };
+  }
+
+  const LAYERS = {
+    id: "d-layers",
+    title: "Layers mean something",
+    q: "What do VISIBLE, CENTER, HIDDEN and DIMENSION tell the reader?",
+    blurb: "BlackCAD's starting layers, the current layer, ByLayer",
+    src: "BlackCAD's default layer set (0, VISIBLE, CENTER, HIDDEN, DIMENSION, NOTES) with its colours, linetypes and weights; line conventions per ASME Y14.2 and ISO 128-2.",
+    steps: [
+      {
+        t: "BlackCAD's starting layers",
+        p: "Every new drawing starts with the layers a reader expects. Each one is a promise about what its lines mean, and it sets their colour, linetype and weight. Someone opening your file can turn the dimensions off, or find every centre line, because you used the layers.",
+        ctl: [],
+        fig: layersFig,
+        math: () => ["VISIBLE", "CENTER", "HIDDEN", "DIMENSION", "NOTES", "0"].map((k) => ln(`${V_(k)} ${LAYER_MEANS[k]}`)).join(""),
+      },
+      {
+        t: "Draw on the right layer",
+        p: "New objects go on the current layer, marked CURRENT in the Layers panel (Ctrl+2). Click a layer's name to make it current. Dimensions go on DIMENSION by themselves, but text goes on the current layer, so make NOTES current before you write notes. To move something to another layer, select it and click Layer in Properties.",
+        ctl: [],
+        fig: currentFig,
+        math: () => ln(`current now: ${V_(esc(layerList().find((l) => l.current)?.name || "VISIBLE"))}`) + ln("The + in the Layers panel adds a layer of your own.", "dim"),
+      },
+      {
+        t: "Colour and weight come from the layer",
+        p: "Objects are drawn ByLayer: they take their colour, linetype and weight from their layer. Change a layer once and everything on it follows. The eye turns a layer off while you work; the lock keeps it visible but stops changes, which is handy while you dimension.",
+        ctl: [],
+        fig: () => plateLayersFig(),
+        needs: ["LTYPE"],
+        math: () => ln(`VISIBLE ${V_("0.50 mm")}, the rest ${V_("0.25 mm")}`) + ln("Thick for the part, thin for everything that explains it.", "dim"),
+        basis: "Two line weights, thick about twice thin, is the usual pair for part drawings (ASME Y14.2 and ISO 128-2 set the line types).",
+      },
+      {
+        t: "Your turn: a plate on the right layers",
+        p: "Draw a plate with a hole on VISIBLE, then mark the hole with centre lines on CENTER. The centre lines cross at the hole's centre and run a little past its edge.",
+        ctl: [],
+        fig: () => plateLayersFig({ dims: false, note: false }),
+        math: () => {
+          const v = plateLayersTaskVals();
+          return ln(`plate ${V_(`${xs(v.W)} × ${xs(v.H)}`)} · hole ${V_(`Ø${xs(v.d)}`)} in the middle`);
+        },
+        task: {
+          do: () => {
+            const v = plateLayersTaskVals(), cx = v.W / 2, cy = v.H / 2, L = v.d + 2 * v.e;
+            return [
+              `Click ${kbd("VISIBLE")} in the Layers panel to make it current.`,
+              `${kbd("R")}, then ${kbd("0,0")} and ${kbd(`@${xs(v.W)},${xs(v.H)}`)}.`,
+              `${kbd("C")}, centre ${kbd(`${xs(cx)},${xs(cy)}`)}, ${kbd("D")}, ${kbd(xs(v.d))}.`,
+              `Make ${kbd("CENTER")} current. ${kbd("L")} from ${kbd(`${xs(cx - L / 2)},${xs(cy)}`)} to ${kbd(`@${xs(L)},0`)}, Enter.`,
+              `${kbd("L")} from ${kbd(`${xs(cx)},${xs(cy - L / 2)}`)} to ${kbd(`@0,${xs(L)}`)}, Enter.`,
+            ];
+          },
+          check: () => {
+            const v = plateLayersTaskVals();
+            const es = entities();
+            const res = [];
+            const plate = rectsOf(es).find((r) => sizeIs(r, v.W, v.H));
+            res.push(plate ? { ok: plate.layer === "VISIBLE", t: plate.layer === "VISIBLE" ? `${xf(v.W)} × ${xf(v.H)} plate on VISIBLE` : `The plate is on ${esc(plate.layer)}; select it and set Layer to VISIBLE in Properties.` } : { ok: false, t: `No ${xf(v.W)} × ${xf(v.H)} plate yet.` });
+            if (!plate) return res;
+            const c = [(plate.x0 + plate.x1) / 2, (plate.y0 + plate.y1) / 2];
+            const hole = es.find((g) => g.type === "CIRCLE" && samePt(g.center, c));
+            res.push(!hole ? { ok: false, t: "No circle at the plate's centre." } : !same(2 * hole.radius, v.d) ? { ok: false, t: `The hole is Ø${xf(2 * hole.radius)}; it should be Ø${xf(v.d)}.` } : { ok: lay(hole) === "VISIBLE", t: lay(hole) === "VISIBLE" ? `Ø${xf(v.d)} hole on VISIBLE` : `The hole is on ${esc(lay(hole))}; move it to VISIBLE.` });
+            const through = (g, horiz) => {
+              const [a, b] = [g.start, g.end];
+              if (horiz) return same(a[1], c[1]) && same(b[1], c[1]) && Math.min(a[0], b[0]) < c[0] - v.d / 2 && Math.max(a[0], b[0]) > c[0] + v.d / 2;
+              return same(a[0], c[0]) && same(b[0], c[0]) && Math.min(a[1], b[1]) < c[1] - v.d / 2 && Math.max(a[1], b[1]) > c[1] + v.d / 2;
+            };
+            for (const horiz of [true, false]) {
+              const ls = es.filter((g) => g.type === "LINE" && through(g, horiz));
+              const on = ls.find((g) => lay(g) === "CENTER");
+              const w = horiz ? "Horizontal" : "Vertical";
+              res.push(on ? { ok: true, t: `${w} centre line on CENTER, past the hole's edge` } : ls.length ? { ok: false, t: `${w} centre line is on ${esc(lay(ls[0]))}; move it to CENTER.` } : { ok: false, t: `No ${w.toLowerCase()} centre line through the hole that reaches past its edge.` });
+            }
+            return res;
+          },
+          show: () =>
+            placeOnDrawing("plate on the right layers", (d) => {
+              const v = plateLayersTaskVals(), cx = v.W / 2, cy = v.H / 2, L = v.d + 2 * v.e;
+              d.layer("VISIBLE", 7, () => {
+                d.rect(0, 0, v.W, v.H);
+                d.circle(cx, cy, v.d);
+              });
+              d.layer("CENTER", 2, () => {
+                d.line(cx - L / 2, cy, cx + L / 2, cy);
+                d.line(cx, cy - L / 2, cx, cy + L / 2);
+              });
+            }, { raw: true }),
+        },
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: HIDDEN LINES AND CENTRE LINES
+
+  /** Front view of a block with a vertical through-hole, and its top view above. */
+  function twoViews({ hidden = true, centre = true, gapK = 0.35 } = {}) {
+    const L = s.vL, W = s.vW, H = s.vH, d = Math.min(s.vd, L * 0.8, W * 0.8);
+    const k = Math.min(400 / L, 260 / (H + W + gapK * 40));
+    const x0 = 300 - (L * k) / 2, yF = 340, yT = yF - H * k - 34;
+    const cx = 300, r = (d * k) / 2;
+    let g = lt(rectD(x0, yF - H * k, L * k, H * k), "w", "cont", 3.4) + lt(rectD(x0, yT - W * k, L * k, W * k), "w", "cont", 3.4);
+    const cyT = yT - (W * k) / 2;
+    g += lt(circD(cx, cyT, r), "w", "cont", 3.4);
+    if (hidden) g += lt(`M ${f1(cx - r)} ${f1(yF - H * k)} V ${yF} M ${f1(cx + r)} ${f1(yF - H * k)} V ${yF}`, "r", "hidden", 1.8);
+    if (centre) {
+      const e = 12;
+      g += lt(`M ${cx} ${f1(yF - H * k - e)} V ${yF + e}`, "y", "center", 1.6);
+      g += lt(`M ${cx} ${f1(cyT - r - e)} V ${f1(cyT + r + e)} M ${f1(cx - r - e)} ${f1(cyT)} H ${f1(cx + r + e)}`, "y", "center", 1.6);
+    }
+    label(x0 - 12, yF - (H * k) / 2 + 6, "front", "b", 17, "end");
+    label(x0 - 12, cyT + 6, "top", "b", 17, "end");
+    return { g, x0, yF, yT, k, cx, r };
+  }
+  function hiddenFig() {
+    const v = twoViews({ centre: false });
+    let g = v.g;
+    label(v.cx, v.yF + 26, "hidden: the hole's edges", "r", 17, "middle");
+    return svg(g, "A block's top view showing a round hole, and its front view below with the hole's two edges as dashed hidden lines.", "40 20 520 360");
+  }
+  function centreFig() {
+    const r = clamp(s.vd * 3, 30, 110), cx = 220, cy = 200, e = 3 * 3;
+    const ext = inch() ? 0.125 * 25.4 : 3;
+    const ep = 18;
+    let g = lt(circD(cx, cy, r), "w", "cont", 3.4);
+    g += lt(`M ${cx - r - ep} ${cy} H ${cx + r + ep} M ${cx} ${cy - r - ep} V ${cy + r + ep}`, "y", "center", 1.8);
+    g += dim(cx + r, cy + 22, cx + r + ep, cy + 22, "a");
+    label(cx + r + ep + 6, cy + 30, `about ${nu(ext)}`, "a", 15);
+    const sx = 470, sw = clamp(s.vd * 3, 30, 110);
+    g += lt(rectD(sx, cy - 70, 90, 140), "w", "cont", 3.4);
+    g += lt(`M ${sx - 14} ${cy} H ${sx + 104}`, "y", "center", 1.8);
+    label(sx + 45, cy - 90, "side view: one line", "b", 16, "middle");
+    label(cx, cy + r + 50, "round view: two lines", "b", 16, "middle");
+    void e;
+    void sw;
+    return svg(g, "A circle with two centre lines crossing at its centre and running past its edge, and a side view of a round part with one centre line along its axis.", "60 60 540 320");
+  }
+  function precedenceFig() {
+    let g = lt("M 80 120 H 500", "w", "cont", 3.4) + lt("M 80 130 H 500", "r", "hidden", 1.8);
+    label(80, 100, "visible over hidden: draw only the visible line", "w", 18);
+    g += mark(512, 124, false);
+    g += lt("M 80 260 H 500", "r", "hidden", 1.8) + lt("M 80 270 H 500", "y", "center", 1.6);
+    label(80, 240, "hidden over centre", "w", 18);
+    g += mark(512, 264, false);
+    label(80, 320, "visible › hidden › centre", "a", 22);
+    return svg(g, "Pairs of overlapping lines, showing that a visible line wins over a hidden one and a hidden line wins over a centre line.", "60 70 480 270");
+  }
+  const hidVals = () => ({ L: xv(80, 3), H: xv(20, 0.75), W: xv(40, 1.5), G: xv(15, 0.5), d: xv(20, 0.75), e: xv(3, 0.125) });
+
+  const LINES = {
+    id: "d-lines",
+    title: "Hidden lines and centre lines",
+    q: "How do I show what you can't see?",
+    blurb: "Hidden edges, centre lines, which line wins",
+    src: "Line conventions per ASME Y14.2 and ISO 128-2; overshoot of centre lines is common practice.",
+    steps: [
+      {
+        t: "Hidden lines show what's behind",
+        p: "A hole drilled down through a block can't be seen from the front, but the reader needs to know it's there. Draw its edges on HIDDEN: thin and dashed. Each view shows exactly what you'd see looking from that side, with hidden edges dashed.",
+        ctl: ["vL", "vH", "vd"],
+        fig: hiddenFig,
+        math: () => ln(`the hole's edges sit ${V_(nt(Math.min(s.vd, s.vL * 0.8, s.vW * 0.8) / 2))} each side of its centre`) + ln("Same size in both views, lined up.", "dim"),
+      },
+      {
+        t: "Centre lines mark every axis",
+        p: "Every hole and round feature gets centre lines on CENTER: two crossing at the centre in the view where it's round, one along its axis in the side view. Run them a few millimetres past the edge, and keep the short dash at the centre.",
+        ctl: ["vd"],
+        fig: centreFig,
+        math: () => ln(`overshoot about ${V_(nu(inch() ? 3.175 : 3))} past the edge`) + ln("Centre lines can be extended and used as extension lines for dimensions.", "dim"),
+        basis: "Common drafting practice; ASME Y14.2 and ISO 128-2 define the centre-line and hidden-line types.",
+      },
+      {
+        t: "When lines land on each other",
+        p: "Where two kinds of line would overlap, draw only the more important one: a visible edge wins over a hidden one, and a hidden edge wins over a centre line.",
+        ctl: [],
+        fig: precedenceFig,
+        math: () => ln(`${V_("visible")} › ${V_("hidden")} › ${V_("centre")}`),
+      },
+      {
+        t: "Your turn: the hole in the front view",
+        p: "The board draws the front and top views of a block with a hole. The top view shows the hole round; add its hidden edges and centre line to the front view.",
+        ctl: [],
+        fig: () => svg(twoViews({ hidden: true, centre: true }).g, "Front and top views of a block with a hole, with hidden lines and a centre line in the front view.", "40 20 520 360"),
+        math: () => ln("hidden lines on HIDDEN, centre line on CENTER"),
+        task: {
+          setup: {
+            label: "Set up the two views",
+            run: () =>
+              placeOnDrawing("front and top views", (d) => {
+                const v = hidVals();
+                d.layer("VISIBLE", 7, () => {
+                  d.rect(0, 0, v.L, v.H);
+                  d.rect(0, v.H + v.G, v.L, v.H + v.G + v.W);
+                  d.circle(v.L / 2, v.H + v.G + v.W / 2, v.d);
+                });
+              }, { raw: true }),
+          },
+          do: () => {
+            const o = T0();
+            if (!o) return [needSetup("Set up the two views")];
+            const v = hidVals(), cx = v.L / 2, r = v.d / 2;
+            return [
+              `Make ${kbd("HIDDEN")} current.`,
+              `${kbd("L")} from ${kbd(at(o, cx - r, 0))} to ${kbd(`@0,${xs(v.H)}`)}, Enter.`,
+              `${kbd("L")} from ${kbd(at(o, cx + r, 0))} to ${kbd(`@0,${xs(v.H)}`)}, Enter.`,
+              `Make ${kbd("CENTER")} current. ${kbd("L")} from ${kbd(at(o, cx, -v.e))} to ${kbd(`@0,${xs(v.H + 2 * v.e)}`)}, Enter.`,
+            ];
+          },
+          check: (t) => {
+            const o = t.o;
+            if (!o) return [{ ok: false, t: "Set up the two views first." }];
+            const v = hidVals(), cx = o[0] + v.L / 2, r = v.d / 2, yb = o[1], yt = o[1] + v.H;
+            const es = entities().filter((g) => g.type === "LINE");
+            const vert = (g, x) => same(g.start[0], x) && same(g.end[0], x);
+            const spans = (g, a, b) => Math.min(g.start[1], g.end[1]) <= a + xtol() && Math.max(g.start[1], g.end[1]) >= b - xtol();
+            const res = [];
+            for (const [x, side] of [[cx - r, "Left"], [cx + r, "Right"]]) {
+              const ls = es.filter((g) => vert(g, x) && spans(g, yb, yt));
+              const on = ls.find((g) => lay(g) === "HIDDEN");
+              res.push(on ? { ok: true, t: `${side} hidden edge, full height, on HIDDEN` } : ls.length ? { ok: false, t: `${side} edge is on ${esc(lay(ls[0]))}; move it to HIDDEN.` } : { ok: false, t: `No ${side.toLowerCase()} hidden edge at the hole's ${side.toLowerCase()} side through the front view.` });
+            }
+            const cl = es.filter((g) => vert(g, cx) && Math.min(g.start[1], g.end[1]) < yb - xtol() && Math.max(g.start[1], g.end[1]) > yt + xtol());
+            const on = cl.find((g) => lay(g) === "CENTER");
+            res.push(on ? { ok: true, t: "Centre line on CENTER, running past both edges" } : cl.length ? { ok: false, t: `The centre line is on ${esc(lay(cl[0]))}; move it to CENTER.` } : { ok: false, t: "No centre line through the front view that runs past its top and bottom edges." });
+            return res;
+          },
+          show: () =>
+            placeOnDrawing("hidden-line exercise answer", (d) => {
+              const v = hidVals(), cx = v.L / 2, r = v.d / 2;
+              d.layer("VISIBLE", 7, () => {
+                d.rect(0, 0, v.L, v.H);
+                d.rect(0, v.H + v.G, v.L, v.H + v.G + v.W);
+                d.circle(cx, v.H + v.G + v.W / 2, v.d);
+              });
+              d.layer("HIDDEN", 1, () => {
+                d.line(cx - r, 0, cx - r, v.H);
+                d.line(cx + r, 0, cx + r, v.H);
+              });
+              d.layer("CENTER", 2, () => {
+                d.line(cx, -v.e, cx, v.H + v.e);
+                const cy = v.H + v.G + v.W / 2;
+                d.line(cx, cy - r - v.e, cx, cy + r + v.e);
+                d.line(cx - r - v.e, cy, cx + r + v.e, cy);
+              });
+            }, { raw: true }),
+        },
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: UNITS AND PRECISION
+
+  function unitsStartFig() {
+    let g = path(rectD(70, 80, 200, 110)) + path(rectD(330, 80, 200, 110));
+    label(90, 126, "Metric drawing", "w", 22);
+    label(90, 160, "millimetres", "b", 18);
+    label(350, 126, "Imperial drawing", "w", 22);
+    label(350, 160, "inches", "b", 18);
+    const u = doc ? (doc.info.insunits === 1 ? "Inches" : "Millimeters") : null;
+    g += path(rectD(70, 230, 460, 100), "b");
+    label(90, 266, "DRAWING", "b", 15);
+    label(90, 296, "Units", "w", 18);
+    label(510, 296, u || "Millimeters", "a", 18, "end");
+    label(90, 320, "Display", "w", 18);
+    label(510, 320, esc(doc?.info.display || "Decimal, 0.00"), "a", 18, "end");
+    return svg(g, "The two welcome-screen choices, Metric drawing and Imperial drawing, and the Drawing panel showing the units and display format.", "50 60 500 290");
+  }
+  function decimalsFig() {
+    const v = 12.3456, cur = Math.round(s.dec);
+    let g = "";
+    for (let d = 0; d <= 4; d++) {
+      const y = 90 + d * 52, on = d === cur;
+      const half = 0.5 * Math.pow(10, -d);
+      label(250, y, v.toFixed(d), on ? "a" : "w", on ? 34 : 26, "end");
+      label(290, y, `could be ±${String(+half.toFixed(d + 1))}`, on ? "a" : "b", on ? 20 : 17);
+      if (on) g += path(`M 120 ${y + 12} H 470`, "a");
+    }
+    return svg(g, "The number 12.3456 shown with zero to four decimal places, each with how far off the shown number could be.", "90 50 420 290");
+  }
+
+  const UNITS_ = {
+    id: "d-units",
+    title: "Units and precision",
+    q: "Millimetres or inches, and how many decimals?",
+    blurb: "Drawing units, typing other units, decimals",
+    src: "BlackCAD's metric and imperial drawings (INSUNITS 4 and 1), display formats Decimal 0.00 and 0.000, and unit parsing in the core.",
+    steps: [
+      {
+        t: "Pick the units when you start",
+        p: "On the welcome screen, Metric drawing works in millimetres and Imperial drawing in inches. The Drawing panel shows which one you're in, and the status bar shows the cursor in those units. Start in the units the shop works in, because every plain number you type is read in them.",
+        ctl: [],
+        fig: unitsStartFig,
+        needs: ["UNITS"],
+        math: () => (doc ? ln(`this drawing: ${V_(doc.info.insunits === 1 ? "inches" : "millimetres")}, ${V_(esc(doc.info.display))}`) : ln("No drawing open: start one from the welcome screen.", "dim")),
+      },
+      {
+        t: "Your turn: the other unit",
+        p: "Draw a line in the other unit, without converting it yourself: type the unit and let BlackCAD do the maths.",
+        ctl: [],
+        fig: unitsFig,
+        math: () => ln(du() === "in" ? `in an inch drawing, ${V_("50mm")} becomes ${V_("1.969 in")}` : `in a metric drawing, ${V_('1-1/2"')} becomes ${V_("38.10 mm")}`),
+        task: {
+          do: () => [`Type ${kbd("L")} and Enter, and click a start point anywhere.`, `Type ${kbd(du() === "in" ? "@50mm&lt;0" : '@1-1/2"&lt;0')} and Enter, then Enter again to finish.`, "Click the line and read its Length in Properties."],
+          check: (t) => {
+            const want = du() === "in" ? 50 / 25.4 : 38.1;
+            const ls = fresh(t, entities()).filter((g) => g.type === "LINE");
+            const good = ls.find((g) => same(g.length, want));
+            return good ? [{ ok: true, t: `A line exactly ${xf(want)} long` }] : [{ ok: false, t: ls.length ? `No line is exactly ${xf(want)}; the nearest is ${xf(ls.reduce((b, g) => (Math.abs(g.length - want) < Math.abs(b - want) ? g.length : b), ls[0].length))}.` : "No lines in the drawing yet." }];
+          },
+          show: () => placeOnDrawing("line in the other unit", (d) => d.line(0, 0, du() === "in" ? 50 / 25.4 : 38.1, 0), { raw: true }),
+        },
+      },
+      {
+        t: "Decimals say how precise",
+        p: "The number of decimals on a size tells the reader how closely it matters: 12.5 reads looser than 12.500. A metric drawing starts at two places and an inch drawing at three. Show only as many as the part needs, and let the title block's tolerance say the rest.",
+        ctl: ["dec"],
+        fig: decimalsFig,
+        needs: ["UNITS"],
+        math: () => ln(`12.3456 shown as ${V_((12.3456).toFixed(Math.round(s.dec)))}`) + ln("Inch title blocks often tie tolerance to decimals, such as .XX ±.01 and .XXX ±.005.", "dim"),
+        extra: () => `<div class="bb-row"><button class="chalkbtn" data-lesson="tol">Tolerances, in Shop</button></div>`,
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: DRAW FULL SIZE
+
+  const SHEETS = { A4: [297, 210], A3: [420, 297], Letter: [279.4, 215.9], Tabloid: [431.8, 279.4] };
+  const SCALES = () => (du() === "in" ? [1, 2, 4, 8, 16, 32, 48, 96] : [1, 2, 5, 10, 20, 50, 100, 200]);
+  const TB = { w: 170, h: 40, m: 10 }; // title block and margin on paper, mm
+  /** The smallest standard scale that fits a w × h (mm) part on the sheet. */
+  function fitScale(w, h, sheet = s.sheet) {
+    const [SW, SH] = SHEETS[sheet];
+    const uw = SW - 2 * TB.m - 10, uh = SH - 2 * TB.m - TB.h - 10;
+    return SCALES().find((S) => w / S <= uw && h / S <= uh) || SCALES().at(-1);
+  }
+  const sheetButtons = () => `<div class="bb-row">${buttons("sheet", Object.keys(SHEETS).map((k) => [k, k === "Letter" ? "Letter" : k === "Tabloid" ? "Tabloid" : k]), s.sheet)}</div>`;
+  function fullSizeFig() {
+    const L = s.sL, k = 420 / Math.max(L, 1);
+    let g = path(rectD(80, 160, L * k, 70)) + dim(80, 260, 80 + L * k, 260, "g");
+    label(80 + (L * k) / 2, 252, nt(L), "g", 20, "middle");
+    g += path(rectD(80, 80, 150, 34), "b");
+    label(94, 103, "Model · 1:1", "b", 18);
+    label(80, 320, "the part is its real length in the drawing", "w", 18);
+    return svg(g, "A part drawn at its real length with its length dimensioned, and the Model 1:1 tag above it.", "60 60 480 280");
+  }
+  function sheetFig() {
+    const [SW, SH] = SHEETS[s.sheet];
+    const L = s.sL, Hp = L * 0.45, S = fitScale(L, Hp);
+    const k = Math.min(440 / SW, 280 / SH);
+    const x0 = 300 - (SW * k) / 2, y0 = 40;
+    let g = path(rectD(x0, y0, SW * k, SH * k), "w") + path(rectD(x0 + TB.m * k, y0 + TB.m * k, (SW - 2 * TB.m) * k, (SH - 2 * TB.m) * k), "b");
+    const tbx = x0 + (SW - TB.m - TB.w) * k, tby = y0 + (SH - TB.m - TB.h) * k;
+    g += path(rectD(tbx, tby, TB.w * k, TB.h * k), "b");
+    label(tbx + 8, tby + 18, `SCALE 1:${S}`, "a", 15);
+    const pw = (L / S) * k, ph = (Hp / S) * k;
+    g += fill(rectD(x0 + (SW * k - pw) / 2, y0 + TB.m * k + 10, pw, ph), "b") + path(rectD(x0 + (SW * k - pw) / 2, y0 + TB.m * k + 10, pw, ph), "a");
+    label(300, y0 + SH * k + 30, `${s.sheet} sheet · part ${nt(L)} long → 1:${S}`, "a", 19, "middle");
+    return svg(g, "A sheet with a border and title block, and the part drawn smaller to fit at the chosen scale.", "40 20 520 360");
+  }
+  const SCALE_ = {
+    id: "d-scale",
+    title: "Draw full size",
+    q: "What scale do I draw at?",
+    blurb: "Model at 1:1, scale on the sheet",
+    src: "BlackCAD draws in model space at 1:1. Standard drawing scales: metric per ISO 5455 (1:2, 1:5, 1:10 …); inch scales by halves.",
+    steps: [
+      {
+        t: "The model is always full size",
+        p: "Draw every part at its real size: a 300 mm part is 300 long in BlackCAD. The tag at the top of the drawing reads Model · 1:1. Never shrink the geometry to fit a page; dimensions measure the geometry, so they'd come out wrong.",
+        ctl: ["sL"],
+        fig: fullSizeFig,
+        math: () => ln(`drawn length ${V_(nt(s.sL))} = real length ${V_(nt(s.sL))}`),
+      },
+      {
+        t: "The scale belongs to the sheet",
+        p: "Scale only happens when the drawing goes onto a sheet. A part too big for the paper is shown at 1:2, 1:5 and so on. Until BlackCAD has layouts, draw the sheet border around the part at the scale's size instead: a 1:5 border is five times the sheet. Text grows with it, so it prints the right height.",
+        ctl: ["sL"],
+        fig: sheetFig,
+        extra: sheetButtons,
+        needs: ["LAYOUT", "PLOT"],
+        math: () => {
+          const S = fitScale(s.sL, s.sL * 0.45), [SW, SH] = SHEETS[s.sheet];
+          return ln(`scale ${V_(`1:${S}`)}`) + ln(`border in the model: ${V_(`${nt(SW * S)} × ${nu(SH * S)}`)}`) + ln(`3.5 mm text on paper is ${V_(nu(3.5 * S))} tall in the model`);
+        },
+        place: { label: "Put a sheet and title block around my drawing", run: () => placeSheet() },
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: ORTHOGRAPHIC VIEWS
+
+  /** A stepped block: length L (x), depth W (y), height H (z), step at 2/3 L, half height. */
+  function pictorial(x0, y0, k) {
+    const L = s.vL * k, W = s.vW * k, H = s.vH * k;
+    const o = [W * 0.5 * Math.cos(Math.PI / 4), -W * 0.5 * Math.sin(Math.PI / 4)];
+    const F = [[0, 0], [L, 0], [L, H / 2], [(2 * L) / 3, H / 2], [(2 * L) / 3, H], [0, H]].map(([x, z]) => [x0 + x, y0 - z]);
+    const B = F.map(([x, y]) => [x + o[0], y + o[1]]);
+    let g = fill(poly(F), "b") + path(poly(F));
+    g += path(poly([B[5], B[4], B[3], B[2], B[1]], false));
+    for (const i of [1, 2, 3, 4, 5]) g += path(`M ${f1(F[i][0])} ${f1(F[i][1])} L ${f1(B[i][0])} ${f1(B[i][1])}`);
+    return { g, F, B };
+  }
+  function viewsFig1() {
+    const k = Math.min(260 / (s.vL + s.vW * 0.35), 200 / (s.vH + s.vW * 0.35));
+    const p = pictorial(150, 300, k);
+    let g = p.g;
+    g += arrow(p.F[0][0] + (s.vL * k) / 3, 380, p.F[0][0] + (s.vL * k) / 3, 320, "a");
+    label(p.F[0][0] + (s.vL * k) / 3, 400, "FRONT", "a", 18, "middle");
+    const top = [(p.F[5][0] + p.B[4][0]) / 2, Math.min(...p.B.map((q) => q[1])) - 70];
+    g += arrow(top[0], top[1], top[0], top[1] + 50, "a");
+    label(top[0], top[1] - 10, "TOP", "a", 18, "middle");
+    const rx = Math.max(...p.B.map((q) => q[0])) + 70, ry = (p.F[1][1] + p.F[2][1]) / 2;
+    g += arrow(rx, ry, rx - 50, ry, "a");
+    label(rx + 8, ry + 6, "RIGHT", "a", 18);
+    return svg(g, "A sketch of a stepped block with arrows showing the directions you look from for the front, top and right side views.", "60 10 520 410");
+  }
+  function viewLayout(third = s.proj !== "first") {
+    const L = s.vL, W = s.vW, H = s.vH;
+    const gp = 30;
+    const k = Math.min((460 - gp) / (L + W), (320 - gp) / (H + W));
+    const fx = third ? 70 : 70 + W * k + gp, fy = third ? 70 + W * k + gp : 70;
+    const front = [[0, 0], [L, 0], [L, H / 2], [(2 * L) / 3, H / 2], [(2 * L) / 3, H], [0, H]].map(([x, z]) => [fx + x * k, fy + H * k - z * k]);
+    let g = path(poly(front));
+    const tx = fx, ty = third ? 70 : fy + H * k + gp;
+    g += path(rectD(tx, ty, L * k, W * k)) + path(`M ${f1(tx + ((2 * L) / 3) * k)} ${f1(ty)} V ${f1(ty + W * k)}`);
+    const rx = third ? fx + L * k + gp : 70, ry = fy;
+    g += path(rectD(rx, ry, W * k, H * k)) + path(`M ${f1(rx)} ${f1(ry + (H * k) / 2)} H ${f1(rx + W * k)}`);
+    label(fx + (L * k) / 2, fy + H * k + 22, "FRONT", "b", 16, "middle");
+    label(tx + (L * k) / 2, third ? ty - 8 : ty + W * k + 20, "TOP", "b", 16, "middle");
+    label(rx + (W * k) / 2, ry + H * k + 22, "RIGHT", "b", 16, "middle");
+    return { g, k, fx, fy, tx, ty, rx, ry, L, W, H, gp };
+  }
+  function viewsFig2() {
+    const v = viewLayout();
+    label(560, 60, s.proj === "first" ? "first angle" : "third angle", "a", 22, "end");
+    return svg(v.g, s.proj === "first" ? "First-angle layout: top view below the front, right side view to the left of it." : "Third-angle layout: top view above the front, right side view to the right of it.", "40 30 560 400");
+  }
+  function viewsFig3() {
+    const v = viewLayout(true);
+    let g = v.g;
+    const right = v.fx + v.L * v.k, topB = v.ty + v.W * v.k;
+    g += dash(`M ${f1(v.fx)} ${f1(topB)} V ${f1(v.fy)} M ${f1(right)} ${f1(topB)} V ${f1(v.fy)} M ${f1(v.fx + ((2 * v.L) / 3) * v.k)} ${f1(topB)} V ${f1(v.fy + (v.H / 2) * v.k)}`, "a");
+    g += dash(`M ${f1(right)} ${f1(v.fy)} H ${f1(v.rx)} M ${f1(right)} ${f1(v.fy + v.H * v.k)} H ${f1(v.rx)}`, "a");
+    // the 45° line carries depth from the top view across to the side view
+    const Wk = v.W * v.k;
+    g += path(`M ${f1(v.rx - 10)} ${f1(topB + 10)} L ${f1(v.rx + Wk + 10)} ${f1(v.ty - 10)}`, "b");
+    g += dash(`M ${f1(right)} ${f1(v.ty)} H ${f1(v.rx + Wk)} V ${f1(v.ry)} M ${f1(right)} ${f1(topB)} H ${f1(v.rx)} V ${f1(v.ry)}`, "b");
+    label(v.rx + Wk + 14, v.ty + 4, "45° line", "b", 15);
+    return svg(g, "Front, top and right views lined up, with dashed projection lines carrying edges between them and a 45 degree line carrying depth from the top view to the side view.", "40 30 560 400");
+  }
+  function oneViewFig() {
+    let g = path(rectD(110, 110, 300, 170)) + circle(180, 170, 24) + circle(340, 220, 24);
+    g += lt("M 150 170 H 210 M 180 140 V 200 M 310 220 H 370 M 340 190 V 250", "y", "center", 1.6);
+    label(110, 320, "PLATE T 3 · one view is enough", "c", 18);
+    label(110, 90, "flat plate", "b", 18);
+    g += lt("M 450 140 H 540 M 450 250 H 540", "w", "cont", 3) + lt("M 440 195 H 550", "y", "center", 1.6) + path("M 450 140 V 250 M 540 140 V 250");
+    label(495, 280, "turned pin: Ø", "b", 16, "middle");
+    return svg(g, "A flat plate shown in a single view with a thickness note, and a turned pin shown in one side view with its centre line.", "80 60 490 290");
+  }
+  const viewTaskVals = () => ({ L: xv(80, 3), H: xv(30, 1.25), W: xv(40, 1.5), G: xv(10, 0.5) });
+
+  const VIEWS = {
+    id: "d-views",
+    title: "Orthographic views",
+    q: "Which views does a part need?",
+    blurb: "Front, top and side; third and first angle; lining views up",
+    src: "Orthographic projection per ASME Y14.3 and ISO 128-3 (third-angle and first-angle arrangements).",
+    steps: [
+      {
+        t: "Look straight at each side",
+        p: "An orthographic view looks straight at one side of the part, so every edge facing you shows at its true length. The front view shows the part's most telling shape. The top view looks down on it, and the right side view looks at it from the right.",
+        ctl: ["vL", "vW", "vH"],
+        fig: viewsFig1,
+        math: () => ln(`length ${V_(nt(s.vL))} · depth ${V_(nt(s.vW))} · height ${V_(nt(s.vH))}`),
+      },
+      {
+        t: "Where the views go",
+        p: "In third-angle projection, used in North America, the top view sits above the front and the right side view to its right. In first angle, used across most of Europe and Asia, they swap: the top view goes below and the right side view on the left. The title block says which.",
+        ctl: ["vL", "vW", "vH"],
+        fig: viewsFig2,
+        extra: () => `<div class="bb-row">${buttons("proj", [["third", "Third angle"], ["first", "First angle"]], s.proj)}</div>`,
+        math: () => (s.proj === "first" ? ln(`first angle: top ${V_("below")}, right side on the ${V_("left")}`) : ln(`third angle: top ${V_("above")}, right side on the ${V_("right")}`)),
+      },
+      {
+        t: "Line the views up",
+        p: "Views share sizes: the front and top have the same length, and the front and side the same height. Line them up so the reader can carry a feature from one view to the next. With Ortho on (F8), draw light lines across from one view to build the next.",
+        ctl: ["vL", "vW", "vH"],
+        fig: viewsFig3,
+        needs: ["XLINE", "OFFSET"],
+        math: () => ln(`front and top: same length ${V_(nt(s.vL))}`) + ln(`front and side: same height ${V_(nt(s.vH))}`) + ln(`top and side: same depth ${V_(nt(s.vW))}`),
+      },
+      {
+        t: "Only the views you need",
+        p: "Draw the fewest views that show every feature. A flat plate needs one view and a thickness note. A turned pin needs one side view, with its diameters dimensioned Ø. Add a view only when it shows something the others can't.",
+        ctl: [],
+        fig: oneViewFig,
+        math: () => ln("plate: one view + a note such as PLATE T 3") + ln("most machined parts: two or three views"),
+      },
+      {
+        t: "Your turn: draw the top view",
+        p: () => `The board draws the front view of a plain block. Draw its top view in line with it, ${s.proj === "first" ? "below (first angle)" : "above (third angle)"}: same length, and as deep as the block.`,
+        ctl: [],
+        fig: () => {
+          const v = viewTaskVals(), k = 300 / v.L;
+          const third = s.proj !== "first";
+          const fy = third ? 300 : 150, ty = third ? 300 - v.H * k - 30 - v.W * k : 150 + v.H * k + 30;
+          let g = path(rectD(150, fy - (third ? v.H * k : 0), v.L * k, v.H * k)) + dash(rectD(150, ty, v.L * k, v.W * k), "a");
+          label(140, fy - (third ? (v.H * k) / 2 : -(v.H * k) / 2) + 6, "front", "b", 17, "end");
+          label(140, ty + (v.W * k) / 2 + 6, "top: you", "a", 17, "end");
+          return svg(g, "A block's front view, with a dashed rectangle where the top view goes.", "40 20 520 360");
+        },
+        math: () => {
+          const v = viewTaskVals();
+          return ln(`block ${V_(`${xs(v.L)} long × ${xs(v.W)} deep × ${xs(v.H)} high`)}`);
+        },
+        task: {
+          setup: { label: "Set up the front view", run: () => placeOnDrawing("front view", (d) => d.layer("VISIBLE", 7, () => d.rect(0, 0, viewTaskVals().L, viewTaskVals().H)), { raw: true }) },
+          do: () => {
+            const o = T0();
+            if (!o) return [needSetup("Set up the front view")];
+            const v = viewTaskVals();
+            const y = s.proj === "first" ? -v.G - v.W : v.H + v.G;
+            return [`${kbd("R")}, first corner ${kbd(at(o, 0, y))}.`, `Other corner ${kbd(`@${xs(v.L)},${xs(v.W)}`)}.`, "Or snap it yourself: start above the front view's corner with Ortho on."];
+          },
+          check: (t) => {
+            const o = t.o;
+            if (!o) return [{ ok: false, t: "Set up the front view first." }];
+            const v = viewTaskVals();
+            const third = s.proj !== "first";
+            const rs = rectsOf(fresh(t, entities()));
+            const good = rs.find((r) => sizeIs(r, v.L, v.W) && same(r.x0, o[0]) && (third ? r.y0 > o[1] + v.H + xtol() : r.y1 < o[1] - xtol()));
+            if (good) return [{ ok: true, t: `${xf(v.L)} × ${xf(v.W)} top view` }, { ok: true, t: `Lined up with the front view, ${third ? "above" : "below"} it` }];
+            const sz = rs.find((r) => sizeIs(r, v.L, v.W));
+            if (sz) return [{ ok: true, t: `${xf(v.L)} × ${xf(v.W)} top view` }, { ok: false, t: !same(sz.x0, o[0]) ? "It isn't lined up: its left edge should be straight above the front view's." : `It should sit ${third ? "above" : "below"} the front view, with a gap.` }];
+            return [{ ok: false, t: `No ${xf(v.L)} × ${xf(v.W)} rectangle yet.` }];
+          },
+          show: () =>
+            placeOnDrawing("front and top views", (d) => {
+              const v = viewTaskVals(), y = s.proj === "first" ? -v.G - v.W : v.H + v.G;
+              d.layer("VISIBLE", 7, () => {
+                d.rect(0, 0, v.L, v.H);
+                d.rect(0, y, v.L, y + v.W);
+              });
+            }, { raw: true }),
+        },
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: SECTIONS
+
+  /** 45° hatch lines clipped to a rectangle, spacing sp. */
+  function hatchRect(x, y, w, h, sp = 12, c = "b") {
+    let d = "";
+    for (let t = -h; t < w; t += sp) {
+      const x1 = x + Math.max(t, 0), y1 = y + h - Math.max(-t, 0);
+      const len_ = Math.min(w - Math.max(t, 0), h - Math.max(-t, 0));
+      d += `M ${f1(x1)} ${f1(y1)} l ${f1(len_)} ${f1(-len_)} `;
+    }
+    return `<path class="dsh c-${c}" style="--d:.6s;stroke-dasharray:none;stroke-width:1.4" d="${d}"/>`;
+  }
+  function sectionParts() {
+    const x0 = 120, L = 340, cx = x0 + L / 2;
+    const D = 80, d = 40, cb = 18, T = 60;
+    return { x0, L, cx, D, d, cb, T };
+  }
+  function sectionFig(withHatch = true, label2 = true) {
+    const p = sectionParts();
+    const ty = 60, tW = 120;
+    let g = path(rectD(p.x0, ty, p.L, tW)) + circle(p.cx, ty + tW / 2, p.D / 2) + circle(p.cx, ty + tW / 2, p.d / 2);
+    g += lt(`M ${p.x0 - 20} ${ty + tW / 2} H ${p.x0 + p.L + 20}`, "a", "phantom", 3);
+    g += arrow(p.x0 - 20, ty + tW / 2, p.x0 - 20, ty + tW / 2 + 30, "a") + arrow(p.x0 + p.L + 20, ty + tW / 2, p.x0 + p.L + 20, ty + tW / 2 + 30, "a");
+    label(p.x0 - 30, ty + tW / 2 - 8, "A", "a", 20, "end");
+    label(p.x0 + p.L + 30, ty + tW / 2 - 8, "A", "a", 20);
+    const sy = 240;
+    const left = [[p.x0, sy], [p.cx - p.D / 2, sy], [p.cx - p.D / 2, sy + p.cb], [p.cx - p.d / 2, sy + p.cb], [p.cx - p.d / 2, sy + p.T], [p.x0, sy + p.T]];
+    const right = left.map(([x, y]) => [2 * p.cx - x, y]);
+    g += path(poly(left)) + path(poly(right));
+    if (withHatch) {
+      g += hatchRect(p.x0, sy, p.cx - p.D / 2 - p.x0, p.T) + hatchRect(p.cx - p.D / 2, sy + p.cb, (p.D - p.d) / 2, p.T - p.cb);
+      g += hatchRect(p.cx + p.D / 2, sy, p.cx - p.D / 2 - p.x0, p.T) + hatchRect(p.cx + p.d / 2, sy + p.cb, (p.D - p.d) / 2, p.T - p.cb);
+    }
+    g += lt(`M ${p.cx} ${sy - 12} V ${sy + p.T + 12}`, "y", "center", 1.6);
+    if (label2) label(p.cx, sy + p.T + 40, "SECTION A-A", "w", 20, "middle");
+    return svg(g, "A plate's top view with a cutting-plane line A-A through a counterbored hole, and below it the section view with the cut material hatched and the hole left clear.", "50 30 500 360");
+  }
+  function hatchFig() {
+    let g = path(rectD(100, 90, 160, 200)) + hatchRect(100, 90, 160, 200, 14);
+    g += path(rectD(340, 90, 160, 200)) + hatchRect(340, 90, 160, 200, 14, "a");
+    label(180, 320, "cut material: 45°", "b", 18, "middle");
+    label(420, 320, "same angle, evenly spaced", "a", 18, "middle");
+    return svg(g, "Two blocks of 45 degree hatching, evenly spaced.", "70 60 460 280");
+  }
+  const SECTIONS = {
+    id: "d-sections",
+    title: "Sections",
+    q: "How do I show the inside of a part?",
+    blurb: "Cutting planes, hatching, naming",
+    src: "Section views per ASME Y14.3 and ISO 128-50 (hatching at 45°).",
+    steps: [
+      {
+        t: "Cut it open on paper",
+        p: "When hidden lines get confusing, cut the part along a line and draw what you'd see. A cutting-plane line on another view marks where the cut is, and its arrows point the way you look.",
+        ctl: [],
+        fig: () => sectionFig(true, false),
+        math: () => ln("cutting-plane line: thick, long-short-short dashes, arrows at each end") + ln("Draw it on a layer of its own, such as SECTION.", "dim"),
+      },
+      {
+        t: "Hatch what the saw would touch",
+        p: "In the section, the cut material is hatched with thin lines at 45°. Holes and gaps weren't cut, so they stay clear. Edges behind the cut are drawn as visible lines; hidden lines are usually left out.",
+        ctl: [],
+        fig: hatchFig,
+        needs: ["HATCH"],
+        math: () => ln(`hatch spacing about ${V_(nu(3))} on paper`) + ln("Different parts in one section get different angles.", "dim"),
+      },
+      {
+        t: "Name it",
+        p: "Letter the cutting-plane line at both ends, A and A, and write SECTION A-A under the view. A second section on the same sheet uses B-B.",
+        ctl: [],
+        fig: () => sectionFig(true, true),
+        needs: ["HATCH"],
+        math: () => ln(`label: ${V_("SECTION A-A")}, on NOTES`),
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: DIMENSIONING IN BLACKCAD
+
+  function dimTypesFig() {
+    const x0 = 140, y0 = 300, W = 320, H = 180, ch = 50, r = 34;
+    const o = [[x0, y0], [x0 + W, y0], [x0 + W, y0 - H + ch], [x0 + W - ch, y0 - H], [x0, y0 - H]];
+    let g = path(poly(o)) + circle(x0 + 110, y0 - 90, r);
+    g += dim(x0, y0 + 30, x0 + W, y0 + 30, "g");
+    label(x0 + W / 2, y0 + 22, "DIMLINEAR", "g", 16, "middle");
+    g += dim(x0 - 30, y0, x0 - 30, y0 - H, "g");
+    label(x0 - 38, y0 - H / 2, "DIMLINEAR", "g", 16, "end");
+    const nx = 22 * Math.SQRT1_2, ny = -22 * Math.SQRT1_2;
+    g += dim(o[2][0] + nx, o[2][1] + ny, o[3][0] + nx, o[3][1] + ny, "g");
+    label(o[3][0] + 34, o[3][1] - 12, "DIMALIGNED", "g", 16);
+    g += path(`M ${x0 + 110 - r * 0.7} ${y0 - 90 + r * 0.7} L ${x0 + 110 + r * 0.7} ${y0 - 90 - r * 0.7} l 40 -30 h 30`, "g");
+    label(x0 + 110 + r * 0.7 + 74, y0 - 90 - r * 0.7 - 24, "DIMDIAMETER", "g", 16);
+    return svg(g, "A plate with a chamfered corner and a hole, dimensioned with horizontal and vertical linear dimensions, an aligned dimension on the chamfer and a diameter on the hole.", "-20 60 610 320");
+  }
+  function dimSnapFig() {
+    let g = path(rectD(150, 120, 300, 130));
+    g += smark("END", 150, 250) + smark("END", 450, 250);
+    g += path("M 150 262 V 312 M 450 262 V 312", "g") + dim(150, 302, 450, 302, "g");
+    label(300, 294, "300.00", "g", 18, "middle");
+    g += arrow(300, 330, 300, 360, "a");
+    label(300, 384, "pull down: horizontal", "a", 16, "middle");
+    g += arrow(120, 185, 80, 185, "a");
+    label(74, 160, "pull left:", "a", 16, "end");
+    label(74, 210, "vertical", "a", 16, "end");
+    return svg(g, "A dimension started on two snapped endpoints and pulled below the part so it reads horizontally; pulling it to the side would make it vertical.", "0 100 520 300");
+  }
+
+  function dimGapFig() {
+    const have = (id) => !missing(id);
+    let g = path("M 100 300 H 400 L 260 150 Z");
+    g += (have("DIMANGULAR") ? path : dash)(`M 180 300 A 80 80 0 0 0 158.4 245.2`, have("DIMANGULAR") ? "g" : "a");
+    label(190, 270, `${have("DIMANGULAR") ? "" : "? "}43°`, have("DIMANGULAR") ? "g" : "a", 18);
+    g += (have("LEADER") ? path : dash)("M 330 220 L 400 160 H 470", have("LEADER") ? "g" : "a");
+    label(410, 150, "NOTE", have("LEADER") ? "g" : "a", 17);
+    label(100, 350, have("DIMANGULAR") && have("LEADER") ? "both in BlackCAD" : "amber: not in BlackCAD yet", have("DIMANGULAR") && have("LEADER") ? "g" : "a", 17);
+    return svg(g, "An angle dimension and a leader note, drawn dashed in amber where BlackCAD doesn't have the command yet.", "60 110 460 260");
+  }
+  const dimTaskVals = () => ({ L: xv(100, 4), H: xv(60, 2.5), d: xv(20, 0.75), hx: xv(30, 1.25), hy: xv(30, 1.25) });
+  function dimPlate(d, v) {
+    d.layer("VISIBLE", 7, () => {
+      d.rect(0, 0, v.L, v.H);
+      d.circle(v.hx, v.hy, v.d);
+    });
+    const e = v.d / 2 + xv(4, 0.15);
+    d.layer("CENTER", 2, () => {
+      d.line(v.hx - e, v.hy, v.hx + e, v.hy);
+      d.line(v.hx, v.hy - e, v.hx, v.hy + e);
+    });
+  }
+  const DIMCMD = {
+    id: "d-dimcmd",
+    title: "Dimensioning in BlackCAD",
+    q: "Which dimension command do I use?",
+    blurb: "DIM, DIMLINEAR, DIMALIGNED, DIMRADIUS, DIMDIAMETER",
+    src: "BlackCAD's dimension commands; dimensions are placed on the DIMENSION layer by the core.",
+    steps: [
+      {
+        t: "Five ways to dimension",
+        p: "DIM does most jobs: pick a circle for its diameter, an arc for its radius, or two points for a straight size. The others make one kind only. Every dimension lands on the DIMENSION layer by itself.",
+        ctl: [],
+        fig: dimTypesFig,
+        math: () => ["DIM", "DIMLINEAR", "DIMALIGNED", "DIMRADIUS", "DIMDIAMETER"].filter(hasCmd).map((c) => ln(`${V_(aliasOf(c))} ${c} · ${esc(COMMANDS.find((x) => x.name === c).desc)}`)).join(""),
+      },
+      {
+        t: "Snap to the geometry",
+        p: "Start every dimension on a snapped point: an endpoint, a centre or an intersection. Then it measures the geometry exactly. Place the dimension line by moving away from the part: above or below gives a horizontal size, left or right a vertical one. DIMLINEAR offers Aligned while you place it.",
+        ctl: [],
+        fig: dimSnapFig,
+        math: () => ln("A dimension shows the measured size; you never type the number."),
+      },
+      {
+        t: "Dimensions BlackCAD can't place yet",
+        p: "Angles, rows of baseline dimensions and leader notes are everyday drafting. Where BlackCAD doesn't have the command yet, the board shows the workaround.",
+        ctl: [],
+        fig: dimGapFig,
+        needs: ["DIMANGULAR", "DIMBASELINE", "LEADER"],
+        math: () => {
+          const m = gapNames(["DIMANGULAR", "DIMBASELINE", "LEADER"]);
+          return m.length ? ln(`<span class="warn">${m.join(", ")}</span>: not in BlackCAD yet`) : ln("All three are in BlackCAD.", "ok");
+        },
+      },
+      {
+        t: "Your turn: dimension a plate",
+        p: "The board draws a plate with a hole. Give it its length and height, the hole's diameter, and the hole's position from the left and bottom edges.",
+        ctl: [],
+        fig: () => plateLayersFig({ note: false }),
+        math: () => {
+          const v = dimTaskVals();
+          return ln(`plate ${V_(`${xs(v.L)} × ${xs(v.H)}`)} · hole ${V_(`Ø${xs(v.d)}`)} at ${V_(`${xs(v.hx)}, ${xs(v.hy)}`)} from the corner`);
+        },
+        task: {
+          setup: { label: "Set up the plate", run: () => placeOnDrawing("plate to dimension", (d) => dimPlate(d, dimTaskVals()), { raw: true }) },
+          do: () => [`${kbd("DL")}: snap the two bottom corners, place it below. Then the two right-hand corners, place it to the right.`, `${kbd("DL")}: the left edge's corner to the hole centre (CEN), placed below; and the bottom corner to the centre, placed to the left.`, `${kbd("D")}: click the circle, and place the diameter outside the plate.`],
+          check: (t) => {
+            const es = fresh(t, entities()).filter((g) => /^DIMENSION/.test(g.type));
+            const lin = es.filter((g) => g.type === "DIMENSION_LINEAR" || g.type === "DIMENSION_ALIGNED").length;
+            const dia = es.filter((g) => g.type === "DIMENSION_DIAMETER").length;
+            const off = es.filter((g) => lay(g) !== "DIMENSION").length;
+            return [
+              { ok: lin >= 4, t: lin >= 4 ? `${lin} linear dimensions` : `${lin} of 4 linear dimensions: length, height and the hole's two positions.` },
+              { ok: dia >= 1, t: dia ? "Diameter on the hole" : "No diameter dimension yet: D, then click the circle." },
+              ...(es.length ? [{ ok: !off, t: off ? `${off} dimension${off === 1 ? " is" : "s are"} off the DIMENSION layer.` : "All on the DIMENSION layer" }] : []),
+            ];
+          },
+          show: () => placeShownPlate(),
+        },
+      },
+    ],
+  };
+
+  /** A plate dimensioned the way the rules lesson recommends: from one corner. */
+  function placeShownPlate() {
+    placeOnDrawing("dimensioned plate", (d) => {
+      const v = dimTaskVals(), g1 = xv(10, 0.4), g2 = xv(7, 0.28);
+      dimPlate(d, v);
+      d.dimH(0, 0, v.hx, v.hy, -g1);
+      d.dimH(0, 0, v.L, 0, -g1 - g2);
+      d.dimV(0, 0, v.hx, v.hy, -g1);
+      d.dimV(0, 0, 0, v.H, -g1 - g2);
+      d.dimDia(v.hx, v.hy, v.d, 45);
+    }, { raw: true });
+  }
+
+  // ================================================================ LESSON: DIMENSIONING RULES
+
+  function chainFig() {
+    const nS = Math.round(s.nseg), x0 = 70, W = 460, y0 = 270, step_ = W / nS;
+    let g = path(`M ${x0} ${y0} H ${x0 + W}`, "w", "thick");
+    for (let i = 0; i <= nS; i++) g += path(`M ${f1(x0 + i * step_)} ${y0 - 14} V ${y0 + 4}`);
+    for (let i = 0; i < nS; i++) {
+      const last = i === nS - 1;
+      g += dim(x0 + i * step_, 200, x0 + (i + 1) * step_, 200, last ? "r" : "g");
+      label(x0 + (i + 0.5) * step_, 192, last ? "×" : "✓", last ? "r" : "g", 18, "middle");
+    }
+    g += dim(x0, 140, x0 + W, 140, "g");
+    label(x0 + W / 2, 132, "overall", "g", 18, "middle");
+    label(x0, 330, `${nS} steps + overall = one too many: leave one step out`, "r", 18);
+    return svg(g, "A row of step dimensions with an overall dimension above; the last step is crossed out because it repeats a size.", "40 100 520 250");
+  }
+  function spacingFig() {
+    let g = path(rectD(120, 90, 300, 110));
+    g += path("M 120 210 V 330 M 260 210 V 290 M 420 210 V 330", "w");
+    g += dim(120, 250, 260, 250, "g") + dim(120, 310, 420, 310, "g");
+    g += dim(460, 200, 460, 250, "a") + dim(500, 250, 500, 310, "a");
+    label(470, 230, nt(10), "a", 16);
+    label(510, 286, nt(7), "a", 16);
+    label(120, 70, "short sizes nearest the part, long ones outside", "b", 17);
+    return svg(g, "A part with two rows of dimensions below it: the shorter one nearer the part, about 10 away, and the longer one about 7 further out.", "60 50 500 300");
+  }
+  function whereFig() {
+    let g = circle(160, 200, 50) + lt("M 100 200 H 220 M 160 140 V 260", "y", "center", 1.5);
+    g += path("M 195 165 l 50 -50 h 40", "g");
+    label(250, 106, "Ø where it's round", "g", 17);
+    g += mark(320, 104, true);
+    g += path(rectD(380, 150, 140, 100)) + lt("M 430 150 V 250 M 470 150 V 250", "r", "hidden", 1.6);
+    g += dim(430, 120, 470, 120, "r");
+    label(450, 110, "to hidden lines", "r", 16, "middle");
+    g += mark(450, 285, false);
+    return svg(g, "On the left, a hole's diameter dimensioned in the view where it's round, marked good; on the right, a dimension between hidden lines, marked wrong.", "70 80 480 230");
+  }
+  const DIMRULES = {
+    id: "d-dimrules",
+    title: "Dimensioning rules",
+    q: "Where do the dimensions go?",
+    blurb: "Once each, outside the part, where the feature shows",
+    src: "General dimensioning rules per ASME Y14.5 and ISO 129-1 (each feature dimensioned once, no duplicate or closed chains); row spacing is common practice.",
+    steps: [
+      {
+        t: "Each size once",
+        p: "Give every size once, in one place. A row of steps that also has an overall size gives one size twice, and the shop can't tell which one wins. Leave one step out so it's clear which size is free to vary.",
+        ctl: ["nseg"],
+        fig: chainFig,
+        math: () => ln(`dimension ${V_(Math.round(s.nseg) - 1)} of the ${Math.round(s.nseg)} steps, plus the overall`),
+      },
+      {
+        t: "Outside the part, small inside large",
+        p: "Put dimensions outside the outline where you can. Start the first row about 10 mm (3/8 in) from the part and space further rows about 7 mm (1/4 in) apart, with shorter sizes nearer the part so extension lines don't cross dimension lines.",
+        ctl: [],
+        fig: spacingFig,
+        math: () => ln(`first row about ${V_(nu(inch() ? 9.525 : 10))} out · rows about ${V_(nu(inch() ? 6.35 : 7))} apart`) + ln("Leave a small gap between the part and each extension line.", "dim"),
+        basis: "Spacing figures are common practice for 3.5 mm (1/8 in) text; check the standard your shop follows.",
+      },
+      {
+        t: "Dimension where the feature shows",
+        p: "Dimension a hole in the view where it's round, and a step in the view that shows its profile. Don't dimension to hidden lines: if a size only shows as hidden lines, add a view or a section.",
+        ctl: [],
+        fig: whereFig,
+        math: () => ln("holes: Ø in the round view, located by their centres", "ok") + ln("never: to hidden lines", "bad"),
+      },
+      {
+        t: "Work from one datum",
+        p: "Choose one edge, corner or hole as the start and measure from it. Each feature is then only one tolerance away from the start. Shop's Dimensioning for fabrication lesson shows how chains add errors up.",
+        ctl: [],
+        fig: () => plateLayersFig({ note: false }),
+        needs: ["DIMBASELINE"],
+        math: () => ln("datum: the lower-left corner, for example") + ln("hole positions measured from it, not from each other", "dim"),
+        extra: () => `<div class="bb-row"><button class="chalkbtn" data-lesson="dims">Dimensioning for fabrication, in Shop</button></div>`,
+        place: { label: "Draw a plate dimensioned this way", run: () => placeShownPlate() },
+      },
+    ],
+  };
+
+  // ================================================================ LESSON: THE SHEET
+
+  const TB_FIELDS = () => [
+    ["PART NAME", "BRACKET"],
+    ["PART NO.", "P-0001"],
+    ["MATERIAL", "MILD STEEL"],
+    ["UNITS", du() === "in" ? "INCHES" : "MM"],
+    ["SCALE", "1:1"],
+    ["TOLERANCE", du() === "in" ? ".XX ±.01" : "ISO 2768-m"],
+    ["DRAWN", (user() || "NAME").toUpperCase()],
+    ["DATE", new Date().toISOString().slice(0, 10)],
+    ["REV", "A"],
+  ];
+  function titleFig() {
+    const x0 = 70, y0 = 90, w = 460, h = 210;
+    let g = path(rectD(x0, y0, w, h));
+    const rows = TB_FIELDS();
+    const cols = 3, cw = w / cols, rh = h / 3;
+    for (let i = 1; i < cols; i++) g += path(`M ${f1(x0 + i * cw)} ${y0} V ${y0 + h}`, "w");
+    for (let j = 1; j < 3; j++) g += path(`M ${x0} ${f1(y0 + j * rh)} H ${x0 + w}`, "w");
+    rows.forEach(([k, v], i) => {
+      const cx = x0 + (i % cols) * cw + 10, cy = y0 + Math.floor(i / cols) * rh;
+      label(cx, cy + 22, k, "b", 14);
+      label(cx, cy + 52, esc(v), "w", 19);
+    });
+    label(x0, y0 - 16, "lower right corner of the sheet", "b", 17);
+    return svg(g, "A title block divided into nine boxes: part name, part number, material, units, scale, tolerance, drawn by, date and revision.", "50 60 500 260");
+  }
+  function notesFig() {
+    const notes = ["NOTES:", du() === "in" ? "1. DIMENSIONS IN INCHES." : "1. DIMENSIONS IN MM.", "2. MATERIAL: MILD STEEL, 3 THK.", "3. BREAK ALL SHARP EDGES.", "4. TOLERANCES PER TITLE BLOCK."];
+    let g = "";
+    notes.forEach((t, i) => label(90, 110 + i * 40, t, "c", 20));
+    g += dim(70, 110 - 18, 70, 150 - 18, "a");
+    label(62, 126, "1.6 h", "a", 15, "end");
+    return svg(g, "A numbered list of general notes, each its own line of text, spaced 1.6 times the text height.", "20 70 520 230");
+  }
+  function revFig() {
+    let g = path(rectD(70, 90, 460, 150));
+    g += path("M 70 130 H 530 M 140 90 V 240 M 400 90 V 240", "w");
+    label(84, 118, "REV", "b", 15);
+    label(154, 118, "DESCRIPTION", "b", 15);
+    label(414, 118, "DATE · BY", "b", 15);
+    label(96, 168, "A", "w", 19);
+    label(154, 168, "FIRST RELEASE", "w", 17);
+    label(96, 212, "B", "a", 19);
+    label(154, 212, "HOLE Ø10 WAS Ø8", "a", 17);
+    label(414, 212, new Date().toISOString().slice(0, 10), "a", 15);
+    return svg(g, "A revision table with revision A, first release, and revision B describing a changed hole size.", "50 70 500 190");
+  }
+  function filesFig() {
+    const f = [[".cad", "BlackCAD's own"], [".dwg", "2018 format"], [".dxf", "exchange"], [".svg", "picture"]];
+    let g = "";
+    f.forEach(([e, w], i) => {
+      const x = 80 + i * 120;
+      g += path(`M ${x} 120 h 70 l 20 20 v 100 h -90 Z M ${x + 70} 120 v 20 h 20`, i ? "w" : "a");
+      label(x + 45, 200, e, i ? "w" : "a", 22, "middle");
+      label(x + 45, 270, w, "b", 15, "middle");
+    });
+    return svg(g, "Four file icons: .cad, BlackCAD's own format; .dwg in the 2018 format; .dxf for exchange; and .svg as a picture.", "60 100 500 190");
+  }
+  const SHEET = {
+    id: "d-sheet",
+    title: "Title block, notes and revisions",
+    q: "What goes around the drawing?",
+    blurb: "The title block, general notes, revisions, saving",
+    src: "Title block content per ASME Y14.1 and ISO 7200; revisions per ASME Y14.35.",
+    steps: [
+      {
+        t: "The title block",
+        p: "The title block answers what every reader asks: what the part is, what it's made of, its units and scale, how accurate it must be, who drew it and which revision this is. It sits in the lower right corner of the sheet.",
+        ctl: [],
+        fig: titleFig,
+        extra: sheetButtons,
+        needs: ["BLOCK"],
+        math: () => ln(`text on ${V_("NOTES")}; change any field later in Properties (Contents)`) + ln("Try it scales the sheet to fit your drawing.", "dim"),
+        place: { label: "Put a sheet and title block around my drawing", run: () => placeSheet() },
+      },
+      {
+        t: "General notes",
+        p: "Notes say what dimensions can't: units, material, finish, edge breaks and which tolerances apply. Number them and put them on NOTES. TEXT writes one line at a time, so each note is its own line.",
+        ctl: [],
+        fig: notesFig,
+        needs: ["MTEXT", "LEADER"],
+        math: () => ln(`text height ${V_(nu(inch() ? 3.175 : 3.5))} on paper; lines ${V_(nu((inch() ? 3.175 : 3.5) * 1.6))} apart`) + ln("Make NOTES current before you type them.", "dim"),
+      },
+      {
+        t: "Revisions",
+        p: "When a released drawing changes, raise the revision letter: A, then B. A revision table says what changed, when and by whom, and the title block shows the current letter. A different part gets a new part number, never a revision.",
+        ctl: [],
+        fig: revFig,
+        math: () => ln("first release: A") + ln("each change: next letter, and a line in the table", "dim"),
+      },
+      {
+        t: "Save it so others can open it",
+        p: "Save (Ctrl+S) keeps BlackCAD's own .cad format. Save as .dwg writes the 2018 format other drafting programs open, and DXF and SVG are in the file menu. Set Your name on saves, in the same menu, so every file records who saved it.",
+        ctl: [],
+        fig: filesFig,
+        needs: ["PLOT"],
+        math: () => ln(`saves record: ${V_(esc(user() || "no name set"))}`),
+      },
+    ],
+  };
+
+  /** A sheet border and title block around the drawing, scaled to fit it. */
+  function placeSheet() {
+    if (!doc) newDrawing(inch());
+    if (!doc) return;
+    const k = unitScale(); // drawing units per mm
+    const b = doc.disp.bounds;
+    const bw = b ? (b[2] - b[0]) / k : 0, bh = b ? (b[3] - b[1]) / k : 0;
+    const S = b ? fitScale(bw, bh) : 1;
+    const [SW, SH] = SHEETS[s.sheet];
+    const W = SW * S, H = SH * S, m = TB.m * S, tbw = TB.w * S, tbh = TB.h * S;
+    // centre the drawing in the space above the title block
+    const cx = b ? (b[0] + b[2]) / 2 / k : W / 2, cy = b ? (b[1] + b[3]) / 2 / k : H / 2;
+    const x0 = cx - W / 2, y0 = cy - (H + tbh) / 2;
+    const rows = TB_FIELDS().map(([kk, v]) => [kk, kk === "SCALE" ? `1:${S}` : v]);
+    placeOnDrawing(`${s.sheet} sheet at 1:${S}`, (d) => {
+      d.layer("BORDER", 7, () => {
+        d.rect(0, 0, W, H);
+        d.rect(m, m, W - m, H - m);
+        const tx = W - m - tbw, ty = m;
+        d.rect(tx, ty, W - m, ty + tbh);
+        for (let i = 1; i < 3; i++) d.line(tx + (i * tbw) / 3, ty, tx + (i * tbw) / 3, ty + tbh);
+        for (let j = 1; j < 3; j++) d.line(tx, ty + (j * tbh) / 3, W - m, ty + (j * tbh) / 3);
+      });
+      const tx = W - m - tbw, ty = m;
+      rows.forEach(([kk, v], i) => {
+        const col_ = i % 3, row = 2 - Math.floor(i / 3);
+        const x = tx + (col_ * tbw) / 3 + 2 * S, y = ty + (row * tbh) / 3;
+        d.textAt(x, y + (tbh / 3) * 0.62, 2 * S, kk);
+        d.textAt(x, y + (tbh / 3) * 0.18, 3.5 * S, v);
+      });
+    }, { at: [x0 * k, y0 * k] });
+  }
+
+  const DRAFTING_UNITS = [
+    { name: "Start here: the tools", lede: "Commands, points, snaps and edits", lessons: [CMD, COORDS, SNAPS, EDIT] },
+    { name: "Lines that talk", lede: "Layers, hidden lines and centre lines", lessons: [LAYERS, LINES] },
+    { name: "Size and scale", lede: "Units, decimals and the sheet", lessons: [UNITS_, SCALE_] },
+    { name: "Views", lede: "Seeing a part from every side", lessons: [VIEWS, SECTIONS] },
+    { name: "Dimensions", lede: "Sizes the reader can trust", lessons: [DIMCMD, DIMRULES] },
+    { name: "The sheet", lede: "What goes around the drawing", lessons: [SHEET] },
+  ];
+  /** Every missing tool, and the lessons that need it. */
+  function gapReport() {
+    const need = new Map();
+    for (const u of DRAFTING_UNITS)
+      for (const l of u.lessons)
+        for (const st of l.steps)
+          for (const id of st.needs || []) {
+            if (!missing(id)) continue;
+            if (!need.has(id)) need.set(id, new Set());
+            need.get(id).add(l.title);
+          }
+    return [...need.entries()].map(([id, ls]) => ({ id, ...GAPS[id], lessons: [...ls] }));
+  }
+
   // ================================================================ THE CURRICULUM
   // Subjects are the board's tabs. Shop is taught now; the others show their
   // syllabus so learners (and the people building lessons) can see where the
@@ -5530,6 +7329,13 @@ const Board = (() => {
 
   const SUBJECTS = [
     {
+      id: "drafting",
+      name: "Drafting",
+      title: "Drafting: drawings anyone can build from",
+      lede: "Learn BlackCAD and the language of drawings together: commands and snaps, layers that mean something, views, dimensions and the sheet. Each lesson ends with something to draw, and the board checks it.",
+      units: DRAFTING_UNITS,
+    },
+    {
       id: "shop",
       name: "Shop",
       title: "Shop: cut, bend, weld",
@@ -5539,30 +7345,6 @@ const Board = (() => {
         { name: "Cutting", lede: "Laser and plasma, from the designer's side", lessons: [KERF, SMALL, LEAD, HEAT, EDGE] },
         { name: "Drawings for the shop", lede: "Dimensions and tolerances they can build to", lessons: [DIMS, TOL] },
         { name: "Weld and assembly", lede: "Edges that weld, parts that line up", lessons: [FITUP, TAB] },
-      ],
-    },
-    {
-      id: "drafting",
-      name: "Drafting",
-      title: "Drafting: drawings anyone can build from",
-      lede: "How a drawing talks: views, lines, dimensions and the sheet around them. These lessons are on the syllabus for the next term.",
-      syllabus: [
-        { name: "Views", lessons: [["Orthographic views", "Front, top and side, and first-angle versus third-angle projection"], ["Sections and details", "Cutting a part open on paper, and blowing up small features"]] },
-        { name: "Lines and layers", lessons: [["Layers and linetypes", "What VISIBLE, HIDDEN, CENTER and DIMENSION tell the reader"], ["Line weights", "Thick for edges, thin for everything that explains them"]] },
-        { name: "Dimensions", lessons: [["Dimensioning rules", "Once each, on the view that shows it best, never twice"], ["Units and scale", "Millimetres, inches and fractions without mistakes"]] },
-        { name: "The sheet", lessons: [["Title blocks and revisions", "Who drew it, which version, and what changed"], ["Notes and callouts", "Saying what a dimension can't"]] },
-      ],
-    },
-    {
-      id: "machining",
-      name: "Machining",
-      title: "Machining: mill and lathe",
-      lede: "Design parts a machinist can make in one setup: radii the cutter can reach, holes the drill can finish, fits that assemble.",
-      syllabus: [
-        { name: "Milling", lessons: [["Inside corners need a radius", "A round cutter can't cut a square corner"], ["Pockets and depth", "How deep a cutter can reach for its diameter"], ["Holes: drill points and depth", "The cone at the bottom and blind-hole depths"], ["Threads: tap drills and depth", "Tap drill sizes and how deep a thread really goes"]] },
-        { name: "Turning", lessons: [["Shoulders, grooves and undercuts", "Where the tool has to stop, and what it leaves"], ["Chamfers and edge breaks", "Sharp edges, and how to call them out"]] },
-        { name: "Fits and finish", lessons: [["Fits and limits", "Hole and shaft tolerances that slide, locate or press"], ["Surface finish", "Reading and writing roughness callouts"]] },
-        { name: "Speeds and feeds", lessons: [["Cutting speed for the designer", "Why material choice changes the cost of a part"]] },
       ],
     },
     {
@@ -5577,12 +7359,25 @@ const Board = (() => {
         { name: "Wiring", lessons: [["Glands, grommets and strain relief", "Cables through sheet metal"], ["Grounding studs and bonding", "Bare metal where it counts"]] },
       ],
     },
+    {
+      id: "machining",
+      name: "Machining",
+      hidden: true, // an outline for a later term; no tab yet
+      title: "Machining: mill and lathe",
+      lede: "Design parts a machinist can make in one setup: radii the cutter can reach, holes the drill can finish, fits that assemble.",
+      syllabus: [
+        { name: "Milling", lessons: [["Inside corners need a radius", "A round cutter can't cut a square corner"], ["Pockets and depth", "How deep a cutter can reach for its diameter"], ["Holes: drill points and depth", "The cone at the bottom and blind-hole depths"], ["Threads: tap drills and depth", "Tap drill sizes and how deep a thread really goes"]] },
+        { name: "Turning", lessons: [["Shoulders, grooves and undercuts", "Where the tool has to stop, and what it leaves"], ["Chamfers and edge breaks", "Sharp edges, and how to call them out"]] },
+        { name: "Fits and finish", lessons: [["Fits and limits", "Hole and shaft tolerances that slide, locate or press"], ["Surface finish", "Reading and writing roughness callouts"]] },
+        { name: "Speeds and feeds", lessons: [["Cutting speed for the designer", "Why material choice changes the cost of a part"]] },
+      ],
+    },
   ];
-  const LESSONS = [...SUBJECTS[0].units.flatMap((u) => u.lessons), CHECK];
-  const subjectOf = (id) => SUBJECTS.find((sj) => sj.units?.some((u) => u.lessons.some((l) => l.id === id))) || SUBJECTS[0];
-  const unitOf = (id) => SUBJECTS[0].units.find((u) => u.lessons.some((l) => l.id === id));
-  let LESSON = BEND;
-  let subject = "shop";
+  const SHOWN = SUBJECTS.filter((sj) => !sj.hidden);
+  const LESSONS = [...SUBJECTS.filter((sj) => sj.units).flatMap((sj) => sj.units.flatMap((u) => u.lessons)), CHECK];
+  const subjectOf = (id) => (id === "check" ? SUBJECTS.find((sj) => sj.id === "shop") : SUBJECTS.find((sj) => sj.units?.some((u) => u.lessons.some((l) => l.id === id)))) || SHOWN[0];
+  let LESSON = CMD;
+  let subject = "drafting";
 
   // ================================================================ CHECKING THE OPEN DRAWING
 
@@ -5715,15 +7510,18 @@ const Board = (() => {
   // language every tool uses, beside whatever is already drawn, as one undo
   // step. Outlines go on the current layer, bend lines on BEND, words on NOTES.
 
-  function placeOnDrawing(what, build) {
-    if (!core) return;
+  /** opts.at: the origin in drawing units (default: beside what's drawn).
+   *  opts.raw: the build works in drawing units rather than millimetres. */
+  function placeOnDrawing(what, build, opts = {}) {
+    if (!core) return null;
     if (!doc) newDrawing(inch());
-    if (!doc) return;
-    const k = unitScale();
+    if (!doc) return null;
+    const k0 = unitScale();
+    const k = opts.raw ? 1 : k0;
     const b = doc.disp.bounds;
-    const ox = b ? b[2] + 25 * k : 0, oy = b ? b[1] : 0;
+    const ox = opts.at ? opts.at[0] : b ? b[2] + 25 * k0 : 0, oy = opts.at ? opts.at[1] : b ? b[1] : 0;
     const X = (x) => N(ox + x * k), Y = (y) => N(oy + y * k), L = (v) => N(v * k);
-    const textH = (inch() ? 3.175 : 3.5) * k;
+    const textH = (inch() ? 3.175 : 3.5) * k0;
     const prev = doc.info.layers.find((l) => l.current);
     const layers = new Map(doc.info.layers.map((l) => [l.name.toUpperCase(), l.handle]));
     const exec = (line) => core.exec(doc.id, line);
@@ -5747,10 +7545,14 @@ const Board = (() => {
       circle: (x, y, d) => exec(`circle ${X(x)} ${Y(y)} ${L(d / 2)}`),
       pline: (pts, closed = true) => exec(`pline ${closed ? 1 : 0} ${pts.map(([x, y, bl = 0]) => `${X(x)} ${Y(y)} ${N(bl)}`).join(" ")}`),
       text: (x, y, words, scale = 1) => onLayer("NOTES", 4, () => exec(`text ${X(x)} ${Y(y)} ${N(textH * scale)} 0 ${words}`)),
+      textAt: (x, y, h, words) => onLayer("NOTES", 4, () => exec(`text ${X(x)} ${Y(y)} ${L(h)} 0 ${words}`)),
+      layer: (name, aci, fn) => onLayer(name, aci, fn),
+      dimV: (x1, y1, x2, y2, lx) => exec(`dim-linear ${X(x1)} ${Y(y1)} ${X(x2)} ${Y(y2)} ${X(lx)} ${Y((y1 + y2) / 2)} 90`),
+      dimDia: (cx, cy, d, ang = 45) => exec(`dim-diameter ${X(cx)} ${Y(cy)} ${L(d / 2)} ${ang}`),
       bend: (x1, y1, x2, y2) => onLayer("BEND", 2, () => exec(`line ${X(x1)} ${Y(y1)} ${X(x2)} ${Y(y2)}`)),
       notes: (fn) => onLayer("NOTES", 4, fn),
       dimH: (x1, y1, x2, y2, ly) => exec(`dim-linear ${X(x1)} ${Y(y1)} ${X(x2)} ${Y(y2)} ${X((x1 + x2) / 2)} ${Y(ly)} 0`),
-      textH: textH / k,
+      textH: textH / k0,
       u: U().toUpperCase(),
     };
     try {
@@ -5764,7 +7566,7 @@ const Board = (() => {
       if (e instanceof CoreCrash) return crashed(e);
       toast(e.message || String(e), true);
       refresh(doc);
-      return;
+      return null;
     }
     refresh(doc);
     zoomExtents();
@@ -5772,6 +7574,7 @@ const Board = (() => {
     log(`Blackboard: ${what} drawn. One Undo takes it away.`, "ok");
     close();
     toast(`${what.charAt(0).toUpperCase() + what.slice(1)} drawn. Undo takes it away.`);
+    return [ox, oy];
   }
 
   const numTxt = (v) => `${num(v)} ${U().toUpperCase()}`;
@@ -5995,14 +7798,14 @@ const Board = (() => {
   // ================================================================ PRINTING
   // A print-only sheet in dark ink on white. The figures are the board's own.
 
-  function printSheet(title, body) {
+  function printSheet(title, body, foot = "Starting points, not the rules of your shop. Replace them with your own measured numbers in Shop settings.") {
     let el = $("#print-sheet");
     if (!el) {
       el = document.createElement("div");
       el.id = "print-sheet";
       document.body.append(el);
     }
-    el.innerHTML = `<header><span><b>BlackCAD</b> · Blackboard</span><span>${new Date().toLocaleDateString()}</span></header><h1>${title}</h1>${body}<footer>Starting points, not the rules of your shop. Replace them with your own measured numbers in Shop settings.</footer>`;
+    el.innerHTML = `<header><span><b>BlackCAD</b> · Blackboard</span><span>${new Date().toLocaleDateString()}</span></header><h1>${title}</h1>${body}<footer>${foot}</footer>`;
     document.documentElement.classList.add("printing");
     const done = () => {
       document.documentElement.classList.remove("printing");
@@ -6024,25 +7827,30 @@ const Board = (() => {
   }
   function printLesson() {
     const keep = step;
+    printing = true;
     const parts = LESSON.steps.map((st, i) => {
       step = i;
       n = 0;
       words = [];
       const fig = st.fig();
       const basis = typeof st.basis === "function" ? st.basis() : st.basis || "";
-      return `<section class="pstep"><div class="pfig">${fig}</div><div><h2>${i + 1}. ${st.t}</h2><p>${st.p}</p><div class="pmath">${st.math()}</div>${basis ? `<p class="pbasis">${basis}</p>` : ""}</div></section>`;
+      const task = st.task ? `<p><b>Your turn:</b></p><ol>${st.task.do().map((x) => `<li>${x}</li>`).join("")}</ol>` : "";
+      const gaps = (st.needs || []).filter(missing).map((id) => `${GAPS[id].name}: ${GAPS[id].work}`);
+      return `<section class="pstep"><div class="pfig">${fig}</div><div><h2>${i + 1}. ${st.t}</h2><p>${textOf(st.p)}</p><div class="pmath">${st.math()}</div>${basis ? `<p class="pbasis">${basis}</p>` : ""}${task}${gaps.length ? `<p class="pbasis"><b>Not in BlackCAD yet.</b> ${gaps.join(" ")}</p>` : ""}</div></section>`;
     });
     step = keep;
-    printSheet(LESSON.title, `<p class="sub">${LESSON.q} · ${cardTitle()}</p>${parts.join("")}`);
+    printing = false;
+    const drafting = subjectOf(LESSON.id).id === "drafting";
+    printSheet(LESSON.title, `<p class="sub">${LESSON.q} · ${drafting ? (du() === "in" ? "inches" : "millimetres") : cardTitle()}</p>${parts.join("")}`, drafting ? "From the BlackCAD Blackboard. Exercises assume their starting shapes at 0,0." : undefined);
   }
 
   // ================================================================ RENDERING
 
   const isLesson = () => !view.startsWith("tab:") && view !== "settings";
-  const curSubject = () => SUBJECTS.find((sj) => sj.id === subject) || SUBJECTS[0];
+  const curSubject = () => SHOWN.find((sj) => sj.id === subject) || SHOWN[0];
 
   if (savedView === "settings") view = "settings";
-  else if (typeof savedView === "string" && savedView.startsWith("tab:") && SUBJECTS.some((sj) => `tab:${sj.id}` === savedView)) {
+  else if (typeof savedView === "string" && savedView.startsWith("tab:") && SHOWN.some((sj) => `tab:${sj.id}` === savedView)) {
     view = savedView;
     subject = savedView.slice(4);
   } else if (LESSONS.some((l) => l.id === savedView)) {
@@ -6071,7 +7879,7 @@ const Board = (() => {
   function renderTabs() {
     const active = isLesson() ? subjectOf(LESSON.id).id : view === "settings" ? "" : subject;
     tabsEl.innerHTML =
-      SUBJECTS.map((sj) => `<button class="bbtab${sj.id === active ? " on" : ""}" data-tab="${sj.id}" role="tab" aria-selected="${sj.id === active}">${sj.name}</button>`).join("") +
+      SHOWN.map((sj) => `<button class="bbtab${sj.id === active ? " on" : ""}" data-tab="${sj.id}" role="tab" aria-selected="${sj.id === active}">${sj.name}</button>`).join("") +
       `<button class="bbtab cfg${view === "settings" ? " on" : ""}" data-act="settings" title="Shop settings"><span class="long">Shop settings</span><span class="short">Settings</span></button>`;
   }
 
@@ -6082,7 +7890,7 @@ const Board = (() => {
       const nDone = all.filter((l) => done.has(l.id)).length;
       return (
         `<div class="bb-ix-head"><div><h2>${sj.title}</h2><p class="lede">${sj.lede}</p></div>` +
-        `<div class="bb-tools"><button class="chalkbtn" data-act="settings">Shop settings</button><button class="chalkbtn" data-lesson="check">Check my drawing</button><button class="chalkbtn" data-act="print-card">Print the shop card</button><span class="prog">${nDone} of ${all.length} done</span></div></div>` +
+        `<div class="bb-tools">${toolsHtml(sj)}<span class="prog">${nDone} of ${all.length} done</span></div></div>` +
         sj.units
           .map(
             (u) =>
@@ -6090,7 +7898,8 @@ const Board = (() => {
               u.lessons.map((l) => `<li><button class="lesson${done.has(l.id) ? " done" : ""}" data-lesson="${l.id}"><b>${l.title}</b><span>${l.q}</span><em>${l.steps.length} steps${done.has(l.id) ? " · done" : ""}</em></button></li>`).join("") +
               `</ul></section>`
           )
-          .join("")
+          .join("") +
+        (sj.id === "drafting" ? gapIndexHtml() : "")
       );
     }
     return (
@@ -6100,6 +7909,23 @@ const Board = (() => {
   }
 
   const textOf = (v) => (typeof v === "function" ? v() : v || "");
+  function toolsHtml(sj) {
+    if (sj.id === "shop") return `<button class="chalkbtn" data-act="settings">Shop settings</button><button class="chalkbtn" data-lesson="check">Check my drawing</button><button class="chalkbtn" data-act="print-card">Print the shop card</button>`;
+    if (sj.id === "drafting") {
+      const gaps = gapReport();
+      return `<button class="chalkbtn try" data-lesson="d-cmd">Start here</button>` + (gaps.length ? `<button class="chalkbtn" data-act="gaps">${gaps.length} tool${gaps.length === 1 ? "" : "s"} not in BlackCAD yet</button>` : "");
+    }
+    return "";
+  }
+  function gapIndexHtml() {
+    const gaps = gapReport();
+    if (!gaps.length) return `<section class="bb-unit" id="bb-gaplist"><h3>Not in BlackCAD yet<span>Every tool these lessons use is in BlackCAD.</span></h3></section>`;
+    return (
+      `<section class="bb-unit" id="bb-gaplist"><h3>Not in BlackCAD yet<span>Drafting tools the lessons work around. Each flag clears by itself once the command exists.</span></h3><ul class="gaplist">` +
+      gaps.map((g) => `<li><b>${g.name}</b> <code>${g.cmds[0]}</code><span>for ${g.use}</span><em>in ${g.lessons.join(", ")}</em></li>`).join("") +
+      `</ul></section>`
+    );
+  }
   function extraHtml(st) {
     let h = textOf(st.extra);
     if (st.place) {
@@ -6143,9 +7969,11 @@ const Board = (() => {
     }
     const st = LESSON.steps[step];
     textEl.innerHTML =
-      `<p class="kicker">${LESSON.title}</p><h2>${st.t}</h2><p class="lede">${st.p}</p><div id="bb-ex"></div><div class="math" id="bb-math"></div>` +
+      `<p class="kicker">${LESSON.title}</p><h2>${st.t}</h2><p class="lede">${textOf(st.p)}</p><div id="bb-ex"></div><div class="math" id="bb-math"></div>` +
       st.ctl.map(sliderHtml).join("") +
       `<p class="basis" id="bb-basis"></p><div id="bb-extra">${extraHtml(st)}</div>` +
+      `<div id="bb-task">${taskHtml(st)}</div>` +
+      gapsHtml(st.needs) +
       (st.note ? `<p class="note">${st.note}</p>` : "");
     renderMath();
   }
@@ -6201,7 +8029,7 @@ const Board = (() => {
     textEl.scrollTop = 0;
   }
   function openLesson(id, i = 0) {
-    LESSON = LESSONS.find((l) => l.id === id) || BEND;
+    LESSON = LESSONS.find((l) => l.id === id) || CMD;
     view = LESSON.id;
     if (subjectOf(LESSON.id)) subject = subjectOf(LESSON.id).id;
     go(i);
@@ -6323,6 +8151,24 @@ const Board = (() => {
       persist();
       return;
     }
+    if (a === "proj" || a === "sheet") {
+      s[a] = b.dataset.v;
+      renderText();
+      renderFig(true);
+      persist();
+      return;
+    }
+    if (a === "task-setup" || a === "task-check" || a === "task-show") {
+      const st = LESSON.steps[step];
+      if (!st.task) return;
+      if (a === "task-setup") return runSetup(st);
+      if (a === "task-show") return st.task.show();
+      runTaskCheck(st);
+      const t = $("#bb-task");
+      if (t) t.innerHTML = taskHtml(st);
+      return;
+    }
+    if (a === "gaps") return $("#bb-gaplist")?.scrollIntoView({ block: "start", behavior: "smooth" });
     if (a === "wside") {
       s.wside = b.dataset.v;
       renderText();
@@ -6411,7 +8257,7 @@ const Board = (() => {
     open: (where) => {
       if (where === "settings") openSettings();
       else if (LESSONS.some((l) => l.id === where)) openLesson(where, 0);
-      else if (SUBJECTS.some((sj) => sj.id === where)) openTab(where);
+      else if (SHOWN.some((sj) => sj.id === where)) openTab(where);
       setOpen(true);
     },
     close,
@@ -6476,7 +8322,7 @@ boot();
           <button class="big" data-act="new-imperial"><b>Imperial drawing</b><span>Inches</span></button>
           <button class="big" data-act="open"><b>Open a file</b><span>DWG, DXF or .cad</span></button>
           <button class="big" data-act="sample"><b>Sample plate</b><span>P-1042, to try the tools</span></button>
-          <button class="big bb-card" data-board><b>Blackboard</b><span>School for drafting, school for shop. Lessons that work on numbers you can move, your shop's own rules, and a check for your drawing.</span><i><u>Shop</u><u>Drafting</u><u>Machining</u><u>Electronics</u></i></button>
+          <button class="big bb-card" data-board><b>Blackboard</b><span>School for drafting, school for shop. Lessons that work on numbers you can move, your shop's own rules, and a check for your drawing.</span><i><u>Drafting</u><u>Shop</u><u>Electronics</u></i></button>
         </div>
         <p class="hint">Or drop a drawing anywhere on this window.</p>
       </div>
