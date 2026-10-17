@@ -2011,7 +2011,9 @@ function drawCursor(w, h) {
     drawSnapMarker(snap.kind, sx, sy);
   }
   showTip();
-  if (!cursor.inside || cursor.touch) return;
+  if (!cursor.inside) return;
+  // On touch the crosshairs follow the one finger that is down.
+  if (cursor.touch && !(pointers.size === 1 && pointerMode && pointerMode.kind !== "pan")) return;
   const pickBox = !runner?.req || runner.req.type === "select";
   const [cx, cy] = [Math.round(cursor.sx) + 0.5, Math.round(cursor.sy) + 0.5];
   ctx.save();
@@ -2325,6 +2327,7 @@ function onDown(e) {
     }
   }
   pointerMode = { kind: "press", x0: cursor.sx, y0: cursor.sy, x1: cursor.sx, y1: cursor.sy, shift: e.shiftKey, touch: cursor.touch };
+  needsDraw = true;
 }
 
 function onMove(e) {
@@ -2353,9 +2356,9 @@ function onMove(e) {
     m.x1 = cursor.sx;
     m.y1 = cursor.sy;
     if (Math.hypot(m.x1 - m.x0, m.y1 - m.y0) > 6) {
-      // On touch, a drag that starts on empty space pans.
-      if (m.touch && !hoverAt(m.x0, m.y0)) pointerMode = { kind: "pan", x: e.clientX, y: e.clientY };
-      else pointerMode = { ...m, kind: "box" };
+      // One finger draws the selection box, as the mouse does; two
+      // fingers pan and pinch.
+      pointerMode = { ...m, kind: "box" };
     }
   } else if (m?.kind === "box") {
     m.x1 = cursor.sx;
