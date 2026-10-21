@@ -196,7 +196,8 @@ pub extern "C" fn cad_result_len() -> usize {
     RESULT.with(|r| r.borrow().len())
 }
 
-/// The program's name and version, `"CAD 0.5.0"`, in the result.
+/// The program's name and version (`cad_core::PRODUCT_NAME`, a space,
+/// `cad_core::VERSION`), in the result.
 #[unsafe(no_mangle)]
 pub extern "C" fn cad_version() -> i32 {
     finish(Ok(format!("{} {}", cad_core::PRODUCT_NAME, cad_core::VERSION).into_bytes()))
