@@ -1,10 +1,9 @@
-# CAD (working name) — clean-room CAD software with its own `.cad` format and DWG fluency (draft)
+# BlackCAD — clean-room CAD software with its own `.cad` format and DWG fluency (draft)
 
-*The software has no final name yet. Until it does it calls itself CAD,
-kept to this title and one constant in the code (`PRODUCT_NAME`) so it is
-easy to change, and that is the name it writes into DWG files as the
-program that saved them. Elsewhere in these docs **`.cad`** and **CAD**
-mean the file format.*
+*The program's name lives in this title and in one constant in the code
+(`cad_core::PRODUCT_NAME`), so it is easy to change; that is the name it
+writes into DWG files as the program that saved them. Elsewhere in these
+docs **`.cad`** and **CAD** mean the file format.*
 
 A clean-room CAD engine written from scratch in Rust. Drawings are saved
 in the project's own **native `.cad` format** (binary-DXF-style records in
@@ -46,8 +45,10 @@ tools/               compaction_lab.py: format-layout measurements (Python, not 
 
 ## Build
 
-Install Rust from <https://rustup.rs>. Nothing else is downloaded: the
-project has no dependencies. Then, from this folder:
+Install Rust from <https://rustup.rs>: Rust 1.87 or later, since the
+workspace uses the 2024 edition and declares `rust-version = "1.87"`.
+Nothing else is downloaded: the project has no dependencies. Then, from
+this folder:
 
 | Platform | Command | Output |
 |---|---|---|
@@ -322,6 +323,11 @@ and `--example native_bench` for size and speed on 200,000 entities
   Hatch patterns (outlines only), TrueType fonts, angular and ordinate
   dimensions without a block, dimension styles from DWG.
 - Snaps, tracking, ortho and polar (DESIGN.md §9): next.
+
+## Working on it
+
+How changes reach `main` (branches, commits, pull requests, releases) is
+in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Clean-room record
 
