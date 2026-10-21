@@ -1895,7 +1895,12 @@ impl Reader {
             ..Default::default()
         };
         let gs = b.0;
-        let n_paths = b.i(91, 0).max(0) as usize;
+        // The counts come from the file. Every path, vertex, edge, knot and
+        // control point takes at least one group, so none can outnumber
+        // the groups left: bounding them by that keeps a damaged count from
+        // asking for terabytes, and changes nothing in a sound file.
+        let left = |k: usize| gs.len().saturating_sub(k);
+        let n_paths = (b.i(91, 0).max(0) as usize).min(gs.len());
         let start = gs.iter().position(|x| x.code == 91).map(|p| p + 1).unwrap_or(gs.len());
         let mut k = start;
         let next = |k: &mut usize, code: u16| -> Option<&Value> {
@@ -1912,11 +1917,14 @@ impl Reader {
             Vec2::new(x, y)
         };
         for _ in 0..n_paths {
+            if k >= gs.len() {
+                break;
+            }
             let flags = next(&mut k, 92).map(vi).unwrap_or(0) as u32;
             if flags & 2 != 0 {
                 let has_bulge = next(&mut k, 72).map(vi).unwrap_or(0) != 0;
                 let closed = next(&mut k, 73).map(vi).unwrap_or(0) != 0;
-                let n = next(&mut k, 93).map(vi).unwrap_or(0).max(0) as usize;
+                let n = (next(&mut k, 93).map(vi).unwrap_or(0).max(0) as usize).min(left(k));
                 let mut vertices = Vec::with_capacity(n);
                 for _ in 0..n {
                     let p = p2(&mut k, 10);
@@ -1925,7 +1933,7 @@ impl Reader {
                 }
                 h.paths.push(HatchPath::Polyline { flags: flags & !2, closed, vertices });
             } else {
-                let n = next(&mut k, 93).map(vi).unwrap_or(0).max(0) as usize;
+                let n = (next(&mut k, 93).map(vi).unwrap_or(0).max(0) as usize).min(left(k));
                 let mut edges = Vec::with_capacity(n);
                 for _ in 0..n {
                     let t = next(&mut k, 72).map(vi).unwrap_or(1);
@@ -1951,8 +1959,8 @@ impl Reader {
                             let degree = next(&mut k, 94).map(vi).unwrap_or(3) as u32;
                             let rational = next(&mut k, 73).map(vi).unwrap_or(0) != 0;
                             let _periodic = next(&mut k, 74);
-                            let nk = next(&mut k, 95).map(vi).unwrap_or(0).max(0) as usize;
-                            let nc = next(&mut k, 96).map(vi).unwrap_or(0).max(0) as usize;
+                            let nk = (next(&mut k, 95).map(vi).unwrap_or(0).max(0) as usize).min(left(k));
+                            let nc = (next(&mut k, 96).map(vi).unwrap_or(0).max(0) as usize).min(left(k));
                             let knots = (0..nk).map(|_| next(&mut k, 40).map(vf).unwrap_or(0.0)).collect();
                             let mut control_points = Vec::with_capacity(nc);
                             let mut weights = Vec::new();
@@ -2389,5 +2397,96 @@ fn bare_anonymous(name: &str) -> String {
         t.to_string()
     } else {
         name.to_string()
+    }
+}
+
+#[cfg(test)]
+mod hostile_counts {
+    //! Counts in a file are only claims. A HATCH that claims trillions of
+    //! paths, vertices, edges or knots reads as what its groups hold, and
+    //! no allocation follows the claim (one used to abort the process).
+
+    use super::read_bytes;
+    use crate::model::*;
+
+    fn hatch_with(counts: &[(&str, &str)]) -> Vec<u8> {
+        let mut lines = vec!["0", "SECTION", "2", "ENTITIES", "0", "HATCH", "8", "0", "2", "ANSI31", "70", "0"];
+        for (code, value) in counts {
+            lines.push(code);
+            lines.push(value);
+        }
+        lines.extend(["0", "ENDSEC", "0", "EOF"]);
+        let mut s = lines.join("\n");
+        s.push('\n');
+        s.into_bytes()
+    }
+
+    fn hatch(d: &Drawing) -> &Hatch {
+        d.objects
+            .values()
+            .find_map(|o| match &o.kind {
+                ObjectKind::Hatch(h) => Some(h),
+                _ => None,
+            })
+            .expect("a hatch")
+    }
+
+    #[test]
+    fn claimed_polyline_vertices() {
+        let big = "4000000000000";
+        let d = read_bytes(&hatch_with(&[
+            ("91", big),
+            ("92", "2"),
+            ("72", "0"),
+            ("73", "1"),
+            ("93", big),
+            ("10", "0"),
+            ("20", "0"),
+            ("10", "5"),
+            ("20", "0"),
+            ("97", "0"),
+        ]))
+        .unwrap();
+        let h = hatch(&d);
+        assert_eq!(h.paths.len(), 1);
+        match &h.paths[0] {
+            HatchPath::Polyline { vertices, .. } => assert!(vertices.len() <= 10, "{} vertices", vertices.len()),
+            p => panic!("{p:?}"),
+        }
+    }
+
+    #[test]
+    fn claimed_edges_knots_and_control_points() {
+        let big = "4000000000000";
+        let d = read_bytes(&hatch_with(&[
+            ("91", "1"),
+            ("92", "1"),
+            ("93", big),
+            ("72", "4"),
+            ("94", "3"),
+            ("73", "0"),
+            ("74", "0"),
+            ("95", big),
+            ("96", big),
+            ("40", "0"),
+            ("40", "1"),
+            ("10", "0"),
+            ("20", "0"),
+            ("97", "0"),
+        ]))
+        .unwrap();
+        let h = hatch(&d);
+        assert_eq!(h.paths.len(), 1);
+        match &h.paths[0] {
+            HatchPath::Edges { edges, .. } => {
+                assert!(edges.len() <= 14, "{} edges", edges.len());
+                for e in edges {
+                    if let HatchEdge::Spline { knots, control_points, .. } = e {
+                        assert!(knots.len() <= 14 && control_points.len() <= 14);
+                    }
+                }
+            }
+            p => panic!("{p:?}"),
+        }
     }
 }
