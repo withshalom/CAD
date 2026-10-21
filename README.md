@@ -27,8 +27,11 @@ See [Status](#status).
 ## What's here
 
 ```
-crates/cad-core/     the core library (DWG reader, database, drafting standards, units,
-                     font, rendering, raster and vector output)
+crates/cad-model/    the drawing database, geometry and text code pages      (MIT OR Apache-2.0)
+crates/cad-dwg/      the DWG reader and writer                                (MIT OR Apache-2.0)
+crates/cad-dxf/      the DXF reader and writer                                (MIT OR Apache-2.0)
+crates/cad-core/     the core library on those three: native .cad format, drafting standards,
+                     editing commands, units, font, rendering, raster and vector output
 crates/cad-ffi/      bridge to the platform apps: the session (open drawings, undo, commands),
                      WebAssembly entry points for the browser, JNI entry points for Android
 apps/web/            the workspace GUI as a browser app (PWA), installable on desktop and Android
@@ -323,6 +326,15 @@ and `--example native_bench` for size and speed on 200,000 entities
   Hatch patterns (outlines only), TrueType fonts, angular and ordinate
   dimensions without a block, dimension styles from DWG.
 - Snaps, tracking, ortho and polar (DESIGN.md §9): next.
+
+## License
+
+BlackCAD is proprietary (see [`LICENSE`](LICENSE)), except the drawing
+database and the DWG and DXF readers and writers: the crates
+[`cad-model`](crates/cad-model), [`cad-dwg`](crates/cad-dwg) and
+[`cad-dxf`](crates/cad-dxf) are licensed under either of the MIT License
+or the Apache License, Version 2.0, at your option. Other programs can use
+them to read and write DWG and DXF without the rest of BlackCAD.
 
 ## Working on it
 
