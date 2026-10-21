@@ -3,6 +3,7 @@ name = "cad-cli"
 description = "Command-line test build for the CAD core"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
 

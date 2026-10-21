@@ -1,10 +1,11 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = ["crates/cad-core", "crates/cad-ffi", "apps/cad-cli", "xtask"]
 
 [workspace.package]
 version = "0.6.0"
-edition = "2021"
+edition = "2024"
+rust-version = "1.87"
 license = "LicenseRef-Proprietary"
 publish = false
 

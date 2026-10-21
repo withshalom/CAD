@@ -3,6 +3,7 @@ name = "xtask"
 description = "Build helpers run as `cargo xtask` (Android native library)"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
 
