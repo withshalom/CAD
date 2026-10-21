@@ -149,14 +149,14 @@ pub fn drag(d: &mut Drawing, h: Handle, kind: GripKind, from: Vec2, to: Vec2) ->
     match (&mut k, kind) {
         (ObjectKind::Circle(c), GripKind::Radius) => {
             let r = to.distance(c.center.xy());
-            if !(r > 0.0) {
+            if r.is_nan() || r <= 0.0 {
                 return Err("the radius must be more than zero".into());
             }
             c.radius = r;
         }
         (ObjectKind::Arc(a), GripKind::Radius) => {
             let r = to.distance(a.center.xy());
-            if !(r > 0.0) {
+            if r.is_nan() || r <= 0.0 {
                 return Err("the radius must be more than zero".into());
             }
             a.radius = r;

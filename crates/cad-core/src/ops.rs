@@ -545,17 +545,17 @@ pub fn leader(d: &mut Drawing, block: Handle, points: &[Vec2], text: &str, heigh
 
 /// A hatch in `block` of the region around `p`, bounded by the visible
 /// outlines there, with its islands (HATCH, pick points).
-pub fn hatch_at(d: &mut Drawing, block: Handle, p: Vec2, pattern: &str, scale: f64, angle: f64, double: bool) -> R<Handle> {
+pub fn hatch_at(d: &mut Drawing, block: Handle, p: Vec2, pattern: boundary::HatchPattern<'_>) -> R<Handle> {
     let region = boundary::region_at(d, block, p)?;
     let mut loops = vec![region.outer];
     loops.extend(region.islands);
-    let h = boundary::hatch(&loops, true, pattern, scale, angle, double, Unit::of(d), Some(p))?;
+    let h = boundary::hatch(&loops, true, pattern, Unit::of(d), Some(p))?;
     d.add_entity_in(block, Handle::NULL, ObjectKind::Hatch(h)).map_err(err)
 }
 
 /// A hatch of closed objects: circles, closed polylines, ellipses,
 /// splines (HATCH, select objects). Objects inside others become islands.
-pub fn hatch_objects(d: &mut Drawing, hs: &[Handle], pattern: &str, scale: f64, angle: f64, double: bool) -> R<Handle> {
+pub fn hatch_objects(d: &mut Drawing, hs: &[Handle], pattern: boundary::HatchPattern<'_>) -> R<Handle> {
     let first = *hs.first().ok_or("select the closed objects to hatch")?;
     let block = block_of(d, first)?;
     let mut loops = Vec::new();
@@ -569,7 +569,7 @@ pub fn hatch_objects(d: &mut Drawing, hs: &[Handle], pattern: &str, scale: f64, 
         (0..n).map(|i| pts[i].cross(pts[(i + 1) % n])).sum::<f64>().abs() / 2.0
     };
     loops.sort_by(|a, b| area(b).total_cmp(&area(a)));
-    let h = boundary::hatch(&loops, false, pattern, scale, angle, double, Unit::of(d), None)?;
+    let h = boundary::hatch(&loops, false, pattern, Unit::of(d), None)?;
     d.add_entity_in(block, Handle::NULL, ObjectKind::Hatch(h)).map_err(err)
 }
 
@@ -756,10 +756,11 @@ mod tests {
         add(&mut d, ObjectKind::LwPolyline(LwPolyline::new(vec![Vec2::ZERO, Vec2::new(100.0, 0.0), Vec2::new(100.0, 50.0), Vec2::new(0.0, 50.0)], true)));
         let hole = add(&mut d, ObjectKind::Circle(Circle::new(Vec2::new(30.0, 25.0), 10.0)));
         let ms = d.model_space();
-        let h = hatch_at(&mut d, ms, Vec2::new(70.0, 25.0), "ANSI31", 1.0, 0.0, false).unwrap();
+        let pattern = |name, scale, angle, double| boundary::HatchPattern { name, scale, angle, double };
+        let h = hatch_at(&mut d, ms, Vec2::new(70.0, 25.0), pattern("ANSI31", 1.0, 0.0, false)).unwrap();
         let ObjectKind::Hatch(hh) = &d.get(h).unwrap().kind else { panic!() };
         assert_eq!(hh.paths.len(), 2);
-        let h2 = hatch_objects(&mut d, &[hole], "SOLID", 1.0, 0.0, false).unwrap();
+        let h2 = hatch_objects(&mut d, &[hole], pattern("SOLID", 1.0, 0.0, false)).unwrap();
         assert!(matches!(&d.get(h2).unwrap().kind, ObjectKind::Hatch(x) if x.solid_fill));
         let (l, t) = leader(&mut d, ms, &[Vec2::new(30.0, 35.0), Vec2::new(50.0, 60.0)], "SEE NOTE 1", 3.5, Handle::NULL).unwrap();
         let ObjectKind::Leader(ld) = &d.get(l).unwrap().kind else { panic!() };

@@ -49,6 +49,7 @@
 //! (the grips of selected objects, [`cad_core::grips`]).
 
 use crate::session::{flag, nums, parse_handle, parse_num};
+use cad_core::boundary::HatchPattern;
 use cad_core::export::display::{json_escape, json_num};
 use cad_core::geom::{BBox, Vec2};
 use cad_core::model::*;
@@ -135,7 +136,7 @@ fn layer(d: &Drawing, s: &str) -> R<Handle> {
 
 /// Run a command this module knows; `None` for one it does not.
 pub(crate) fn edit(d: &mut Drawing, space: Handle, cmd: &str, args: &[&str]) -> Option<R<Vec<Handle>>> {
-    Some(run(d, space, cmd, args).transpose()?)
+    run(d, space, cmd, args).transpose()
 }
 
 fn run(d: &mut Drawing, space: Handle, cmd: &str, args: &[&str]) -> R<Option<Vec<Handle>>> {
@@ -163,7 +164,7 @@ fn run(d: &mut Drawing, space: Handle, cmd: &str, args: &[&str]) -> R<Option<Vec
         }
         "scale" => {
             let (v, hs) = take(3)?;
-            if !(v[2] > 0.0) {
+            if v[2].is_nan() || v[2] <= 0.0 {
                 return Err("the scale factor must be more than zero".into());
             }
             ops::transform_entities(d, &hs, &Affine::scale(pt(&v, 0), v[2]))?;
@@ -354,15 +355,14 @@ fn run(d: &mut Drawing, space: Handle, cmd: &str, args: &[&str]) -> R<Option<Vec
             if args.len() < 5 {
                 return Err(format!("{cmd} takes the pattern, scale, angle and double, then {}", if cmd == "hatch" { "a point" } else { "objects" }));
             }
-            let pattern = args[0];
             let v = nums(&args[1..3], 2)?;
-            let double = flag(args[3])?;
+            let pattern = HatchPattern { name: args[0], scale: v[0], angle: v[1].to_radians(), double: flag(args[3])? };
             if cmd == "hatch" {
                 let p = nums(&args[4..], 2)?;
-                vec![ops::hatch_at(d, space, pt(&p, 0), pattern, v[0], v[1].to_radians(), double)?]
+                vec![ops::hatch_at(d, space, pt(&p, 0), pattern)?]
             } else {
                 let hs = handle_list(&args[4..])?;
-                vec![ops::hatch_objects(d, &hs, pattern, v[0], v[1].to_radians(), double)?]
+                vec![ops::hatch_objects(d, &hs, pattern)?]
             }
         }
         "dim-angular" | "dim-angular-lines" | "dim-angular-arc" => {
@@ -1081,7 +1081,7 @@ fn set_insert(d: &mut Drawing, h: Handle, field: &str, raw: &str) -> R<()> {
         "x" => Affine::translate(Vec2::new(x - at.x, 0.0)),
         "y" => Affine::translate(Vec2::new(0.0, x - at.y)),
         "scale" => {
-            if !(x > 0.0) || i.scale.x == 0.0 {
+            if x.is_nan() || x <= 0.0 || i.scale.x == 0.0 {
                 return Err("the scale must be more than zero".into());
             }
             Affine::scale(at, x / i.scale.x.abs())

@@ -89,7 +89,7 @@ pub fn insertable(d: &Drawing) -> Vec<(Handle, &BlockHeader)> {
             _ => None,
         })
         .collect();
-    v.sort_by(|a, b| a.1.name.to_ascii_lowercase().cmp(&b.1.name.to_ascii_lowercase()));
+    v.sort_by_key(|(_, b)| b.name.to_ascii_lowercase());
     v
 }
 

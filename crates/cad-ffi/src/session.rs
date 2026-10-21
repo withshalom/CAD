@@ -732,7 +732,7 @@ fn query(doc: &mut Doc, cmd: &str, args: &[&str]) -> Result<String, String> {
         "check-holes" => {
             use cad_core::check::{check_holes, Limits};
             let v = nums(args, 3)?;
-            if v.iter().any(|x| !(*x >= 0.0)) {
+            if v.iter().any(|x| x.is_nan() || *x < 0.0) {
                 return Err("the limits cannot be negative".into());
             }
             let limits = Limits { min_diameter: v[0], min_web: v[1], hole_to_bend: v[2] };
@@ -1756,7 +1756,7 @@ mod tests {
         let id = s.new_drawing(false).unwrap();
         let num = |json: &str, key: &str| -> f64 {
             let at = json.find(&format!("\"{key}\":")).unwrap_or_else(|| panic!("{key} in {json}")) + key.len() + 3;
-            let end = json[at..].find(|c: char| c == ',' || c == '}' || c == ']').unwrap() + at;
+            let end = json[at..].find([',', '}', ']']).unwrap() + at;
             json[at..end].parse().unwrap()
         };
         // ARC by three points, picked clockwise.
