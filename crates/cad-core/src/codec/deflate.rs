@@ -260,7 +260,7 @@ fn code_lengths(freq: &[u32], limit: u32) -> Vec<u8> {
     let mut leaves: Vec<(u64, usize)> = f
         .iter()
         .enumerate()
-        .filter(|(_, &x)| x > 0)
+        .filter(|&(_, &x)| x > 0)
         .map(|(s, &x)| (x as u64, s))
         .collect();
     leaves.sort();

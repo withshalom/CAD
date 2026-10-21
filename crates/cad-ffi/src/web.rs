@@ -141,14 +141,14 @@ unsafe fn text(ptr: *const u8, len: usize) -> String {
     String::from_utf8_lossy(unsafe { input(ptr, len) }).into_owned()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_abi_version() -> i32 {
     crate::ABI_VERSION
 }
 
 /// `len` bytes for the page to write into; give them back with
 /// `cad_free`. Null when `len` is 0 or too large.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_alloc(len: usize) -> *mut u8 {
     hook();
     let Ok(layout) = std::alloc::Layout::array::<u8>(len) else {
@@ -167,7 +167,7 @@ pub extern "C" fn cad_alloc(len: usize) -> *mut u8 {
 ///
 /// `ptr` and `len` must be exactly what `cad_alloc` returned and was
 /// asked for, given back once.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn cad_free(ptr: *mut u8, len: usize) {
     if ptr.is_null() || len == 0 {
         return;
@@ -181,29 +181,29 @@ pub unsafe extern "C" fn cad_free(ptr: *mut u8, len: usize) {
 
 /// Bytes the core holds now (its allocations), for the page's memory
 /// warning.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_heap_bytes() -> usize {
     heap_bytes()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_result_ptr() -> *const u8 {
     RESULT.with(|r| r.borrow().as_ptr())
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_result_len() -> usize {
     RESULT.with(|r| r.borrow().len())
 }
 
 /// The program's name and version, `"CAD 0.5.0"`, in the result.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_version() -> i32 {
     finish(Ok(format!("{} {}", cad_core::PRODUCT_NAME, cad_core::VERSION).into_bytes()))
 }
 
 /// The message of the panic that stopped the module, in the result.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_panic_message() -> i32 {
     let m = PANIC.with(|p| p.borrow().clone());
     finish(Ok(m.into_bytes()))
@@ -214,7 +214,7 @@ pub extern "C" fn cad_panic_message() -> i32 {
 /// # Safety
 ///
 /// `ptr` and `len` describe bytes as for [`input`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn cad_open(ptr: *const u8, len: usize) -> u32 {
     hook();
     // SAFETY: from this function's contract.
@@ -238,7 +238,7 @@ fn id_or_message(r: Result<u32, String>) -> u32 {
 
 /// Start a drawing: imperial (inches) when `imperial` is not 0,
 /// otherwise metric (millimetres). Its id, or 0 when memory is short.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_new(imperial: i32) -> u32 {
     hook();
     id_or_message(SESSION.with(|s| s.borrow_mut().new_drawing(imperial != 0)))
@@ -246,26 +246,26 @@ pub extern "C" fn cad_new(imperial: i32) -> u32 {
 
 /// Open the sample plate (the drawing in the workspace mockups). Its id,
 /// or 0 when memory is short.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_sample() -> u32 {
     hook();
     id_or_message(SESSION.with(|s| s.borrow_mut().sample()))
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_close(id: u32) {
     SESSION.with(|s| s.borrow_mut().close(id));
 }
 
 /// The drawing's units, layers, history and summary as JSON.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_info(id: u32) -> i32 {
     hook();
     finish(SESSION.with(|s| s.borrow_mut().info(id)).map(String::into_bytes))
 }
 
 /// Model space as a display list.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_display(id: u32) -> i32 {
     hook();
     finish(SESSION.with(|s| s.borrow_mut().display(id)))
@@ -274,7 +274,7 @@ pub extern "C" fn cad_display(id: u32) -> i32 {
 /// What changed in the display since the page last read it: a patch of
 /// the entities that changed, or the whole display list (see
 /// `Session::display_changes`).
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_display_changes(id: u32) -> i32 {
     hook();
     finish(SESSION.with(|s| s.borrow_mut().display_changes(id)))
@@ -285,7 +285,7 @@ pub extern "C" fn cad_display_changes(id: u32) -> i32 {
 /// # Safety
 ///
 /// `ptr` and `len` describe the UTF-8 command as for [`input`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn cad_exec(id: u32, ptr: *const u8, len: usize) -> i32 {
     hook();
     // SAFETY: from this function's contract.
@@ -300,7 +300,7 @@ pub unsafe extern "C" fn cad_exec(id: u32, ptr: *const u8, len: usize) -> i32 {
 /// # Safety
 ///
 /// Both strings are described as for [`input`].
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn cad_save(
     id: u32,
     format_ptr: *const u8,
@@ -327,7 +327,7 @@ thread_local! {
 }
 
 /// The notes from the last `cad_save`, one per line, in the result.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn cad_save_notes() -> i32 {
     finish(Ok(NOTES.with(|n| n.borrow().clone()).into_bytes()))
 }

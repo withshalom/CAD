@@ -3,6 +3,7 @@ name = "cad-core"
 description = "Clean-room CAD core: native .cad format, DWG reader, drawing database, geometry and exporters"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
 

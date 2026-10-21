@@ -3,6 +3,7 @@ name = "cad-ffi"
 description = "Bridge between the CAD core and the platform apps (JNI entry points for Android)"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
 
