@@ -1,0 +1,10 @@
+/target
+/dist
+# Real drawings stay out of the repository unless the owner clears them
+# (TEST-PLAN.md): only the folders listed below are committed.
+/corpus/*
+!/corpus/mosaiciron-mi201/
+*.svg
+*.dxf
+!/corpus/**/*.dxf
+!/apps/web/**/*.svg

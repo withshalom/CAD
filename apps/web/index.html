@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#121519">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="CAD: DWG-native drafting.">
+<title>CAD</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<div id="app" class="no-drawing">
+
+  <!-- Desktop top bar (DESIGN.md §10) -->
+  <header id="top">
+    <button id="mark" class="mark" title="Menu" aria-label="Menu" aria-haspopup="menu"></button>
+    <nav id="tabs" class="tabs" aria-label="Open drawings"></nav>
+    <button id="new-btn" class="iconbtn" title="New drawing (Ctrl+N)" aria-label="New drawing"></button>
+    <span class="grow"></span>
+    <button id="install-btn" class="install" hidden>Install app</button>
+    <button id="undo-btn" class="iconbtn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled></button>
+    <button id="redo-btn" class="iconbtn" title="Redo (Ctrl+Y)" aria-label="Redo" disabled></button>
+    <span id="saved" class="saved"></span>
+    <button id="who" class="who" title="Who has this drawing open"><span class="av" id="who-av">·</span><span id="who-text">This browser</span></button>
+  </header>
+
+  <!-- Phone top bar and aid chips (DESIGN.md §11) -->
+  <header id="pbar">
+    <button id="pmenu" class="iconbtn" aria-label="Menu"></button>
+    <div class="ttl"><b id="ptitle">CAD</b><span id="psub"></span></div>
+    <button id="pundo" class="iconbtn" aria-label="Undo" disabled></button>
+    <button id="predo" class="iconbtn" aria-label="Redo" disabled></button>
+    <button id="players" class="iconbtn" aria-label="Layers"></button>
+  </header>
+  <div id="chips"><div id="chip-aids"></div><span id="ppos" class="pos num"></span></div>
+
+  <aside id="rail" aria-label="Tools"></aside>
+
+  <main id="stage">
+    <canvas id="canvas" tabindex="0" aria-label="Drawing"></canvas>
+    <div class="chip crumb" id="crumb"></div>
+    <div class="chip views" id="views"></div>
+    <div id="tip" class="tip" hidden><span class="snaptag" id="snaptag" hidden></span><span class="dyn" id="dyn"></span></div>
+    <div id="drop-hint" hidden><div>Drop a DWG, DXF or .cad file to open it</div></div>
+    <section id="welcome">
+      <div class="welcome-card">
+        <div class="wmark" id="wmark"></div>
+        <h1>CAD</h1>
+        <p class="sub num" id="welcome-version">Loading the core…</p>
+        <div class="welcome-actions">
+          <button class="big" data-act="new-metric"><b>New drawing</b><span>Metric, mm</span></button>
+          <button class="big" data-act="new-imperial"><b>New drawing</b><span>Imperial, inches</span></button>
+          <button class="big" data-act="open"><b>Open…</b><span>DWG, DXF or .cad</span></button>
+          <button class="big" data-act="sample"><b>Sample</b><span>P-1042 plate</span></button>
+        </div>
+        <p class="hint">Or drop a drawing anywhere on this window.</p>
+      </div>
+    </section>
+  </main>
+
+  <aside id="side" aria-label="Properties, layers and drawing">
+    <div class="side-grab"></div>
+    <section class="sec" id="sec-props">
+      <div class="sech"><h2>Properties</h2></div>
+      <div id="props"></div>
+    </section>
+    <section class="sec" id="sec-layers">
+      <div class="sech"><h2>Layers</h2><button class="iconbtn sm" id="layer-add" title="New layer" aria-label="New layer"></button></div>
+      <div id="layers"></div>
+    </section>
+    <section class="sec" id="sec-drawing">
+      <div class="sech"><h2>Drawing</h2></div>
+      <div id="drawing"></div>
+    </section>
+  </aside>
+
+  <section id="cmd">
+    <div id="history" aria-live="polite"></div>
+    <div class="in">
+      <span id="prompt"></span>
+      <input id="cmd-input" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Command line">
+      <ul id="suggest" hidden></ul>
+    </div>
+  </section>
+
+  <footer id="stat">
+    <span id="coords" class="coords num">0, 0</span>
+    <div id="aids"></div>
+    <span class="grow"></span>
+    <button class="st on">Model</button>
+    <button class="st" disabled title="Layouts are not built yet">Sheet 1</button>
+  </footer>
+
+  <div id="sheet">
+    <div class="handle"></div>
+    <div id="sheet-tools" class="tools"></div>
+    <div id="sheet-obj"></div>
+  </div>
+</div>
+
+<div id="menu" role="menu" hidden></div>
+<div id="numpad" hidden></div>
+<div id="toast" role="status" hidden></div>
+<input type="file" id="file-input" accept=".dwg,.dxf,.cad" hidden>
+</body>
+</html>

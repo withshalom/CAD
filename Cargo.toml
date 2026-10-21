@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["crates/cad-core", "crates/cad-ffi"]
+
+[workspace.package]
+version = "0.6.0"
+edition = "2021"
+license = "LicenseRef-Proprietary"
+publish = false
+
+# No third-party crates anywhere in this workspace. Everything is written
+# from scratch against the Rust standard library only. See docs/PROVENANCE.md.
+[workspace.dependencies]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

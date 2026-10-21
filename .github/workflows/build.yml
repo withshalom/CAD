@@ -1,0 +1,118 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu 22.04 keeps the Linux binary compatible with glibc 2.35+.
+          - os: ubuntu-22.04
+            artifact: cad-linux-x86_64
+            bin: target/release/cad
+          - os: windows-latest
+            artifact: cad-windows-x86_64
+            bin: target/release/cad.exe
+          - os: macos-latest
+            artifact: cad-macos-arm64
+            bin: target/release/cad
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy
+          rustup default stable
+      - name: Lint
+        run: cargo clippy --all-targets
+      - name: Test
+        run: cargo test --release
+      - name: Build
+        run: cargo build --release
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.bin }}
+
+  android:
+    # The Android test viewer (apps/android) as a debug APK. GitHub's Ubuntu
+    # image comes with the Android SDK, several NDKs, JDK 17 and Rust; this
+    # job adds Rust's Android targets and a pinned Gradle.
+    runs-on: ubuntu-24.04
+    env:
+      GRADLE_VERSION: "9.6.1"
+      GRADLE_SHA256: 9c0f7faeeb306cb14e4279a3e084ca6b596894089a0638e68a07c945a32c9e14
+      APK: apps/android/app/build/outputs/apk/debug/app-debug.apk
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+      - name: Native library
+        # The newest NDK on the image rather than its default one.
+        run: cargo xtask android --abi all ${ANDROID_NDK_LATEST_HOME:+--ndk "$ANDROID_NDK_LATEST_HOME"}
+      - name: Gradle
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/gradle.zip" \
+            "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip"
+          echo "$GRADLE_SHA256  $RUNNER_TEMP/gradle.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-$GRADLE_VERSION/bin" >> "$GITHUB_PATH"
+      - name: APK
+        run: gradle --no-daemon -p apps/android assembleDebug
+      - uses: actions/upload-artifact@v6
+        with:
+          name: cad-viewer-debug-apk
+          path: ${{ env.APK }}
+      - name: Check the APK
+        # Native libraries aligned for 16 KB pages, and no code but the
+        # app's own: no third-party libraries slipped in.
+        run: |
+          bt="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          unzip -l "$APK"
+          "$bt/zipalign" -c -P 16 4 "$APK"
+          classes="$("$bt/dexdump" "$APK" | grep "Class descriptor" | sed "s/.*'\(.*\)'.*/\1/" | sort -u)"
+          echo "$classes"
+          echo "$classes" | grep -qx "Lcom/withshalom/cad/MainActivity;" \
+            || { echo "dexdump output not understood"; exit 1; }
+          if echo "$classes" | grep -v "^Lcom/withshalom/cad/"; then
+            echo "classes from outside the app (listed above)"
+            exit 1
+          fi
+
+  web:
+    # The browser workbench (apps/web): the core built for WebAssembly and
+    # the app put together in dist/web/. Uploaded as an artifact on every
+    # run; published to GitHub Pages from main when the repository variable
+    # PUBLISH_PAGES is "true" (Settings → Pages → Source: GitHub Actions).
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add wasm32-unknown-unknown
+      - name: Build
+        run: cargo xtask web
+      - uses: actions/upload-artifact@v6
+        with:
+          name: cad-web
+          path: dist/web
+      - uses: actions/upload-pages-artifact@v4
+        if: github.ref == 'refs/heads/main' && vars.PUBLISH_PAGES == 'true'
+        with:
+          path: dist/web
+      - uses: actions/deploy-pages@v4
+        if: github.ref == 'refs/heads/main' && vars.PUBLISH_PAGES == 'true'
