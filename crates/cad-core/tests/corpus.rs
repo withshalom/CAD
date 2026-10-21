@@ -473,3 +473,23 @@ fn dxf_reads_back_into_the_drawing_it_came_from() {
     assert!(failures.is_empty(), "\n{}", failures.join("\n"));
 }
 
+/// The MI-201 files the tests here and in `dwg::write::tests` read. The
+/// corpus is part of the repository, and those tests skip what they cannot
+/// find, so without this check a checkout that lost the corpus would pass
+/// them all without checking anything.
+#[test]
+fn the_corpus_is_present() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/mosaiciron-mi201");
+    let mut want = vec![
+        "mi201-r12.dxf".to_string(),
+        "mi201-r14.dwg".to_string(),
+        "mi201-r2018-from-ascii-dxf.dwg".to_string(),
+        "mi201-r2018-from-binary-dxf.dwg".to_string(),
+    ];
+    for v in ["2000", "2004", "2007", "2010", "2013", "2018"] {
+        want.push(format!("mi201-r{v}.dwg"));
+        want.push(format!("mi201-r{v}.dxf"));
+    }
+    let missing: Vec<&String> = want.iter().filter(|n| !dir.join(n).is_file()).collect();
+    assert!(missing.is_empty(), "missing from {}: {missing:?}", dir.display());
+}
