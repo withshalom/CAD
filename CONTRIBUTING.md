@@ -27,7 +27,8 @@ in [`docs/PROVENANCE.md`](docs/PROVENANCE.md) and come first.
   tests pass at every commit, so `git bisect` and reverting work.
 - **Subject:** `area: what changed`, in the imperative, under 72
   characters (`fix: refuse hatch boundaries with no area`). Areas in use:
-  `build`, `fix`, `feat`, `test`, `docs`, `chore`, `release`.
+  `build`, `ci`, `fix`, `feat`, `test`, `docs`, `chore`, `license`,
+  `release`.
 - **Body:** why the change was needed, what it does that the diff does
   not show, and how it was checked.
 - **Mechanical changes stand alone:** reformatting, renames and moved
@@ -54,6 +55,12 @@ cargo test --release
 
 `crates/cad-ffi/src/web.rs` compiles only for WebAssembly; CI's web job
 lints and builds it.
+
+The open crates (`cad-model`, `cad-dwg`, `cad-dxf`) take nothing from the
+rest of the workspace, and outside their tests they deny the calls that
+can panic (`unwrap`, `expect`, `panic!`, `unreachable!`…): other programs
+read untrusted files with them. Counts read from a file are claims, never
+the size of an allocation by themselves.
 
 ## Releases
 
