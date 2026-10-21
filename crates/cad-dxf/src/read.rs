@@ -587,7 +587,11 @@ impl Reader {
         }
         if !self.skipped.is_empty() {
             let list: Vec<String> = self.skipped.iter().map(|(t, n)| format!("{t} ×{n}")).collect();
-            self.notes.push(format!("left out (not held by the model): {}", list.join(", ")));
+            // A warning: the drawing lacks what the file held.
+            self.d.diagnostics.push(Diagnostic {
+                severity: Severity::Warning,
+                message: format!("left out (not held by the model): {}", list.join(", ")),
+            });
         }
         for n in std::mem::take(&mut self.notes) {
             self.d.diagnostics.push(Diagnostic {

@@ -461,7 +461,7 @@ fn diagnostic_files() {
         "AcDb:SummaryInfo", "AcDb:RevHistory", "AcDb:AcDbObjects", "AcDb:ObjFreeSpace",
         "AcDb:Template", "AcDb:Handles", "AcDb:Classes", "AcDb:AuxHeader", "AcDb:Header",
     ];
-    let (ours, _) = super::stream_sections(&d, &super::WriteOptions::default()).unwrap();
+    let (ours, _, _) = super::stream_sections(&d, &super::WriteOptions::default()).unwrap();
     let ours_named = |n: &str| ours.iter().find(|s| s.name == n).unwrap();
     let replace = |mut v: Vec<Section>, names: &[&'static str]| {
         for s in &mut v {
@@ -945,4 +945,21 @@ fn probe_ownership() {
         let xdic = o.xdictionary.0;
         println!("children {:X} {} xdic {:X}: {}", o.handle.0, o.type_name, xdic, kids.iter().map(|h| format!("{h:X}")).collect::<Vec<_>>().join(" "));
     }
+}
+
+/// What the writer leaves out is counted by type: nothing for a drawing
+/// read from a 2018 file, the objects kept only as older records for one
+/// read from a 2004 file.
+#[test]
+fn left_out_objects_are_counted() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/mosaiciron-mi201");
+    let (Ok(r2018), Ok(r2004)) = (std::fs::read(dir.join("mi201-r2018.dwg")), std::fs::read(dir.join("mi201-r2004.dwg"))) else {
+        return;
+    };
+    let out = super::to_bytes(&super::super::read_bytes(&r2018).unwrap()).unwrap();
+    assert!(out.left_out.is_empty() && out.notes.is_empty(), "{:?}", out.left_out);
+    let out = super::to_bytes(&super::super::read_bytes(&r2004).unwrap()).unwrap();
+    assert_eq!(out.left_out.values().sum::<usize>(), 67, "{:?}", out.left_out);
+    assert_eq!(out.left_out.get("MATERIAL"), Some(&3), "{:?}", out.left_out);
+    assert_eq!(out.notes.len(), 68, "a count, then one note per object");
 }
