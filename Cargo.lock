@@ -3,6 +3,13 @@
 version = 4
 
 [[package]]
+name = "cad-cli"
+version = "0.6.0"
+dependencies = [
+ "cad-core",
+]
+
+[[package]]
 name = "cad-core"
 version = "0.6.0"
 
@@ -12,3 +19,7 @@ version = "0.6.0"
 dependencies = [
  "cad-core",
 ]
+
+[[package]]
+name = "xtask"
+version = "0.6.0"

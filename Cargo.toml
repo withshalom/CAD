@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/cad-core", "crates/cad-ffi"]
+members = ["crates/cad-core", "crates/cad-ffi", "apps/cad-cli", "xtask"]
 
 [workspace.package]
 version = "0.6.0"
