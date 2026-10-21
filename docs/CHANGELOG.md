@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.7.0 (2026-10-21)
+Rust 2024. No change to what the program reads, writes or draws: built
+from the same sources under the 2021 and the 2024 edition, the `cad` binary
+writes byte-identical SVG, PNG, DXF and DWG files for every corpus drawing.
+The `.cad` format stays at 2.4.
+
+Build:
+- The workspace uses the 2024 edition, resolver 3 and `rust-version = "1.87"`
+  (the newest standard-library API in use is from 1.87).
+- `apps/cad-cli` and `xtask` are workspace members again; 0.6.0 had lost them,
+  so `cargo xtask` and the `cad` binary did not build.
+- The WebAssembly exports are marked `#[unsafe(no_mangle)]`.
+- CI denies clippy warnings, checks the declared minimum Rust version, and
+  lints the WebAssembly build of cad-ffi.
+
+CI (its first runs on GitHub Actions):
+- Files are checked out exactly as committed on every platform
+  (`.gitattributes`): Windows had converted line endings, and its tests
+  failed on files they compare byte for byte.
+- The APK check allows what D8 adds to the APK (stubs of platform classes,
+  android.* and dalvik.*, and its desugaring helpers); any other code from
+  outside the app still fails it.
+- A failing step shows the last 6 KB of its output as an annotation.
+
+Code:
+- clippy's 13 warnings fixed. API change: `boundary::hatch`,
+  `ops::hatch_at` and `ops::hatch_objects` take the pattern as one
+  `boundary::HatchPattern` (name, scale, angle, double).
+
+Tests:
+- `small_sections_follow_autocads` expected the product name CAD; it now
+  reads `PRODUCT_NAME`. It had been passing only where the corpus was missing.
+- New `the_corpus_is_present`: the corpus tests no longer pass silently
+  without their files.
+- AutoCAD's binary DXF of MI-201 is not in the corpus (see its README).
+- 1 + 249 + 6 + 26 + 1 + 12 tests and 1 doc-test pass (cad-cli, cad-core,
+  corpus, cad-ffi, damaged inputs, xtask). The WebAssembly module is built
+  by CI only.
+
+Docs:
+- README names the program BlackCAD; new CONTRIBUTING.md.
+
 ## 0.6.0 (2026-10-15)
 Engine (cad-core / cad-ffi):
 - All drafting tools taught by the lessons now live in the core: modify, arrays, blocks, units and scale, views (XLINE/RAY), sections and hatch, dimension commands, dimension rules, layers (plot flag), layouts and the sheet builder.
