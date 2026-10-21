@@ -494,6 +494,10 @@ impl<'a> Cur<'a> {
     fn peek(&self) -> Option<u16> {
         self.items.get(self.at).map(|x| x.0)
     }
+    /// Groups not read yet.
+    fn left(&self) -> usize {
+        self.items.len().saturating_sub(self.at)
+    }
     fn take(&mut self, code: u16) -> Result<&'a XrValue> {
         match self.items.get(self.at) {
             Some((c, v)) if *c == code => {
@@ -619,7 +623,9 @@ fn encode_layout(w: &mut ObjW, g: &Groups, l: &Layout) -> Result<()> {
                 }
             }
             G::Rep(cc, _, ic, id) => {
-                let n = c.int(*cc)?.max(0) as usize;
+                // Each item is one group: a count past the groups left is
+                // damage, and must not size the allocation.
+                let n = (c.int(*cc)?.max(0) as usize).min(c.left());
                 let mut list = Vec::with_capacity(n);
                 for _ in 0..n {
                     list.push(match id {
@@ -1129,4 +1135,46 @@ fn encode_tablestyle(w: &mut ObjW, g: &Groups, d: &Lookup) -> Result<()> {
         w.tv(name);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A style object's groups as DXF gives them, every value plain, and
+    /// the repeated list claiming `claimed` items while holding two.
+    fn groups(kind: &str, claimed: i32) -> Groups {
+        let l = layout(kind).expect("a laid-out kind");
+        let mut items = Vec::new();
+        for f in &l.dxf {
+            match f {
+                G::M(name) => items.push((100, XrValue::Str(name.to_string()))),
+                G::V(code, D::Tv) => items.push((*code, XrValue::Str(String::new()))),
+                G::V(code, D::Bd) => items.push((*code, XrValue::Real(1.0))),
+                G::V(code, D::H(_)) => items.push((*code, XrValue::Handle(Handle::NULL))),
+                G::V(code, D::Cmc) => items.push((*code, XrValue::Int16(256))),
+                G::V(code, _) => items.push((*code, XrValue::Int32(0))),
+                G::X(code, v) => items.push((*code, XrValue::Int16(*v as i16))),
+                G::OptH(_) => {}
+                G::Rep(count, _, item, _) => {
+                    items.push((*count, XrValue::Int32(claimed)));
+                    items.push((*item, XrValue::Real(0.5)));
+                    items.push((*item, XrValue::Real(0.25)));
+                }
+            }
+        }
+        Groups { kind: kind.into(), items }
+    }
+
+    #[test]
+    fn a_claimed_count_does_not_size_the_list() {
+        let l = layout("ACDBSECTIONVIEWSTYLE").expect("laid out");
+        // Sound: two items, both written.
+        let mut w = ObjW::new(V::R2018, Handle(0x100));
+        encode_layout(&mut w, &groups("ACDBSECTIONVIEWSTYLE", 2), &l).unwrap();
+        // Two billion claimed: the list holds what is there, and nothing
+        // the size of the claim is allocated (that aborted the process).
+        let mut w = ObjW::new(V::R2018, Handle(0x100));
+        encode_layout(&mut w, &groups("ACDBSECTIONVIEWSTYLE", i32::MAX), &l).unwrap();
+    }
 }
