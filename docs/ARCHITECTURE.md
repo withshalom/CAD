@@ -34,6 +34,13 @@ name the format and its code, not the product.
   (desktop, Android, iOS) is a thin shell around it. The one piece that
   needs `unsafe`, the bridge to the apps (`crates/cad-ffi`), is small and
   separate.
+- **Open formats, open to others.** The drawing database and the DWG and
+  DXF readers and writers are crates of their own (`cad-model`,
+  `cad-dwg`, `cad-dxf`), licensed MIT OR Apache-2.0 so that other programs
+  can read and write DWG with them; `cad-core` builds on them and keeps
+  everything else. They take nothing from the core: where a file needs
+  something only the program has (its name, a preview, its font's text
+  widths, its hatch pattern library), the writer takes it as an option.
 - **Never crash on a file.** Malformed input produces an error, or a single
   object marked as failed. The rest of the drawing still loads.
 
@@ -56,17 +63,23 @@ name the format and its code, not the product.
  │ units     unit conversion, typed lengths and angles, display       │
  │ native    .cad read/write, journal (incremental save), .cdl locks  │
  │ codec     DEFLATE and zlib (RFC 1950/1951), SHA-256 (FIPS 180-4)    │
- │ model     Drawing: objects by handle, layers, blocks, header; edits│
- │ geom      Vec2/Vec3, transforms, OCS, bulges, NURBS                │
- │ dwg       bits → container → object map → objects → header         │
+ └─────────────────────────────────┬──────────────────────────────────┘
+          cad-core, above; the crates below are MIT OR Apache-2.0
+ ┌─────────────────────────────────▼──────────────────────────────────┐
+ │ cad-dxf   DXF read and write, ASCII and binary                     │
+ │ cad-dwg   bits → container → object map → objects → header; writer │
+ │ cad-model model: Drawing, objects by handle, layers, blocks,       │
+ │           header, edits · geom: Vec2/Vec3, transforms, OCS,        │
+ │           bulges, NURBS · text: code pages, MTEXT codes            │
  └────────────────────────────────────────────────────────────────────┘
 
- open(path) sniffs the first bytes: native magic → native reader, else DWG.
+ open(path) sniffs the first bytes: native magic → native reader, DXF
+ text or sentinel → DXF reader, else DWG.
  save(drawing, path) always writes native .cad.
  new_drawing(Metric | Imperial) starts one from a template.
 ```
 
-## DWG read pipeline (`crates/cad-core/src/dwg`)
+## DWG read pipeline (`crates/cad-dwg`)
 
 1. **Version** (`version.rs`): the six-byte tag, AC1012–AC1032.
 2. **Container**, split by version:
@@ -98,7 +111,7 @@ name the format and its code, not the product.
    (`styles.rs`, R2013 and later); objects that do not decode keep their
    bytes (`Object::raw`).
 
-## DWG writer (`crates/cad-core/src/dwg/write`)
+## DWG writer (`crates/cad-dwg/src/write`)
 
 AC1032 (AutoCAD 2018) only. `objects.rs` encodes each object the model
 holds whole, in the R2010+ object format, making every choice the format
@@ -121,9 +134,17 @@ byte, so what a written file can differ in is the section content and
 what `lz77::compress` writes; the compressor keeps to the stream forms
 AutoCAD's files use (ending `11 00 00`, no copy under four bytes, no far
 opcodes 0x17–0x1F), which the specification's reading allows more of.
-`write::to_bytes` returns the file and notes on anything left out.
+`write::to_bytes` returns the file and notes on anything left out;
+`write::to_bytes_with` takes `WriteOptions`: the program's name and
+version for the application information, the preview PNG, a text-width
+function for MTEXT extents and a hatch pattern library. Without them the
+crate names itself, stores a one-pixel preview, estimates widths and
+writes hatches with the lines they hold. `cad_core::dwg::write::to_bytes`
+passes BlackCAD's own (the preview rendered by `render` and `raster`)
+and first adds graphics blocks to dimensions that have none
+(`export::dimblocks`).
 
-## DXF (`crates/cad-core/src/dxf`)
+## DXF (`crates/cad-dxf`)
 
 `encode.rs` holds group values and both encodings (ASCII and binary) in
 both directions. `write.rs` turns the whole drawing database into the
@@ -132,8 +153,9 @@ groups of an AC1032 DXF, record by record as AutoCAD lays them out;
 binary) into the drawing: names resolved to handles, and the DWG-only
 parts (flag words, entity modes, control lists, header handle variables)
 rebuilt the way a DWG from AutoCAD has them. `cad_core::open` recognises
-DXF by its content. `export/dxf.rs` is the older R12 export of a rendered
-scene.
+DXF by its content. `WriteOptions` carries a hatch pattern library, as
+for DWG; `cad_core::dxf::to_bytes` passes BlackCAD's and adds dimension
+blocks. `export/dxf.rs` is the older R12 export of a rendered scene.
 
 ## Native format (`crates/cad-core/src/native`)
 
@@ -178,7 +200,7 @@ change sets on top of the snapshot; `cad compact` folds them back in.
 Change sets are also the natural unit for live collaboration later: send
 the same records between copies of the app.
 
-## Model (`model/`)
+## Model (`crates/cad-model`)
 
 `Drawing` holds every object in a `BTreeMap<Handle, Object>`. An `Object`
 has its handle, type, owner, reactors, extension dictionary, the common
@@ -294,7 +316,8 @@ apps/web/app.js      layout, input, commands (generators that ask for points, le
 apps/web/core.js     loads core.wasm, copies bytes in and out (the only glue)
 cad-ffi/src/web.rs   wasm entry points: numbers in, bytes out (the only unsafe)
 cad-ffi/src/session.rs   open drawings, undo, the command language: safe Rust
-cad-core             everything else: formats, model, render, display list, snaps
+cad-core             everything else: render, display list, snaps, editing, .cad
+cad-model, cad-dwg, cad-dxf   the drawing database, DWG and DXF
 ```
 
 **No dependencies, as everywhere else.** No npm packages, no frameworks,
