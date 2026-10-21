@@ -10,7 +10,7 @@
 //! `dwg::nongraphic` reads them from DWG records, `dxf` reads and writes
 //! them as DXF, `dwg::write` encodes them, and `native` stores them.
 
-use super::{Color, Handle};
+use super::{Color, DimStyle, Handle, Lineweight};
 use crate::geom::{Vec2, Vec3};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -375,5 +375,42 @@ impl Vport {
             named_ucs: Handle::NULL,
             base_ucs: Handle::NULL,
         }
+    }
+}
+
+impl DimVars {
+    /// Fill in what a drawing-model dimension style holds.
+    pub fn apply_model(&mut self, s: &DimStyle) {
+        self.post = s.post_text.clone();
+        self.scale = s.scale;
+        self.asz = s.arrow_size;
+        self.exo = s.ext_offset;
+        self.dli = s.baseline_spacing;
+        self.exe = s.ext_extension;
+        self.rnd = s.rounding;
+        self.dle = s.dim_line_extension;
+        self.txt = s.text_height;
+        self.cen = s.center_mark;
+        self.tsz = s.tick_size;
+        self.altf = s.alt_factor;
+        self.lfac = s.linear_factor;
+        self.gap = s.text_gap;
+        self.tih = s.text_inside_horizontal;
+        self.toh = s.text_outside_horizontal;
+        self.tad = s.text_above;
+        self.zin = s.zero_suppression;
+        self.alt = s.alt_units;
+        self.altd = s.alt_decimals;
+        self.clrd = s.line_color;
+        self.clre = s.ext_color;
+        self.clrt = s.text_color;
+        self.dec = s.decimals;
+        self.frac = s.fraction_format;
+        self.lunit = s.unit_format;
+        self.dsep = s.decimal_separator as u16;
+        self.just = s.text_justify;
+        self.txsty = s.text_style;
+        self.lwd = Lineweight::from_code(s.line_weight).dxf();
+        self.lwe = Lineweight::from_code(s.ext_weight).dxf();
     }
 }

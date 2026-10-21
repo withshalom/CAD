@@ -1,6 +1,14 @@
 [workspace]
 resolver = "3"
-members = ["crates/cad-core", "crates/cad-ffi", "apps/cad-cli", "xtask"]
+members = [
+    "crates/cad-model",
+    "crates/cad-dwg",
+    "crates/cad-dxf",
+    "crates/cad-core",
+    "crates/cad-ffi",
+    "apps/cad-cli",
+    "xtask",
+]
 
 [workspace.package]
 version = "0.7.0"

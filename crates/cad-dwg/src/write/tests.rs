@@ -52,7 +52,7 @@ fn compare_all(d: &Drawing, section: &[u8]) -> (usize, Vec<String>) {
     let dv = |o: &Object| -> DimVars {
         match nongraphic::dimstyle(&d.objects[&o.handle], &d.classes, d.codepage) {
             Some(Ok((_, v))) => v,
-            _ => DimVars::from_header(&super::super::hvars::Hv::new(d)),
+            _ => super::super::nongraphic::dim_vars_from_header(&super::super::hvars::Hv::new(d)),
         }
     };
     let vp = |o: &Object| -> Vport {
@@ -68,6 +68,8 @@ fn compare_all(d: &Drawing, section: &[u8]) -> (usize, Vec<String>) {
         material: Handle(0x3D0A7),
         dimstyle_vars: &dv,
         vport: &vp,
+        text_width: &super::estimated_text_width,
+        hatch_lines: None,
     };
     let mut matched = 0;
     let mut bad = Vec::new();
@@ -157,13 +159,22 @@ fn dump_bits() {
         .collect();
     let dv = |o: &Object| match nongraphic::dimstyle(&d.objects[&o.handle], &d.classes, d.codepage) {
         Some(Ok((_, v))) => v,
-        _ => DimVars::from_header(&super::super::hvars::Hv::new(&d)),
+        _ => super::super::nongraphic::dim_vars_from_header(&super::super::hvars::Hv::new(&d)),
     };
     let vp = |o: &Object| match nongraphic::vport(&d.objects[&o.handle], &d.classes, d.codepage) {
         Some(Ok(v)) => v,
         _ => Vport::looking_at(Default::default(), Default::default()),
     };
-    let ctx = Ctx { d: &d, appids: &appids, plot_style: Handle(0x3D095), material: Handle(0x3D0A7), dimstyle_vars: &dv, vport: &vp };
+    let ctx = Ctx {
+        d: &d,
+        appids: &appids,
+        plot_style: Handle(0x3D095),
+        material: Handle(0x3D0A7),
+        dimstyle_vars: &dv,
+        vport: &vp,
+        text_width: &super::estimated_text_width,
+        hatch_lines: None,
+    };
     let bits = |b: &[u8]| -> String { b.iter().map(|x| format!("{x:08b}")).collect() };
     for h in want {
         let o = &d.objects[&Handle(h)];
@@ -341,8 +352,8 @@ fn probe_class_records() {
 fn objects_from_dxf_encode_as_objects_from_dwg() {
     let Some(file) = corpus() else { return };
     let mut d = super::super::read_bytes(&file).unwrap();
-    let dxf = crate::dxf::encode::to_ascii(&crate::dxf::groups(&d).0);
-    let d2 = crate::dxf::read_bytes(&dxf).unwrap();
+    let dxf = cad_dxf::encode::to_ascii(&cad_dxf::groups(&d).0);
+    let d2 = cad_dxf::read_bytes(&dxf).unwrap();
     // References to objects DXF does not carry (visual styles, materials,
     // dimension associations) are not expected back.
     let kept: std::collections::BTreeSet<Handle> = d2.objects.keys().copied().collect();
@@ -357,8 +368,8 @@ fn objects_from_dxf_encode_as_objects_from_dwg() {
             _ => {}
         }
     }
-    let a: BTreeMap<u64, Vec<u8>> = super::encode_objects(&d, DwgVersion::R2018).objects.into_iter().collect();
-    let b: BTreeMap<u64, Vec<u8>> = super::encode_objects(&d2, DwgVersion::R2018).objects.into_iter().collect();
+    let a: BTreeMap<u64, Vec<u8>> = super::encode_objects(&d, DwgVersion::R2018, &super::WriteOptions::default()).objects.into_iter().collect();
+    let b: BTreeMap<u64, Vec<u8>> = super::encode_objects(&d2, DwgVersion::R2018, &super::WriteOptions::default()).objects.into_iter().collect();
     let mut same = 0;
     let mut bad = Vec::new();
     for (h, bytes) in &b {
@@ -450,7 +461,7 @@ fn diagnostic_files() {
         "AcDb:SummaryInfo", "AcDb:RevHistory", "AcDb:AcDbObjects", "AcDb:ObjFreeSpace",
         "AcDb:Template", "AcDb:Handles", "AcDb:Classes", "AcDb:AuxHeader", "AcDb:Header",
     ];
-    let (ours, _) = super::stream_sections(&d).unwrap();
+    let (ours, _) = super::stream_sections(&d, &super::WriteOptions::default()).unwrap();
     let ours_named = |n: &str| ours.iter().find(|s| s.name == n).unwrap();
     let replace = |mut v: Vec<Section>, names: &[&'static str]| {
         for s in &mut v {
@@ -701,8 +712,9 @@ fn small_sections_follow_autocads() {
     assert_eq!(super::sections::aux_header(&d, seed, 1), acad("AcDb:AuxHeader"), "auxiliary header");
     assert_eq!(super::sections::summary_info(&d), acad("AcDb:SummaryInfo"), "summary information");
 
+    let (name, version) = ("BlackCAD", "0.7.0");
     let theirs = acad("AcDb:AppInfoHistory");
-    let ours = super::sections::app_info_history(&d, true);
+    let ours = super::sections::app_info_history(&d, true, name, version);
     assert_eq!(&ours[..36], &theirs[..36], "history start");
     let (n1, e1) = appinfo_list(&ours[36..]);
     let (n2, e2) = appinfo_list(&theirs[36..]);
@@ -710,11 +722,11 @@ fn small_sections_follow_autocads() {
     assert_eq!(e1.iter().map(|e| e.0).collect::<Vec<_>>(), e2.iter().map(|e| e.0).collect::<Vec<_>>());
     let ours_props = e1[1]
         .1
-        .replace(&format!(">{}<", crate::PRODUCT_NAME), ">AutoCAD 2027<")
-        .replace(&format!(">{}<", env!("CARGO_PKG_VERSION")), ">X.118.0.0<");
+        .replace(&format!(">{name}<"), ">AutoCAD 2027<")
+        .replace(&format!(">{version}<"), ">X.118.0.0<");
     assert_eq!(ours_props, e2[1].1, "property set");
 
-    let (n1, e1) = appinfo_list(&super::sections::app_info()[4..]);
+    let (n1, e1) = appinfo_list(&super::sections::app_info(name, version)[4..]);
     let (n2, e2) = appinfo_list(&acad("AcDb:AppInfo")[4..]);
     assert_eq!(n1, n2);
     assert_eq!(e1.iter().map(|e| e.0).collect::<Vec<_>>(), e2.iter().map(|e| e.0).collect::<Vec<_>>());
@@ -737,7 +749,7 @@ fn probe_object_streams() {
     let Some(file) = corpus() else { return };
     let d = super::super::read_bytes(&file).unwrap();
     let dxf = std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/mosaiciron-mi201/mi201-r2018.dxf")).unwrap();
-    let groups = crate::dxf::encode::from_ascii(&dxf).unwrap();
+    let groups = cad_dxf::encode::from_ascii(&dxf).unwrap();
     let want: Vec<u64> = std::env::var("DUMP").unwrap_or_default().split(',').filter_map(|h| u64::from_str_radix(h.trim(), 16).ok()).collect();
     for h in want {
         let o = &d.objects[&Handle(h)];
@@ -745,7 +757,7 @@ fn probe_object_streams() {
         // DXF groups of the record with handle h.
         let mut i = 0;
         while i < groups.len() {
-            if groups[i].code == 0 && groups.get(i + 1).is_some_and(|g| g.code == 5 && matches!(g.value, crate::dxf::encode::Value::Handle(x) if x == h)) {
+            if groups[i].code == 0 && groups.get(i + 1).is_some_and(|g| g.code == 5 && matches!(g.value, cad_dxf::encode::Value::Handle(x) if x == h)) {
                 let mut j = i;
                 loop {
                     println!("   dxf {:>4} {:?}", groups[j].code, groups[j].value);
@@ -801,8 +813,8 @@ fn autocads_dxf_writes_autocads_objects() {
     let (Ok(dxf), Some(file)) = (std::fs::read(dir.join("mi201-r2018.dxf")), corpus()) else { return };
     let c = r2004::read(&file, DwgVersion::R2018).unwrap();
     let d = super::super::read_bytes(&file).unwrap();
-    let from_dxf = crate::dxf::read_bytes(&dxf).unwrap();
-    let enc = super::encode_objects(&from_dxf, DwgVersion::R2018);
+    let from_dxf = cad_dxf::read_bytes(&dxf).unwrap();
+    let enc = super::encode_objects(&from_dxf, DwgVersion::R2018, &super::WriteOptions::default());
     for n in &enc.notes {
         eprintln!("note: {n}");
     }
@@ -851,7 +863,7 @@ fn style_objects_decode_to_autocads_dxf_groups() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/mosaiciron-mi201");
     let (Ok(dxf), Some(file)) = (std::fs::read(dir.join("mi201-r2018.dxf")), corpus()) else { return };
     let d = super::super::read_bytes(&file).unwrap();
-    let from_dxf = crate::dxf::read_bytes(&dxf).unwrap();
+    let from_dxf = cad_dxf::read_bytes(&dxf).unwrap();
     let close = |a: &XrValue, b: &XrValue| match (a, b) {
         (XrValue::Real(x), XrValue::Real(y)) => (x - y).abs() <= 1e-12 * x.abs().max(1.0),
         (XrValue::Point(p), XrValue::Point(q)) => (p.x - q.x).abs() + (p.y - q.y).abs() + (p.z - q.z).abs() < 1e-9,

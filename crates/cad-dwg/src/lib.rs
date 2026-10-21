@@ -1,24 +1,39 @@
-//! DWG reader.
+//! BlackCAD's DWG reader and writer.
 //!
-//! Pipeline: detect the version → extract sections from the container
+//! Reading: [`read_bytes`] turns a DWG file of any version from R13 to
+//! AutoCAD 2018 and later (AC1012–AC1032) into a [`Drawing`], except
+//! AutoCAD 2007–2009 (AC1021), whose container is not implemented yet.
+//! Writing: [`write::to_bytes`] writes a drawing as an AutoCAD 2018
+//! (AC1032) file.
+//!
+//! The drawing is `cad-model`'s database, re-exported here as
+//! [`cad_model`].
+//!
+//! Reading, step by step: detect the version → extract sections from the
+//! container
 //! (R13–R15 flat, or R2004-family paged) → classes → object map → decode
 //! every object → header variables (validated against the objects).
 //!
 //! Each object is decoded in isolation: a failure is recorded on that
 //! object and the rest of the drawing still loads.
 
+#![forbid(unsafe_code)]
+
+pub use cad_model;
+pub use cad_model::version;
+use cad_model::{error, geom, model, text};
+
 pub mod bits;
 pub mod crc;
 pub mod lz77;
 pub mod nongraphic;
-pub mod version;
 
 mod classes;
 mod container;
 mod eed;
 mod entities;
 mod header;
-pub(crate) mod hvars;
+pub mod hvars;
 mod object;
 mod objmap;
 #[cfg(test)]

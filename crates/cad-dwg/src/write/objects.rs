@@ -162,6 +162,11 @@ pub(crate) struct Ctx<'a> {
     /// Text style and linetype handles the ByLayer/ByBlock entries need.
     pub dimstyle_vars: &'a dyn Fn(&Object) -> DimVars,
     pub vport: &'a dyn Fn(&Object) -> Vport,
+    /// A line of text's width at height 1 (`WriteOptions::text_width`).
+    pub text_width: &'a dyn Fn(&str) -> f64,
+    /// Line families for a pattern hatch without them
+    /// (`WriteOptions::hatch_lines`).
+    pub hatch_lines: Option<&'a HatchLibrary<'a>>,
 }
 
 fn v3(p: Vec3) -> [f64; 3] {
@@ -719,7 +724,7 @@ fn specific(w: &mut ObjW, o: &Object, ctx: &Ctx) -> Result<()> {
             common_handles(w, o);
         }
         ObjectKind::MText(m) => {
-            mtext_data(w, m);
+            mtext_data(w, m, ctx.text_width);
             common_handles(w, o);
             w.h(Ref::HardPtr, m.style);
             if ver >= V::R2018 {
@@ -733,7 +738,7 @@ fn specific(w: &mut ObjW, o: &Object, ctx: &Ctx) -> Result<()> {
             w.h(Ref::HardPtr, m.block);
         }
         ObjectKind::Hatch(h) => {
-            hatch_data(w, h, crate::units::Unit::of(d));
+            hatch_data(w, h, d, ctx.hatch_lines);
             common_handles(w, o);
         }
         ObjectKind::Xline(x) | ObjectKind::Ray(x) => {
@@ -969,7 +974,7 @@ fn text_data(w: &mut ObjW, t: &Text) {
     }
 }
 
-fn mtext_data(w: &mut ObjW, m: &MText) {
+fn mtext_data(w: &mut ObjW, m: &MText, text_width: &dyn Fn(&str) -> f64) {
     let ver = w.ver;
     w.dat.bd3(v3(m.insertion));
     w.dat.bd3(v3(m.extrusion));
@@ -981,7 +986,7 @@ fn mtext_data(w: &mut ObjW, m: &MText) {
     w.dat.bd(m.text_height);
     w.dat.bs(m.attachment);
     w.dat.bs(m.drawing_dir);
-    let (ext_h, ext_w) = mtext_extents(m);
+    let (ext_h, ext_w) = mtext_extents(m, text_width);
     w.dat.bd(ext_h);
     w.dat.bd(ext_w);
     w.tv(&m.contents);
@@ -1006,16 +1011,16 @@ fn mtext_data(w: &mut ObjW, m: &MText) {
     }
 }
 
-/// The text's extents (height, width) as this program's font sets it:
-/// one line per paragraph. AutoCAD stores its own font's extents here
+/// The text's extents (height, width) as the writing program's font sets
+/// it: one line per paragraph. AutoCAD stores its own font's extents here
 /// and measures again when it regenerates the text.
-fn mtext_extents(m: &MText) -> (f64, f64) {
+fn mtext_extents(m: &MText, text_width: &dyn Fn(&str) -> f64) -> (f64, f64) {
     let plain = crate::text::strip_mtext(&m.contents);
     let lines: Vec<&str> = plain.split('\n').collect();
     let n = lines.len().max(1) as f64;
     let widest = lines
         .iter()
-        .map(|l| crate::font::text_width(l))
+        .map(|l| text_width(l))
         .fold(0.0, f64::max);
     let h = m.text_height * (1.0 + (n - 1.0) * 1.6667 * m.linespacing_factor);
     (h, widest * m.text_height)
@@ -1138,7 +1143,12 @@ fn spline_data(w: &mut ObjW, sp: &Spline) {
     }
 }
 
-fn hatch_data(w: &mut ObjW, h: &Hatch, unit: crate::units::Unit) {
+fn hatch_data(
+    w: &mut ObjW,
+    h: &Hatch,
+    d: &Drawing,
+    library: Option<&HatchLibrary<'_>>,
+) {
     let ver = w.ver;
     if ver >= V::R2004 {
         w.dat.bl(h.is_gradient as u32);
@@ -1232,13 +1242,11 @@ fn hatch_data(w: &mut ObjW, h: &Hatch, unit: crate::units::Unit) {
         w.dat.bd(h.pattern_angle);
         w.dat.bd(h.pattern_scale);
         w.dat.b(h.pattern_double);
-        // The line families: as stored, or from the library for a hatch
-        // that has none, so other programs draw the same pattern.
-        let lines = if h.pattern_lines.is_empty() {
-            crate::render::hatch::pattern_lines(&h.pattern_name, h.pattern_scale, h.pattern_angle, h.pattern_double, unit)
-                .unwrap_or_default()
-        } else {
-            h.pattern_lines.clone()
+        // The line families: as stored, or from the program's library for
+        // a hatch that has none, so other programs draw the same pattern.
+        let lines = match library {
+            Some(library) if h.pattern_lines.is_empty() => library(d, h),
+            _ => h.pattern_lines.clone(),
         };
         w.dat.bs(lines.len().min(u16::MAX as usize) as u16);
         for l in lines.iter().take(u16::MAX as usize) {

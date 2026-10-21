@@ -50,6 +50,11 @@
 
 #![forbid(unsafe_code)]
 
+// The drawing database and the file formats other programs read are
+// crates of their own, licensed MIT OR Apache-2.0 (see LICENSE): their
+// modules appear here under the names they always had.
+pub use cad_model::{error, geom, model, text};
+
 pub mod blocks;
 pub mod boundary;
 pub mod check;
@@ -57,13 +62,10 @@ pub mod codec;
 pub mod construct;
 pub mod dwg;
 pub mod dxf;
-pub mod error;
 pub mod export;
 pub mod font;
-pub mod geom;
 pub mod grips;
 pub mod layouts;
-pub mod model;
 pub mod modify;
 pub mod native;
 pub mod ops;
@@ -74,7 +76,6 @@ pub mod sheet;
 pub mod snap;
 pub mod standards;
 pub mod takeoff;
-pub mod text;
 pub mod units;
 
 pub use error::{Error, ErrorKind, Result};

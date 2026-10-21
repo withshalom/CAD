@@ -19,7 +19,7 @@ pub use lineweight::Lineweight;
 pub use objects::*;
 pub use store::{Journal, ListOp, ObjectMap, Touch};
 
-use crate::dwg::DwgVersion;
+use crate::version::DwgVersion;
 use crate::geom::{Vec2, Vec3};
 use std::collections::BTreeMap;
 use std::fmt;
@@ -748,6 +748,11 @@ pub struct HatchPatternLine {
     pub offset: Vec2,
     pub dashes: Vec<f64>,
 }
+
+/// A program's hatch pattern library as the DWG and DXF writers ask it:
+/// given the drawing and a pattern hatch that holds no line families, the
+/// line families to store, so that other programs draw the pattern.
+pub type HatchLibrary<'a> = dyn Fn(&Drawing, &Hatch) -> Vec<HatchPatternLine> + 'a;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Hatch {

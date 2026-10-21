@@ -489,13 +489,11 @@ const APPINFO_HISTORY_START: [u8; 32] = [
     0x3B, 0xD9, 0x7F, 0xF7, 0x3C, 0xBB, 0xCE, 0x08, 0xA0, 0x53, 0xD8, 0xED, 0xD2, 0x8D, 0xC5, 0xC7,
 ];
 
-fn appinfo_comment() -> String {
-    format!("Saved by {} {}.", crate::PRODUCT_NAME, env!("CARGO_PKG_VERSION"))
+fn appinfo_comment(name: &str, version: &str) -> String {
+    format!("Saved by {name} {version}.")
 }
 
-fn appinfo_product() -> String {
-    let name = crate::PRODUCT_NAME;
-    let version = env!("CARGO_PKG_VERSION");
+fn appinfo_product(name: &str, version: &str) -> String {
     let registry: String = version.split('.').take(2).collect::<Vec<_>>().join(".");
     format!(
         "<ProductInformation name =\"{name}\" build_version=\"{version}\" registry_version=\"{registry}\" install_id_string=\"{name}\" registry_localeID=\"1033\"/>"
@@ -504,17 +502,17 @@ fn appinfo_product() -> String {
 
 /// AcDb:AppInfo (chapter 16) in the layout AutoCAD 2027 writes: format 3,
 /// "AppInfoDataList", two entries (a comment and the product
-/// information), each after the identifier of its kind. It names this
-/// program, never claims to be an Autodesk application.
-pub(crate) fn app_info() -> Vec<u8> {
+/// information), each after the identifier of its kind. It names the
+/// program writing the file, never claims to be an Autodesk application.
+pub(crate) fn app_info(name: &str, version: &str) -> Vec<u8> {
     let mut o = Vec::new();
     o.extend_from_slice(&3u32.to_le_bytes());
     tu(&mut o, "AppInfoDataList");
     o.extend_from_slice(&2u32.to_le_bytes());
     o.extend_from_slice(&APPINFO_COMMENT);
-    tu(&mut o, &appinfo_comment());
+    tu(&mut o, &appinfo_comment(name, version));
     o.extend_from_slice(&APPINFO_PRODUCT);
-    tu(&mut o, &appinfo_product());
+    tu(&mut o, &appinfo_product(name, version));
     o
 }
 
@@ -545,10 +543,8 @@ fn xml_text(s: &str) -> String {
 /// creation and save times, an empty string, who saved it, the program
 /// and its version; later saves leave out the creation time and the empty
 /// string) and the product information.
-pub(crate) fn app_info_history(d: &Drawing, first_save: bool) -> Vec<u8> {
+pub(crate) fn app_info_history(d: &Drawing, first_save: bool, name: &str, version: &str) -> Vec<u8> {
     let hv = Hv::new(d);
-    let name = crate::PRODUCT_NAME;
-    let version = env!("CARGO_PKG_VERSION");
     let mut props = String::from("<prop_set fmt_id=\"{f29f85e0-4ff9-1068-ab91-08002b27b3d9}\">");
     let saved = iso_datetime(hv.time("TDUPDATE", 0.0));
     let by = xml_text(&d.header.properties.last_saved_by);
@@ -570,11 +566,11 @@ pub(crate) fn app_info_history(d: &Drawing, first_save: bool) -> Vec<u8> {
     tu(&mut o, "AppInfoDataList");
     o.extend_from_slice(&3u32.to_le_bytes());
     o.extend_from_slice(&APPINFO_COMMENT);
-    tu(&mut o, &appinfo_comment());
+    tu(&mut o, &appinfo_comment(name, version));
     o.extend_from_slice(&APPINFO_PROPERTIES);
     tu(&mut o, &props);
     o.extend_from_slice(&APPINFO_PRODUCT);
-    tu(&mut o, &appinfo_product());
+    tu(&mut o, &appinfo_product(name, version));
     o
 }
 

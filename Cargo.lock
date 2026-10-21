@@ -12,6 +12,27 @@ dependencies = [
 [[package]]
 name = "cad-core"
 version = "0.7.0"
+dependencies = [
+ "cad-dwg",
+ "cad-dxf",
+ "cad-model",
+]
+
+[[package]]
+name = "cad-dwg"
+version = "0.7.0"
+dependencies = [
+ "cad-dxf",
+ "cad-model",
+]
+
+[[package]]
+name = "cad-dxf"
+version = "0.7.0"
+dependencies = [
+ "cad-dwg",
+ "cad-model",
+]
 
 [[package]]
 name = "cad-ffi"
@@ -19,6 +40,10 @@ version = "0.7.0"
 dependencies = [
  "cad-core",
 ]
+
+[[package]]
+name = "cad-model"
+version = "0.7.0"
 
 [[package]]
 name = "xtask"

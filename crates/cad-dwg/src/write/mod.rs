@@ -32,6 +32,84 @@ pub struct DwgOutput {
     pub notes: Vec<String>,
 }
 
+/// What a DWG file records about the program that wrote it, and the parts
+/// of the file the writer takes from that program when it has them.
+///
+/// [`WriteOptions::default`] names this crate as the writer, stores a
+/// one-pixel preview, estimates text widths, and writes a pattern hatch's
+/// line families only when the drawing holds them.
+#[derive(Clone, Copy)]
+pub struct WriteOptions<'a> {
+    /// The program's name, recorded in the file's application information
+    /// ("Saved by {name} {version}.") and its save history. The file never
+    /// claims to come from another program.
+    pub app_name: &'a str,
+    /// The program's version, `major.minor.patch`.
+    pub app_version: &'a str,
+    /// The preview image (a PNG) that file browsers and AutoCAD's open
+    /// dialog show. `None` stores a one-pixel image.
+    pub preview_png: Option<&'a [u8]>,
+    /// The width of one line of text at height 1, in the program's own
+    /// font. A DWG's MTEXT records its extents, which AutoCAD measures
+    /// again when it regenerates the text. `None` estimates from the
+    /// number of characters ([`estimated_text_width`]).
+    pub text_width: Option<&'a dyn Fn(&str) -> f64>,
+    /// The line families of a pattern hatch that holds none, so that
+    /// other programs draw the pattern: given the drawing and the hatch,
+    /// the lines to store. `None` writes such hatches with no lines.
+    pub hatch_lines: Option<&'a HatchLibrary<'a>>,
+}
+
+impl Default for WriteOptions<'_> {
+    fn default() -> Self {
+        WriteOptions {
+            app_name: "cad-dwg",
+            app_version: env!("CARGO_PKG_VERSION"),
+            preview_png: None,
+            text_width: None,
+            hatch_lines: None,
+        }
+    }
+}
+
+impl std::fmt::Debug for WriteOptions<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WriteOptions")
+            .field("app_name", &self.app_name)
+            .field("app_version", &self.app_version)
+            .field("preview_png", &self.preview_png.map(<[u8]>::len))
+            .field("text_width", &self.text_width.is_some())
+            .field("hatch_lines", &self.hatch_lines.is_some())
+            .finish()
+    }
+}
+
+/// A line of text's width at height 1 when the program gives no font:
+/// 0.8 of the height per character, about the average advance of a
+/// single-stroke drafting font.
+pub fn estimated_text_width(line: &str) -> f64 {
+    line.chars().count() as f64 * 0.8
+}
+
+/// The preview stored when the program gives none: a one-pixel PNG in the
+/// colour of AutoCAD's model-space background (a test checks its CRCs).
+const BLANK_PREVIEW: &[u8] = &[
+    // signature
+    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+    // IHDR: 1 × 1, 8-bit palette indices
+    0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01,
+    0x00, 0x00, 0x00, 0x01, 0x08, 0x03, 0x00, 0x00, 0x00, 0x28, 0xCB, 0x34,
+    0xBB,
+    // PLTE: one colour, #212830
+    0x00, 0x00, 0x00, 0x03, 0x50, 0x4C, 0x54, 0x45, 0x21, 0x28, 0x30, 0xE5,
+    0x71, 0x8F, 0x0B,
+    // IDAT: one row, no filter, index 0
+    0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0xDA, 0x63, 0x60,
+    0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0xE5, 0x27, 0xDE, 0xFC,
+    // IEND
+    0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+];
+
 /// The objects the writer would encode and the ones it leaves out, by
 /// handle, for a drawing.
 struct Encoded {
@@ -66,7 +144,7 @@ fn default_entry(d: &Drawing, dict: Handle, name: &str) -> Option<Handle> {
     }
 }
 
-fn encode_objects(d: &Drawing, ver: DwgVersion) -> Encoded {
+fn encode_objects(d: &Drawing, ver: DwgVersion, opts: &WriteOptions<'_>) -> Encoded {
     let hv = super::hvars::Hv::new(d);
     let appids: BTreeMap<String, Handle> = d
         .objects
@@ -78,7 +156,7 @@ fn encode_objects(d: &Drawing, ver: DwgVersion) -> Encoded {
             _ => None,
         })
         .collect();
-    let header_dims = DimVars::from_header(&hv);
+    let header_dims = nongraphic::dim_vars_from_header(&hv);
     let dv = |o: &Object| -> DimVars {
         match nongraphic::dimstyle(o, &d.classes, d.codepage) {
             Some(Ok((_, v))) => v,
@@ -110,6 +188,8 @@ fn encode_objects(d: &Drawing, ver: DwgVersion) -> Encoded {
         material,
         dimstyle_vars: &dv,
         vport: &vp,
+        text_width: opts.text_width.unwrap_or(&estimated_text_width),
+        hatch_lines: opts.hatch_lines,
     };
     let mut objects = Vec::with_capacity(d.objects.len());
     let mut notes = Vec::new();
@@ -152,18 +232,6 @@ fn encode_objects(d: &Drawing, ver: DwgVersion) -> Encoded {
         }
     }
     Encoded { objects, notes }
-}
-
-/// AutoCAD's model-space background, the canvas of its previews.
-const PREVIEW_BACKGROUND: (u8, u8, u8) = (0x21, 0x28, 0x30);
-
-/// The drawing's `*Active` viewport, which AutoCAD draws the preview from.
-fn active_viewport(d: &Drawing) -> Option<Vport> {
-    d.objects
-        .values()
-        .filter(|o| o.type_name == "VPORT")
-        .filter_map(|o| nongraphic::vport(o, &d.classes, d.codepage)?.ok())
-        .find(|v| v.name.eq_ignore_ascii_case("*Active"))
 }
 
 /// Objects a DXF holds that the DWG of the same drawing does not: the
@@ -220,65 +288,6 @@ fn without_dxf_only(o: &Object, dxf_only: &std::collections::HashSet<Handle>) ->
     Some(p)
 }
 
-/// The preview image as AutoCAD writes it: 256 pixels wide, the shape and
-/// view of the active viewport, model space on AutoCAD's background, as an
-/// indexed-colour PNG (the background, then the AutoCAD colour index).
-fn preview_png(d: &Drawing) -> Vec<u8> {
-    let scene = crate::render::model_space(d);
-    let b = scene.bounds;
-    let width = 256u32;
-    let (height, view) = match active_viewport(d) {
-        Some(v) if v.view_height > 0.0 && v.aspect > 0.0 => {
-            let h = ((width as f64 / v.aspect).round() as u32).clamp(16, 256);
-            let view = crate::raster::View {
-                center: v.center,
-                scale: h as f64 / v.view_height,
-            };
-            (h, Some(view))
-        }
-        _ => {
-            let h = if b.is_empty() || b.width() <= 0.0 || b.height() <= 0.0 {
-                192
-            } else {
-                ((width as f64 * b.height() / b.width()).round() as u32).clamp(64, 256)
-            };
-            (h, None)
-        }
-    };
-    let opts = crate::raster::RasterOptions {
-        width,
-        height,
-        view,
-        grid: false,
-        axis_icon: false,
-        threads: 1,
-        ..Default::default()
-    };
-    let img = crate::raster::render(&scene, &opts);
-    let mut palette = vec![PREVIEW_BACKGROUND];
-    palette.extend((1..=255u8).map(crate::model::color::aci_rgb));
-    let canvas = crate::standards::canvas::BACKGROUND;
-    let dist = |a: (u8, u8, u8), b: (u8, u8, u8)| {
-        let d = |x: u8, y: u8| (x as i32 - y as i32).pow(2);
-        d(a.0, b.0) + d(a.1, b.1) + d(a.2, b.2)
-    };
-    let mut cache = std::collections::HashMap::new();
-    let pixels: Vec<u8> = img
-        .rgba
-        .chunks(4)
-        .map(|p| {
-            let c = (p[0], p[1], p[2]);
-            *cache.entry(c).or_insert_with(|| {
-                if dist(c, canvas) < 3 * 24 * 24 {
-                    return 0;
-                }
-                (1..palette.len()).min_by_key(|&i| dist(c, palette[i])).unwrap_or(0) as u8
-            })
-        })
-        .collect();
-    crate::raster::png::encode_indexed(img.width, img.height, &palette, &pixels)
-}
-
 /// The section map order AutoCAD 2027 uses (ids descending from the first).
 const MAP_ORDER: [&str; 13] = [
     "AcDb:XrefManifest",
@@ -300,12 +309,19 @@ fn round_up(n: usize, to: usize) -> usize {
     n.max(1).div_ceil(to) * to
 }
 
-/// The drawing as an AutoCAD 2018 (AC1032) DWG file.
+/// The drawing as an AutoCAD 2018 (AC1032) DWG file, with
+/// [`WriteOptions::default`].
 pub fn to_bytes(d: &Drawing) -> Result<DwgOutput> {
-    // Dimensions drawn from their definition points get graphics blocks,
-    // which other programs draw.
-    let d = &*crate::export::dimblocks::with_dimension_blocks(d);
-    let (stream, mut notes) = stream_sections(d)?;
+    to_bytes_with(d, &WriteOptions::default())
+}
+
+/// The drawing as an AutoCAD 2018 (AC1032) DWG file.
+///
+/// Objects are written as the drawing holds them. A dimension whose
+/// graphics block is missing is written without one; a program that draws
+/// dimensions adds the blocks first, so that other programs show them.
+pub fn to_bytes_with(d: &Drawing, opts: &WriteOptions<'_>) -> Result<DwgOutput> {
+    let (stream, mut notes) = stream_sections(d, opts)?;
     let bytes = container::pack(&file_info(d), &stream, &MAP_ORDER);
     if !notes.is_empty() {
         notes.insert(
@@ -329,9 +345,9 @@ fn file_info(d: &Drawing) -> container::FileInfo {
 
 /// Every section of the file, in stream order, and notes on what was left
 /// out.
-fn stream_sections(d: &Drawing) -> Result<(Vec<Section>, Vec<String>)> {
+fn stream_sections(d: &Drawing, opts: &WriteOptions<'_>) -> Result<(Vec<Section>, Vec<String>)> {
     let ver = DwgVersion::R2018;
-    let Encoded { objects, mut notes } = encode_objects(d, ver);
+    let Encoded { objects, mut notes } = encode_objects(d, ver, opts);
     let _ = &mut notes;
     if objects.is_empty() {
         return Err(Error::format("the drawing has no objects to write"));
@@ -355,17 +371,17 @@ fn stream_sections(d: &Drawing) -> Result<(Vec<Section>, Vec<String>)> {
 
     let summary = sections::summary_info(d);
     let summary_page = round_up(summary.len(), 0x80);
-    let png = preview_png(d);
-    let preview_len = sections::preview(&png, 0).len();
+    let png = opts.preview_png.unwrap_or(BLANK_PREVIEW);
+    let preview_len = sections::preview(png, 0).len();
     let preview_page = round_up(preview_len, 0x400);
     let preview_address = 0x100 + container::uncompressed_page_extent(summary_page) + 0x20;
-    let preview = sections::preview(&png, preview_address as u64);
-    let app_info = sections::app_info();
+    let preview = sections::preview(png, preview_address as u64);
+    let app_info = sections::app_info(opts.app_name, opts.app_version);
     let app_info_page = round_up(app_info.len(), 0x80);
     // Every write is the drawing's first save as far as the file records:
     // the model keeps no count of earlier saves.
     let saves = 1;
-    let history = sections::app_info_history(d, saves == 1);
+    let history = sections::app_info_history(d, saves == 1, opts.app_name, opts.app_version);
     let history_page = round_up(history.len(), 0x80);
 
     let compressed = |name, data| Section {
