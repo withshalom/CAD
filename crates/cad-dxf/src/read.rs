@@ -2263,7 +2263,9 @@ impl Reader {
             match o.kind.clone() {
                 ObjectKind::BlockHeader(mut b) => {
                     b.entities = list.clone();
-                    self.d.objects.get_mut(owner).unwrap().kind = ObjectKind::BlockHeader(b);
+                    if let Some(o) = self.d.objects.get_mut(owner) {
+                        o.kind = ObjectKind::BlockHeader(b);
+                    }
                 }
                 ObjectKind::Polyline(mut p) => {
                     let (verts, rest): (Vec<Handle>, Vec<Handle>) = list
@@ -2271,7 +2273,9 @@ impl Reader {
                         .partition(|h| matches!(self.d.objects.get(h).map(|o| &o.kind), Some(ObjectKind::Vertex(_))));
                     p.vertices = verts;
                     p.seqend = rest.last().copied().unwrap_or(Handle::NULL);
-                    self.d.objects.get_mut(owner).unwrap().kind = ObjectKind::Polyline(p);
+                    if let Some(o) = self.d.objects.get_mut(owner) {
+                        o.kind = ObjectKind::Polyline(p);
+                    }
                 }
                 ObjectKind::Insert(mut ins) => {
                     let (attrs, rest): (Vec<Handle>, Vec<Handle>) = list
@@ -2279,7 +2283,9 @@ impl Reader {
                         .partition(|h| matches!(self.d.objects.get(h).map(|o| &o.kind), Some(ObjectKind::Attribute(_))));
                     ins.attribs = attrs;
                     ins.seqend = rest.last().copied().unwrap_or(Handle::NULL);
-                    self.d.objects.get_mut(owner).unwrap().kind = ObjectKind::Insert(ins);
+                    if let Some(o) = self.d.objects.get_mut(owner) {
+                        o.kind = ObjectKind::Insert(ins);
+                    }
                 }
                 _ => {}
             }

@@ -476,7 +476,7 @@ fn diagnostic_files() {
     };
     let info = super::file_info(&d);
     let write = |name: &str, v: &[Section], order: &[&str]| {
-        std::fs::write(format!("{out}/{name}"), pack(&info, v, order)).unwrap();
+        std::fs::write(format!("{out}/{name}"), pack(&info, v, order).unwrap()).unwrap();
     };
     write("T0-autocad-sections.dwg", &acad(), &acad_order);
     write("T1-our-header.dwg", &replace(acad(), &["AcDb:Header"]), &acad_order);
@@ -487,7 +487,7 @@ fn diagnostic_files() {
     let small = ["AcDb:SummaryInfo", "AcDb:Preview", "AcDb:AppInfo", "AcDb:RevHistory", "AcDb:ObjFreeSpace", "AcDb:Template", "AcDb:AuxHeader"];
     write("T4-our-small-sections.dwg", &replace(without, &small), &order11);
     std::fs::write(format!("{out}/T5-all-ours.dwg"), super::to_bytes(&d).unwrap().bytes).unwrap();
-    let lit = super::container::pack_with(&info, &acad(), &acad_order, super::container::literal_only);
+    let lit = super::container::pack_with(&info, &acad(), &acad_order, super::container::literal_only).unwrap();
     std::fs::write(format!("{out}/T6-autocad-sections-uncompressed-runs.dwg"), lit).unwrap();
 }
 
@@ -628,7 +628,7 @@ fn container_rebuilds_autocads_files() {
             acad_maintenance: le32(&file, 0x3C),
         };
         REPLAY.with(|q| *q.borrow_mut() = t.stored.into());
-        let out = super::container::pack_with(&info, &t.sections, &t.map_order, replay);
+        let out = super::container::pack_with(&info, &t.sections, &t.map_order, replay).unwrap();
         assert!(REPLAY.with(|q| q.borrow().is_empty()), "{name}: pages left over");
         if let Some(i) = out.iter().zip(&file).position(|(a, b)| a != b) {
             panic!(

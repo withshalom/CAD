@@ -322,7 +322,7 @@ pub fn to_bytes(d: &Drawing) -> Result<DwgOutput> {
 /// dimensions adds the blocks first, so that other programs show them.
 pub fn to_bytes_with(d: &Drawing, opts: &WriteOptions<'_>) -> Result<DwgOutput> {
     let (stream, mut notes) = stream_sections(d, opts)?;
-    let bytes = container::pack(&file_info(d), &stream, &MAP_ORDER);
+    let bytes = container::pack(&file_info(d), &stream, &MAP_ORDER)?;
     if !notes.is_empty() {
         notes.insert(
             0,

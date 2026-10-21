@@ -13,6 +13,7 @@
 //! page map directly.
 
 use super::super::crc::{crc32, page_checksum};
+use crate::error::{Error, Result};
 use super::super::lz77;
 use super::super::r2004::magic_sequence;
 
@@ -99,8 +100,9 @@ struct PageRec {
 }
 
 /// Pack the sections, given in stream order. The section map lists them
-/// with descending ids in the order given by `map_order` (names).
-pub(crate) fn pack(info: &FileInfo, sections: &[Section], map_order: &[&str]) -> Vec<u8> {
+/// with descending ids in the order given by `map_order` (names), which
+/// must name every section once.
+pub(crate) fn pack(info: &FileInfo, sections: &[Section], map_order: &[&str]) -> Result<Vec<u8>> {
     pack_with(info, sections, map_order, lz77::compress)
 }
 
@@ -132,21 +134,24 @@ pub(crate) fn literal_only(src: &[u8]) -> Option<Vec<u8>> {
 }
 
 /// [`pack`] with a chosen compressor.
-pub(crate) fn pack_with(info: &FileInfo, sections: &[Section], map_order: &[&str], compress: Compress) -> Vec<u8> {
+pub(crate) fn pack_with(info: &FileInfo, sections: &[Section], map_order: &[&str], compress: Compress) -> Result<Vec<u8>> {
     let mut out = vec![0u8; 0x100];
     let mut pages: Vec<PageRec> = Vec::new();
     // Section id by name: the empty section is 0, then descending in map
     // order.
     let n = map_order.len() as u32;
-    let id_of = |name: &str| -> u32 {
-        let i = map_order.iter().position(|m| *m == name).expect("section in map order");
-        n - i as u32
+    let id_of = |name: &str| -> Result<u32> {
+        let i = map_order
+            .iter()
+            .position(|m| *m == name)
+            .ok_or_else(|| Error::format(format!("section {name} is not in the section map")))?;
+        Ok(n - i as u32)
     };
     // (name, page number, data size, start) for the section map.
     let mut page_refs: Vec<(&str, u32, u32, u64)> = Vec::new();
     let mut first_page_address: Vec<(&str, usize)> = Vec::new();
     for s in sections {
-        let id = id_of(s.name);
+        let id = id_of(s.name)?;
         let chunks: Vec<&[u8]> = if s.data.is_empty() {
             Vec::new()
         } else {
@@ -178,8 +183,8 @@ pub(crate) fn pack_with(info: &FileInfo, sections: &[Section], map_order: &[&str
             let header_sum = page_checksum(data_sum, &hdr);
             put_u32(&mut hdr, 24, header_sum);
             let m = PAGE_MASK ^ address as u32;
-            for w in hdr.chunks_mut(4) {
-                let v = u32::from_le_bytes(w.try_into().unwrap()) ^ m;
+            for w in hdr.chunks_exact_mut(4) {
+                let v = u32::from_le_bytes([w[0], w[1], w[2], w[3]]) ^ m;
                 w.copy_from_slice(&v.to_le_bytes());
             }
             out.extend_from_slice(&hdr);
@@ -220,8 +225,12 @@ pub(crate) fn pack_with(info: &FileInfo, sections: &[Section], map_order: &[&str
     };
     describe("", 0, MAX_PAGE as u32, true, 0);
     for name in map_order {
-        let s = sections.iter().find(|s| s.name == *name).expect("section listed");
-        describe(s.name, s.data.len() as u64, s.page_size as u32, s.compressed, id_of(s.name));
+        let s = sections
+            .iter()
+            .find(|s| s.name == *name)
+            .ok_or_else(|| Error::format(format!("section map names {name}, which is not written")))?;
+        let id = id_of(s.name)?;
+        describe(s.name, s.data.len() as u64, s.page_size as u32, s.compressed, id);
     }
     let section_map_id = last_data + 3;
     let sm_address = out.len();
@@ -302,7 +311,7 @@ pub(crate) fn pack_with(info: &FileInfo, sections: &[Section], map_order: &[&str
     put_u32(h, 0x40, info.acad_maintenance);
     h[0x80..0xEC].copy_from_slice(&encrypted);
     h[0xEC..0x100].copy_from_slice(&mask[0xEC..0x100]);
-    out
+    Ok(out)
 }
 
 /// Where the first page of each section will start, for sections whose

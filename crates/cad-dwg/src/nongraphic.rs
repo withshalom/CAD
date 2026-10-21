@@ -199,6 +199,16 @@ fn xrecord_data(s: &mut Streams) -> Result<XRecord> {
     Ok(XRecord { cloning, items })
 }
 
+/// `b` as the bytes of an `N`-byte little-endian number. The callers take
+/// exactly `N` bytes; were any missing, they would read as zero.
+fn le<const N: usize>(b: &[u8]) -> [u8; N] {
+    let mut a = [0u8; N];
+    for (x, y) in a.iter_mut().zip(b) {
+        *x = *y;
+    }
+    a
+}
+
 fn xrecord_items(d: &[u8], ver: V) -> Result<Vec<(u16, XrValue)>> {
     let mut p = 0usize;
     let mut out = Vec::new();
@@ -210,14 +220,14 @@ fn xrecord_items(d: &[u8], ver: V) -> Result<Vec<(u16, XrValue)>> {
         Ok(s)
     };
     while p < d.len() {
-        let code = u16::from_le_bytes(take(&mut p, 2)?.try_into().unwrap());
+        let code = u16::from_le_bytes(le(take(&mut p, 2)?));
         let t = xr_type(code)
             .ok_or_else(|| Error::format(format!("XRECORD group code {code} not known")))?;
-        let f64_at = |b: &[u8]| f64::from_le_bytes(b.try_into().unwrap());
+        let f64_at = |b: &[u8]| f64::from_le_bytes(le(b));
         let v = match t {
             XrType::Str => {
                 if ver.has_string_stream() {
-                    let len = u16::from_le_bytes(take(&mut p, 2)?.try_into().unwrap()) as usize;
+                    let len = u16::from_le_bytes(le(take(&mut p, 2)?)) as usize;
                     let units: Vec<u16> = take(&mut p, len * 2)?
                         .chunks_exact(2)
                         .map(|c| u16::from_le_bytes([c[0], c[1]]))
@@ -235,15 +245,15 @@ fn xrecord_items(d: &[u8], ver: V) -> Result<Vec<(u16, XrValue)>> {
             }
             XrType::Real => XrValue::Real(f64_at(take(&mut p, 8)?)),
             XrType::Int8 => XrValue::Int8(take(&mut p, 1)?[0] as i8),
-            XrType::Int16 => XrValue::Int16(i16::from_le_bytes(take(&mut p, 2)?.try_into().unwrap())),
-            XrType::Int32 => XrValue::Int32(i32::from_le_bytes(take(&mut p, 4)?.try_into().unwrap())),
-            XrType::Int64 => XrValue::Int64(i64::from_le_bytes(take(&mut p, 8)?.try_into().unwrap())),
+            XrType::Int16 => XrValue::Int16(i16::from_le_bytes(le(take(&mut p, 2)?))),
+            XrType::Int32 => XrValue::Int32(i32::from_le_bytes(le(take(&mut p, 4)?))),
+            XrType::Int64 => XrValue::Int64(i64::from_le_bytes(le(take(&mut p, 8)?))),
             XrType::Bool => XrValue::Bool(take(&mut p, 1)?[0] != 0),
             XrType::Bytes => {
                 let len = take(&mut p, 1)?[0] as usize;
                 XrValue::Bytes(take(&mut p, len)?.to_vec())
             }
-            XrType::Handle => XrValue::Handle(Handle(u64::from_le_bytes(take(&mut p, 8)?.try_into().unwrap()))),
+            XrType::Handle => XrValue::Handle(Handle(u64::from_le_bytes(le(take(&mut p, 8)?)))),
         };
         out.push((code, v));
     }

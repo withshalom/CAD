@@ -12,6 +12,18 @@
 //! It uses the Rust standard library only and no `unsafe` code.
 
 #![forbid(unsafe_code)]
+// A file is only a claim: no input reaches a panic. Tests may unwrap.
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::unimplemented,
+        clippy::todo,
+        clippy::unreachable
+    )
+)]
 
 pub mod error;
 pub mod geom;
