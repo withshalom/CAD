@@ -29,11 +29,20 @@ jobs:
           rustup toolchain install stable --profile minimal --component clippy
           rustup default stable
       - name: Lint
-        run: cargo clippy --all-targets -- -D warnings
+        shell: bash
+        run: |
+          cargo clippy --all-targets -- -D warnings 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "Lint" "$RUNNER_TEMP/step.log"; exit 1; }
       - name: Test
-        run: cargo test --release
+        shell: bash
+        run: |
+          cargo test --release 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "Test" "$RUNNER_TEMP/step.log"; exit 1; }
       - name: Build
-        run: cargo build --release
+        shell: bash
+        run: |
+          cargo build --release 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "Build" "$RUNNER_TEMP/step.log"; exit 1; }
       - uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact }}
@@ -52,7 +61,10 @@ jobs:
           rustup toolchain install "$msrv" --profile minimal
           rustup default "$msrv"
       - name: Check
-        run: cargo check --workspace --all-targets
+        shell: bash
+        run: |
+          cargo check --workspace --all-targets 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "MSRV check" "$RUNNER_TEMP/step.log"; exit 1; }
 
   android:
     # The Android test viewer (apps/android) as a debug APK. GitHub's Ubuntu
@@ -72,7 +84,10 @@ jobs:
           rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
       - name: Native library
         # The newest NDK on the image rather than its default one.
-        run: cargo xtask android --abi all ${ANDROID_NDK_LATEST_HOME:+--ndk "$ANDROID_NDK_LATEST_HOME"}
+        shell: bash
+        run: |
+          cargo xtask android --abi all ${ANDROID_NDK_LATEST_HOME:+--ndk "$ANDROID_NDK_LATEST_HOME"} 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "Native library" "$RUNNER_TEMP/step.log"; exit 1; }
       - name: Gradle
         run: |
           curl -fsSL -o "$RUNNER_TEMP/gradle.zip" \
@@ -81,7 +96,10 @@ jobs:
           unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/gradle-$GRADLE_VERSION/bin" >> "$GITHUB_PATH"
       - name: APK
-        run: gradle --no-daemon -p apps/android assembleDebug
+        shell: bash
+        run: |
+          gradle --no-daemon -p apps/android assembleDebug 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "APK" "$RUNNER_TEMP/step.log"; exit 1; }
       - uses: actions/upload-artifact@v6
         with:
           name: cad-viewer-debug-apk
@@ -89,18 +107,10 @@ jobs:
       - name: Check the APK
         # Native libraries aligned for 16 KB pages, and no code but the
         # app's own: no third-party libraries slipped in.
+        shell: bash
         run: |
-          bt="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
-          unzip -l "$APK"
-          "$bt/zipalign" -c -P 16 4 "$APK"
-          classes="$("$bt/dexdump" "$APK" | grep "Class descriptor" | sed "s/.*'\(.*\)'.*/\1/" | sort -u)"
-          echo "$classes"
-          echo "$classes" | grep -qx "Lcom/withshalom/cad/MainActivity;" \
-            || { echo "dexdump output not understood"; exit 1; }
-          if echo "$classes" | grep -v "^Lcom/withshalom/cad/"; then
-            echo "classes from outside the app (listed above)"
-            exit 1
-          fi
+          bash .github/check-apk.sh "$APK" 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "Check the APK" "$RUNNER_TEMP/step.log"; exit 1; }
 
   web:
     # The browser workbench (apps/web): the core built for WebAssembly and
@@ -122,9 +132,15 @@ jobs:
       - name: Lint
         # The WebAssembly entry points build only for wasm, so the build
         # job's lint does not see them.
-        run: cargo clippy -p cad-ffi --lib --target wasm32-unknown-unknown -- -D warnings
+        shell: bash
+        run: |
+          cargo clippy -p cad-ffi --lib --target wasm32-unknown-unknown -- -D warnings 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "Web lint" "$RUNNER_TEMP/step.log"; exit 1; }
       - name: Build
-        run: cargo xtask web
+        shell: bash
+        run: |
+          cargo xtask web 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "Web build" "$RUNNER_TEMP/step.log"; exit 1; }
       - uses: actions/upload-artifact@v6
         with:
           name: cad-web
