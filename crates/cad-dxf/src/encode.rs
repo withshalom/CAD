@@ -204,6 +204,16 @@ pub fn to_binary(groups: &[Group]) -> Vec<u8> {
     o
 }
 
+/// `b` as the bytes of an `N`-byte little-endian number. The callers take
+/// exactly `N` bytes; were any missing, they would read as zero.
+fn le<const N: usize>(b: &[u8]) -> [u8; N] {
+    let mut a = [0u8; N];
+    for (x, y) in a.iter_mut().zip(b) {
+        *x = *y;
+    }
+    a
+}
+
 /// Reads a binary DXF back into groups, sizing each value by its code as
 /// [`to_binary`] does. Handles become [`Value::Handle`] when they are the
 /// plain upper-case hexadecimal [`to_binary`] writes, and strings otherwise,
@@ -245,10 +255,10 @@ pub fn from_binary(bytes: &[u8]) -> crate::Result<Vec<Group>> {
                     _ => Value::Str(s),
                 }
             }
-            Kind::Real => Value::Real(f64::from_le_bytes(take(&mut p, 8)?.try_into().unwrap())),
-            Kind::I16 => Value::Int(i16::from_le_bytes(take(&mut p, 2)?.try_into().unwrap()) as i64),
-            Kind::I32 => Value::Int(i32::from_le_bytes(take(&mut p, 4)?.try_into().unwrap()) as i64),
-            Kind::I64 => Value::Int(i64::from_le_bytes(take(&mut p, 8)?.try_into().unwrap())),
+            Kind::Real => Value::Real(f64::from_le_bytes(le(take(&mut p, 8)?))),
+            Kind::I16 => Value::Int(i16::from_le_bytes(le(take(&mut p, 2)?)) as i64),
+            Kind::I32 => Value::Int(i32::from_le_bytes(le(take(&mut p, 4)?)) as i64),
+            Kind::I64 => Value::Int(i64::from_le_bytes(le(take(&mut p, 8)?))),
             Kind::Bool => match take(&mut p, 1)?[0] {
                 b @ (0 | 1) => Value::Bool(b == 1),
                 b => Value::Int(b as i64),

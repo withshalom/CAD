@@ -230,8 +230,11 @@ impl ObjectMap {
         list.remove(at);
         self.record(block, ListOp::Remove(at, h));
         // Listed twice (a damaged file): take the rest out too.
-        while let Some(at) = self.list(block).and_then(|l| l.iter().position(|x| *x == h)) {
-            self.list(block).expect("found above").remove(at);
+        while let Some(list) = self.list(block) {
+            let Some(at) = list.iter().position(|x| *x == h) else {
+                break;
+            };
+            list.remove(at);
             self.record(block, ListOp::Remove(at, h));
         }
     }

@@ -1612,7 +1612,8 @@ fn mline_flags_to_dwg(dxf: u16) -> u16 {
 fn nongraphic(w: &mut ObjW, o: &Object, n: &NonGraphic) -> Result<()> {
     let ver = w.ver;
     match n {
-        NonGraphic::Groups(_) => unreachable!("written by styles::encode"),
+        // Written by styles::encode, which `specific` calls instead.
+        NonGraphic::Groups(_) => return Err(Error::format("style object reached the wrong encoder")),
         NonGraphic::Dictionary(d) => {
             w.dat.bl(d.entries.len() as u32);
             w.dat.bs(d.cloning);

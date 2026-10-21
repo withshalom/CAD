@@ -671,10 +671,9 @@ impl<'a> Writer<'a> {
             match value {
                 Some(v) => self.out.push(Group { code, value: v }),
                 None => {
-                    // Points.
-                    let dwg = match src {
-                        Src::Raw(n) => n,
-                        _ => unreachable!(),
+                    // Points: only a raw variable leaves the value for here.
+                    let Src::Raw(dwg) = src else {
+                        continue;
                     };
                     if n == 3 {
                         let p = self.hv.p3(dwg, Vec3::new(dnum(0), dnum(1), dnum(2)));

@@ -415,7 +415,7 @@ fn assemble(
         })?;
         // §4.6: each 32-bit word of the header is XORed with 0x4164536B ^ address.
         let m = PAGE_MASK ^ (page.address as u32);
-        let word = |i: usize| u32::from_le_bytes(raw_hdr[i * 4..i * 4 + 4].try_into().unwrap()) ^ m;
+        let word = |i: usize| u32::from_le_bytes([raw_hdr[i * 4], raw_hdr[i * 4 + 1], raw_hdr[i * 4 + 2], raw_hdr[i * 4 + 3]]) ^ m;
         let page_type = word(0);
         if page_type != DATA_PAGE_TYPE {
             notes.push(Diagnostic {

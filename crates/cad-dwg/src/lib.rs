@@ -18,6 +18,18 @@
 //! object and the rest of the drawing still loads.
 
 #![forbid(unsafe_code)]
+// A file is only a claim: no input reaches a panic. Tests may unwrap.
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::unimplemented,
+        clippy::todo,
+        clippy::unreachable
+    )
+)]
 
 pub use cad_model;
 pub use cad_model::version;

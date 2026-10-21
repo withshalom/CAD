@@ -554,14 +554,12 @@ impl Dimension {
                 let start = rays
                     .iter()
                     .min_by(|x, y| norm(la - x.0).total_cmp(&norm(la - y.0)))
-                    .copied()
-                    .expect("four rays");
+                    .copied()?;
                 let end = rays
                     .iter()
                     .filter(|x| x.1 != start.1)
                     .min_by(|x, y| norm(x.0 - start.0).total_cmp(&norm(y.0 - start.0)))
-                    .copied()
-                    .expect("two rays of the other line");
+                    .copied()?;
                 let sweep = norm(end.0 - start.0);
                 let extent = |line: usize, ang: f64| {
                     let dir = Vec2::from_angle(ang);

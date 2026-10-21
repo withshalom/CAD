@@ -423,7 +423,9 @@ pub(crate) fn common_handles(o: &mut Opened) -> Result<(u64, Vec<Handle>, u64)> 
     let mut reactors = Vec::new();
     let mut xdictionary = 0u64;
     if o.is_entity {
-        let ent = o.common.as_mut().expect("entity common");
+        let Some(ent) = o.common.as_mut() else {
+            return Err(Error::format("entity without its common data"));
+        };
         if flags.entmode == 0 {
             owner = s.h_abs(handle)?;
         }
