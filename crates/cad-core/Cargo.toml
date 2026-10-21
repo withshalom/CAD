@@ -12,4 +12,6 @@ name = "cad_core"
 path = "src/lib.rs"
 
 [dependencies]
-# Intentionally empty: std only.
+cad-model = { path = "../cad-model" }
+cad-dwg = { path = "../cad-dwg" }
+cad-dxf = { path = "../cad-dxf" }

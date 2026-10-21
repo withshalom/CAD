@@ -1,0 +1,15 @@
+[package]
+name = "cad-dwg"
+description = "BlackCAD's DWG reader (R13 to 2018 and later, except 2007) and writer (AutoCAD 2018 format)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+cad-model = { path = "../cad-model" }
+
+[dev-dependencies]
+# Some writer tests compare against AutoCAD's DXF of the same drawing.
+cad-dxf = { path = "../cad-dxf" }

@@ -478,7 +478,7 @@ fn read_value(s: &mut Streams, k: K) -> Result<Val> {
 
 /// A CmColor as the header's display text keeps it: `BYLAYER`,
 /// `BYBLOCK`, an ACI number, `RGB(r,g,b)` or `NONE`. Read back by
-/// [`crate::dwg::hvars`].
+/// [`crate::hvars`].
 pub(crate) fn color_text(c: crate::model::Color) -> String {
     use crate::model::Color;
     match c {

@@ -12,7 +12,8 @@ use crate::geom::{Vec2, Vec3};
 use crate::model::{Color, Drawing, Handle};
 use std::collections::HashMap;
 
-pub(crate) struct Hv<'a> {
+/// A drawing's header variables by DWG name (see the module docs).
+pub struct Hv<'a> {
     d: &'a Drawing,
     raw: HashMap<&'a str, &'a str>,
 }
@@ -251,55 +252,14 @@ impl<'a> Hv<'a> {
 mod tests {
     use super::*;
 
+    // Header variables read from a drawing made from a template are tried
+    // in cad-core (tests/dwg_header_vars.rs), which has the templates.
+
     #[test]
     fn stored_text_reads_back() {
         assert_eq!(unquote("\"m\"").as_deref(), Some("m"));
         assert_eq!(unquote("\"\"").as_deref(), Some(""));
         assert_eq!(unquote(r#""a\"b\\c\u{b0}""#).as_deref(), Some("a\"b\\c°"));
         assert_eq!(floats("(1, -2.5, 1e20)"), Some(vec![1.0, -2.5, 1e20]));
-        let mut d = crate::standards::new_drawing(crate::standards::Template::Imperial);
-        d.version = DwgVersion::R2018;
-        d.header.raw = vec![
-            ("CECOLOR".into(), "0".into()),
-            ("DIMCLRD".into(), "BYBLOCK".into()),
-            ("INTERFERECOLOR".into(), "RGB(255,0,0)".into()),
-            ("PUCSNAME".into(), "#3D0B5".into()),
-            ("MENUNAME".into(), "\"acad\"".into()),
-            ("DIMPOST".into(), "\".\"".into()),
-            ("EXTMIN".into(), "(1, 2, 3)".into()),
-        ];
-        let hv = Hv::new(&d);
-        assert_eq!(hv.color("CECOLOR", Color::ByLayer), Color::ByLayer);
-        assert_eq!(hv.color("DIMCLRD", Color::Index(7)), Color::ByBlock);
-        assert_eq!(hv.color("INTERFERECOLOR", Color::ByLayer), Color::Rgb(255, 0, 0));
-        assert_eq!(hv.handle("PUCSNAME"), Handle(0x3D0B5));
-        assert_eq!(hv.text("DIMPOST", ""), ".");
-        assert_eq!(hv.int("MISSING", 42), 42);
-    }
-
-    /// A header saved by a reader that skipped MENUNAME reads back with
-    /// every string where it belongs.
-    #[test]
-    fn strings_read_one_place_early_are_put_back() {
-        let mut d = crate::standards::new_drawing(crate::standards::Template::Imperial);
-        d.version = DwgVersion::R2018;
-        let q = |s: &str| format!("{s:?}");
-        d.header.raw = vec![
-            ("DIMPOST".into(), q(".")),
-            ("DIMAPOST".into(), q("")),
-            ("DIMALTMZS".into(), q("")),
-            ("DIMMZS".into(), q("")),
-            ("HYPERLINKBASE".into(), q("")),
-            ("STYLESHEET".into(), q("")),
-            ("FINGERPRINTGUID".into(), q("")),
-            ("VERSIONGUID".into(), q("{FP}")),
-            ("PROJECTNAME".into(), q("{VG}")),
-        ];
-        let hv = Hv::new(&d);
-        assert_eq!(hv.text("MENUNAME", "?"), ".");
-        assert_eq!(hv.text("DIMPOST", "?"), "");
-        assert_eq!(hv.text("FINGERPRINTGUID", "?"), "{FP}");
-        assert_eq!(hv.text("VERSIONGUID", "?"), "{VG}");
-        assert_eq!(hv.text("PROJECTNAME", "?"), "");
     }
 }

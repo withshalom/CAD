@@ -157,7 +157,7 @@ fn dictionary_data(s: &mut Streams) -> Result<(Dictionary, Vec<String>)> {
 /// The binary form of an XRECORD value, by group code (DXF reference,
 /// "Group Code Value Types"; sizes as R2007+ files store them).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum XrType {
+pub enum XrType {
     Str,
     Point,
     Real,
@@ -170,7 +170,8 @@ pub(crate) enum XrType {
     Handle,
 }
 
-pub(crate) fn xr_type(code: u16) -> Option<XrType> {
+/// The binary form of an XRECORD value with this group code, if it has one.
+pub fn xr_type(code: u16) -> Option<XrType> {
     use XrType::*;
     Some(match code {
         0..=9 | 100..=102 | 300..=309 | 410..=419 | 430..=439 | 470..=479 | 999 | 1000..=1003 => Str,
@@ -462,129 +463,92 @@ mod tests {
 }
 
 
-impl DimVars {
-    /// From the header's dimension variables (the current style's values
-    /// unless overridden), through `get` (name → value text).
-    pub(crate) fn from_header(hv: &super::hvars::Hv) -> DimVars {
-        let r = |n: &str, d: f64| hv.real(n, d);
-        let i = |n: &str, d: i64| hv.int(n, d) as u16;
-        let b = |n: &str, d: bool| hv.bool(n, d);
-        DimVars {
-            post: hv.text("DIMPOST", ""),
-            apost: hv.text("DIMAPOST", ""),
-            scale: r("DIMSCALE", 1.0),
-            asz: r("DIMASZ", 0.18),
-            exo: r("DIMEXO", 0.0625),
-            dli: r("DIMDLI", 0.38),
-            exe: r("DIMEXE", 0.18),
-            rnd: r("DIMRND", 0.0),
-            dle: r("DIMDLE", 0.0),
-            tp: r("DIMTP", 0.0),
-            tm: r("DIMTM", 0.0),
-            fxl: r("DIMFXL", 1.0),
-            jogang: r("DIMJOGANG", std::f64::consts::FRAC_PI_4),
-            tfill: i("DIMTFILL", 0),
-            tfillclr: hv.color("DIMTFILLCLR", Color::ByBlock),
-            tol: b("DIMTOL", false),
-            lim: b("DIMLIM", false),
-            tih: b("DIMTIH", true),
-            toh: b("DIMTOH", true),
-            se1: b("DIMSE1", false),
-            se2: b("DIMSE2", false),
-            tad: i("DIMTAD", 0),
-            zin: i("DIMZIN", 0),
-            azin: i("DIMAZIN", 0),
-            arcsym: i("DIMARCSYM", 0),
-            txt: r("DIMTXT", 0.18),
-            cen: r("DIMCEN", 0.09),
-            tsz: r("DIMTSZ", 0.0),
-            altf: r("DIMALTF", 25.4),
-            lfac: r("DIMLFAC", 1.0),
-            tvp: r("DIMTVP", 0.0),
-            tfac: r("DIMTFAC", 1.0),
-            gap: r("DIMGAP", 0.09),
-            altrnd: r("DIMALTRND", 0.0),
-            alt: b("DIMALT", false),
-            altd: i("DIMALTD", 2),
-            tofl: b("DIMTOFL", false),
-            sah: b("DIMSAH", false),
-            tix: b("DIMTIX", false),
-            soxd: b("DIMSOXD", false),
-            clrd: hv.color("DIMCLRD", Color::ByBlock),
-            clre: hv.color("DIMCLRE", Color::ByBlock),
-            clrt: hv.color("DIMCLRT", Color::ByBlock),
-            adec: i("DIMADEC", 0),
-            dec: i("DIMDEC", 4),
-            tdec: i("DIMTDEC", 4),
-            altu: i("DIMALTU", 2),
-            alttd: i("DIMALTTD", 2),
-            aunit: i("DIMAUNIT", 0),
-            frac: i("DIMFRAC", 0),
-            lunit: i("DIMLUNIT", 2),
-            dsep: i("DIMDSEP", b'.' as i64),
-            tmove: i("DIMTMOVE", 0),
-            just: i("DIMJUST", 0),
-            sd1: b("DIMSD1", false),
-            sd2: b("DIMSD2", false),
-            tolj: i("DIMTOLJ", 1),
-            tzin: i("DIMTZIN", 0),
-            altz: i("DIMALTZ", 0),
-            alttz: i("DIMALTTZ", 0),
-            upt: b("DIMUPT", false),
-            fit: i("DIMATFIT", 3),
-            fxlon: b("DIMFXLON", false),
-            txtdirection: b("DIMTXTDIRECTION", false),
-            altmzf: r("DIMALTMZF", 100.0),
-            altmzs: hv.text("DIMALTMZS", ""),
-            mzf: r("DIMMZF", 100.0),
-            mzs: hv.text("DIMMZS", ""),
-            lwd: hv.int("DIMLWD", -2) as i16,
-            lwe: hv.int("DIMLWE", -2) as i16,
-            flag_bit: false,
-            txsty: hv.handle("DIMTXSTY"),
-            ldrblk: hv.handle("DIMLDRBLK"),
-            blk: hv.handle("DIMBLK"),
-            blk1: hv.handle("DIMBLK1"),
-            blk2: hv.handle("DIMBLK2"),
-            ltype: hv.handle("DIMLTYPE"),
-            ltex1: hv.handle("DIMLTEX1"),
-            ltex2: hv.handle("DIMLTEX2"),
-        }
-    }
-
-    /// Fill in what a drawing-model dimension style holds.
-    pub(crate) fn apply_model(&mut self, s: &DimStyle) {
-        self.post = s.post_text.clone();
-        self.scale = s.scale;
-        self.asz = s.arrow_size;
-        self.exo = s.ext_offset;
-        self.dli = s.baseline_spacing;
-        self.exe = s.ext_extension;
-        self.rnd = s.rounding;
-        self.dle = s.dim_line_extension;
-        self.txt = s.text_height;
-        self.cen = s.center_mark;
-        self.tsz = s.tick_size;
-        self.altf = s.alt_factor;
-        self.lfac = s.linear_factor;
-        self.gap = s.text_gap;
-        self.tih = s.text_inside_horizontal;
-        self.toh = s.text_outside_horizontal;
-        self.tad = s.text_above;
-        self.zin = s.zero_suppression;
-        self.alt = s.alt_units;
-        self.altd = s.alt_decimals;
-        self.clrd = s.line_color;
-        self.clre = s.ext_color;
-        self.clrt = s.text_color;
-        self.dec = s.decimals;
-        self.frac = s.fraction_format;
-        self.lunit = s.unit_format;
-        self.dsep = s.decimal_separator as u16;
-        self.just = s.text_justify;
-        self.txsty = s.text_style;
-        self.lwd = Lineweight::from_code(s.line_weight).dxf();
-        self.lwe = Lineweight::from_code(s.ext_weight).dxf();
+/// The dimension variables the header holds (the current style's values
+/// unless overridden).
+pub fn dim_vars_from_header(hv: &super::hvars::Hv) -> DimVars {
+    let r = |n: &str, d: f64| hv.real(n, d);
+    let i = |n: &str, d: i64| hv.int(n, d) as u16;
+    let b = |n: &str, d: bool| hv.bool(n, d);
+    DimVars {
+        post: hv.text("DIMPOST", ""),
+        apost: hv.text("DIMAPOST", ""),
+        scale: r("DIMSCALE", 1.0),
+        asz: r("DIMASZ", 0.18),
+        exo: r("DIMEXO", 0.0625),
+        dli: r("DIMDLI", 0.38),
+        exe: r("DIMEXE", 0.18),
+        rnd: r("DIMRND", 0.0),
+        dle: r("DIMDLE", 0.0),
+        tp: r("DIMTP", 0.0),
+        tm: r("DIMTM", 0.0),
+        fxl: r("DIMFXL", 1.0),
+        jogang: r("DIMJOGANG", std::f64::consts::FRAC_PI_4),
+        tfill: i("DIMTFILL", 0),
+        tfillclr: hv.color("DIMTFILLCLR", Color::ByBlock),
+        tol: b("DIMTOL", false),
+        lim: b("DIMLIM", false),
+        tih: b("DIMTIH", true),
+        toh: b("DIMTOH", true),
+        se1: b("DIMSE1", false),
+        se2: b("DIMSE2", false),
+        tad: i("DIMTAD", 0),
+        zin: i("DIMZIN", 0),
+        azin: i("DIMAZIN", 0),
+        arcsym: i("DIMARCSYM", 0),
+        txt: r("DIMTXT", 0.18),
+        cen: r("DIMCEN", 0.09),
+        tsz: r("DIMTSZ", 0.0),
+        altf: r("DIMALTF", 25.4),
+        lfac: r("DIMLFAC", 1.0),
+        tvp: r("DIMTVP", 0.0),
+        tfac: r("DIMTFAC", 1.0),
+        gap: r("DIMGAP", 0.09),
+        altrnd: r("DIMALTRND", 0.0),
+        alt: b("DIMALT", false),
+        altd: i("DIMALTD", 2),
+        tofl: b("DIMTOFL", false),
+        sah: b("DIMSAH", false),
+        tix: b("DIMTIX", false),
+        soxd: b("DIMSOXD", false),
+        clrd: hv.color("DIMCLRD", Color::ByBlock),
+        clre: hv.color("DIMCLRE", Color::ByBlock),
+        clrt: hv.color("DIMCLRT", Color::ByBlock),
+        adec: i("DIMADEC", 0),
+        dec: i("DIMDEC", 4),
+        tdec: i("DIMTDEC", 4),
+        altu: i("DIMALTU", 2),
+        alttd: i("DIMALTTD", 2),
+        aunit: i("DIMAUNIT", 0),
+        frac: i("DIMFRAC", 0),
+        lunit: i("DIMLUNIT", 2),
+        dsep: i("DIMDSEP", b'.' as i64),
+        tmove: i("DIMTMOVE", 0),
+        just: i("DIMJUST", 0),
+        sd1: b("DIMSD1", false),
+        sd2: b("DIMSD2", false),
+        tolj: i("DIMTOLJ", 1),
+        tzin: i("DIMTZIN", 0),
+        altz: i("DIMALTZ", 0),
+        alttz: i("DIMALTTZ", 0),
+        upt: b("DIMUPT", false),
+        fit: i("DIMATFIT", 3),
+        fxlon: b("DIMFXLON", false),
+        txtdirection: b("DIMTXTDIRECTION", false),
+        altmzf: r("DIMALTMZF", 100.0),
+        altmzs: hv.text("DIMALTMZS", ""),
+        mzf: r("DIMMZF", 100.0),
+        mzs: hv.text("DIMMZS", ""),
+        lwd: hv.int("DIMLWD", -2) as i16,
+        lwe: hv.int("DIMLWE", -2) as i16,
+        flag_bit: false,
+        txsty: hv.handle("DIMTXSTY"),
+        ldrblk: hv.handle("DIMLDRBLK"),
+        blk: hv.handle("DIMBLK"),
+        blk1: hv.handle("DIMBLK1"),
+        blk2: hv.handle("DIMBLK2"),
+        ltype: hv.handle("DIMLTYPE"),
+        ltex1: hv.handle("DIMLTEX1"),
+        ltex2: hv.handle("DIMLTEX2"),
     }
 }
 

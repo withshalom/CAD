@@ -1,0 +1,12 @@
+[package]
+name = "cad-dxf"
+description = "BlackCAD's DXF reader and writer (ASCII and binary, AutoCAD 2018 format)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+cad-model = { path = "../cad-model" }
+cad-dwg = { path = "../cad-dwg" }

@@ -1,0 +1,11 @@
+[package]
+name = "cad-model"
+description = "BlackCAD's drawing database: objects keyed by DWG handles, tables, entities, geometry and text code pages"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+# Intentionally empty: std only.

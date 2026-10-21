@@ -382,13 +382,17 @@ pub(crate) struct Writer<'a> {
     /// Names given to anonymous blocks: DWG stores them unnumbered
     /// ("*D"), DXF needs each one unique ("*D0", "*D1").
     block_names: BTreeMap<Handle, String>,
+    /// Line families for a pattern hatch without them
+    /// (`WriteOptions::hatch_lines`).
+    hatch_lines: Option<&'a HatchLibrary<'a>>,
     pub notes: Vec<String>,
 }
 
 impl<'a> Writer<'a> {
-    pub fn new(d: &'a Drawing) -> Self {
+    pub fn new(d: &'a Drawing, hatch_lines: Option<&'a HatchLibrary<'a>>) -> Self {
         let mut w = Writer {
             d,
+            hatch_lines,
             hv: Hv::new(d),
             out: Vec::new(),
             ng: BTreeMap::new(),
@@ -1028,7 +1032,7 @@ impl<'a> Writer<'a> {
         if let Some(Ok((_, v))) = nongraphic::dimstyle(o, &d.classes, d.codepage) {
             return v;
         }
-        let mut v = DimVars::from_header(&self.hv);
+        let mut v = nongraphic::dim_vars_from_header(&self.hv);
         if let ObjectKind::DimStyle(s) = &o.kind {
             v.apply_model(s);
         } else {
@@ -1835,14 +1839,12 @@ impl<'a> Writer<'a> {
             self.r(52, deg(h.pattern_angle));
             self.r(41, h.pattern_scale);
             self.i(77, h.pattern_double as i64);
-            // The line families: as stored, or from the library for a hatch
-            // that has none, so other programs draw the same pattern.
-            let lines = if h.pattern_lines.is_empty() {
-                let unit = crate::units::Unit::of(self.d);
-                crate::render::hatch::pattern_lines(&h.pattern_name, h.pattern_scale, h.pattern_angle, h.pattern_double, unit)
-                    .unwrap_or_default()
-            } else {
-                h.pattern_lines.clone()
+            // The line families: as stored, or from the program's library
+            // for a hatch that has none, so other programs draw the same
+            // pattern.
+            let lines = match self.hatch_lines {
+                Some(library) if h.pattern_lines.is_empty() => library(self.d, h),
+                _ => h.pattern_lines.clone(),
             };
             self.i(78, lines.len() as i64);
             for l in &lines {

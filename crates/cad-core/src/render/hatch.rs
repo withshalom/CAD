@@ -218,6 +218,14 @@ fn unit_factor(unit: Unit) -> f64 {
     }
 }
 
+/// The line families the library gives a hatch, in the drawing's units:
+/// the writers (`cad-dwg`, `cad-dxf`) store them for a pattern hatch that
+/// holds none, so other programs draw the same pattern. Empty for SOLID
+/// and for a pattern the library does not know.
+pub fn library_lines(d: &crate::model::Drawing, h: &crate::model::Hatch) -> Vec<HatchPatternLine> {
+    pattern_lines(&h.pattern_name, h.pattern_scale, h.pattern_angle, h.pattern_double, Unit::of(d)).unwrap_or_default()
+}
+
 /// The stored line families of a library pattern, `scale` and `angle`
 /// (radians) applied, in drawing units; `None` for an unknown name. USER
 /// gives lines at `angle` spaced `scale` apart, and a second set at 90°
