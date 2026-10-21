@@ -9,10 +9,18 @@ bt="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
 unzip -l "$apk"
 "$bt/zipalign" -c -P 16 4 "$apk"
 classes="$("$bt/dexdump" "$apk" | grep "Class descriptor" | sed "s/.*'\(.*\)'.*/\1/" | sort -u)"
-echo "$classes"
+echo "Classes defined in the APK, by package:"
+echo "$classes" | sed -E 's|^L(([^/;]+/){0,2}).*|\1|' | sort | uniq -c
 echo "$classes" | grep -qx "Lcom/withshalom/cad/MainActivity;" \
   || { echo "dexdump output not understood"; exit 1; }
-if echo "$classes" | grep -v "^Lcom/withshalom/cad/"; then
-  echo "classes from outside the app (listed above)"
+# D8 also defines stubs of platform classes newer than the app's minimum
+# API level (android.*, dalvik.*: its API modelling), so that older
+# devices verify the app, and its own desugaring helpers
+# (com.android.tools.r8.*). They come with the toolchain, not a library.
+other="$(echo "$classes" | grep -v -e '^Lcom/withshalom/cad/' -e '^Landroid/' -e '^Ldalvik/' \
+  -e '^Lcom/android/tools/r8/' || true)"
+if [ -n "$other" ]; then
+  echo "Classes from outside the app, the platform and the toolchain:"
+  echo "$other"
   exit 1
 fi
