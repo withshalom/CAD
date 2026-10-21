@@ -29,6 +29,15 @@ before commercial release.
 4. Every module names the specification sections it implements and whether
    the code was checked against the specification text.
 
+## Licensing
+
+Since 0.8.0 the drawing database and the DWG and DXF readers and writers
+are crates of their own (`crates/cad-model`, `crates/cad-dwg`,
+`crates/cad-dxf`), licensed MIT OR Apache-2.0; the rest stays
+proprietary (`LICENSE`). The move changed where the code lives, not how
+it was written: the rules above apply to those crates as to the rest,
+and everything below still describes their sources.
+
 ## Sources used
 
 | Source | Status | Notes |

@@ -4,7 +4,7 @@ description = "BlackCAD's DXF reader and writer (ASCII and binary, AutoCAD 2018 
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+license = "MIT OR Apache-2.0"
 publish.workspace = true
 
 [dependencies]

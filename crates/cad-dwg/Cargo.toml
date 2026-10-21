@@ -4,7 +4,7 @@ description = "BlackCAD's DWG reader (R13 to 2018 and later, except 2007) and wr
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-license.workspace = true
+license = "MIT OR Apache-2.0"
 publish.workspace = true
 
 [dependencies]
