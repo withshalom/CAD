@@ -1,0 +1,4 @@
+# Check out every file exactly as it was committed, on every platform.
+# Git for Windows converts line endings by default, and the tests compare
+# bytes: corpus DXF, fixtures, expected output, docs/DESIGN.md's tables.
+* -text
