@@ -710,7 +710,7 @@ fn small_sections_follow_autocads() {
     assert_eq!(e1.iter().map(|e| e.0).collect::<Vec<_>>(), e2.iter().map(|e| e.0).collect::<Vec<_>>());
     let ours_props = e1[1]
         .1
-        .replace(">CAD<", ">AutoCAD 2027<")
+        .replace(&format!(">{}<", crate::PRODUCT_NAME), ">AutoCAD 2027<")
         .replace(&format!(">{}<", env!("CARGO_PKG_VERSION")), ">X.118.0.0<");
     assert_eq!(ours_props, e2[1].1, "property set");
 
