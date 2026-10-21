@@ -36,6 +36,7 @@ mod write;
 pub use read::{looks_like_dxf, read_bytes, read_file};
 
 use crate::model::{Drawing, HatchLibrary};
+use std::collections::BTreeMap;
 
 /// ASCII or binary DXF.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,7 +49,12 @@ pub enum DxfFormat {
 #[derive(Debug, Clone)]
 pub struct DxfOutput {
     pub bytes: Vec<u8>,
+    /// What was left out or filled in, for people to read.
     pub notes: Vec<String>,
+    /// The objects the file does not hold, by type name: those the model
+    /// keeps only as DWG records it cannot express in DXF, and those whose
+    /// records did not decode. Empty when the file holds the whole drawing.
+    pub left_out: BTreeMap<String, usize>,
 }
 
 /// What the writer takes from the program writing the file when it has it.
@@ -76,7 +82,8 @@ pub fn groups(d: &Drawing) -> (Vec<encode::Group>, Vec<String>) {
 
 /// The drawing as the groups of an AC1032 DXF.
 pub fn groups_with(d: &Drawing, opts: &WriteOptions<'_>) -> (Vec<encode::Group>, Vec<String>) {
-    write::Writer::new(d, opts.hatch_lines).write()
+    let (groups, notes, _) = write::Writer::new(d, opts.hatch_lines).write();
+    (groups, notes)
 }
 
 /// The drawing as an AC1032 DXF file, with [`WriteOptions::default`].
@@ -90,10 +97,55 @@ pub fn to_bytes(d: &Drawing, format: DxfFormat) -> DxfOutput {
 /// graphics block is missing is written without one; a program that draws
 /// dimensions adds the blocks first, so that other programs show them.
 pub fn to_bytes_with(d: &Drawing, format: DxfFormat, opts: &WriteOptions<'_>) -> DxfOutput {
-    let (groups, notes) = groups_with(d, opts);
+    let (groups, notes, left_out) = write::Writer::new(d, opts.hatch_lines).write();
     let bytes = match format {
         DxfFormat::Ascii => encode::to_ascii(&groups),
         DxfFormat::Binary => encode::to_binary(&groups),
     };
-    DxfOutput { bytes, notes }
+    DxfOutput { bytes, notes, left_out }
+}
+
+#[cfg(test)]
+mod left_out {
+    //! What a conversion leaves out is counted by type, so a program can
+    //! tell a whole conversion from a partial one without reading notes.
+
+    use super::*;
+
+    fn corpus(name: &str) -> Option<Vec<u8>> {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../corpus/mosaiciron-mi201");
+        std::fs::read(dir.join(name)).ok()
+    }
+
+    #[test]
+    fn a_dxf_of_the_whole_drawing_leaves_nothing_out() {
+        let Some(file) = corpus("mi201-r2018.dwg") else { return };
+        let d = crate::dwg::read_bytes(&file).unwrap();
+        let out = to_bytes(&d, DxfFormat::Ascii);
+        assert!(out.left_out.is_empty(), "{:?}", out.left_out);
+    }
+
+    #[test]
+    fn objects_kept_only_as_dwg_records_are_counted() {
+        let Some(file) = corpus("mi201-r2010.dwg") else { return };
+        let d = crate::dwg::read_bytes(&file).unwrap();
+        let out = to_bytes(&d, DxfFormat::Ascii);
+        assert_eq!(out.left_out.get("VISUALSTYLE"), Some(&24), "{:?}", out.left_out);
+        assert_eq!(out.left_out.values().sum::<usize>(), 41, "{:?}", out.left_out);
+        assert!(out.notes.iter().any(|n| n.starts_with("left out")), "{:?}", out.notes);
+    }
+
+    #[test]
+    fn entities_the_model_does_not_hold_are_a_warning() {
+        let dxf = "0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n1\n21\n0\n31\n0\n\
+                   0\nNOT_AN_ENTITY_TYPE\n8\n0\n0\nENDSEC\n0\nEOF\n";
+        let d = read_bytes(dxf.as_bytes()).unwrap();
+        let warnings: Vec<&str> = d
+            .diagnostics
+            .iter()
+            .filter(|x| x.severity == crate::model::Severity::Warning)
+            .map(|x| x.message.as_str())
+            .collect();
+        assert!(warnings.iter().any(|m| m.starts_with("left out") && m.contains("NOT_AN_ENTITY_TYPE")), "{:?}", d.diagnostics);
+    }
 }

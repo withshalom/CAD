@@ -512,7 +512,7 @@ impl<'a> Writer<'a> {
                 .map(|(t, n)| format!("{t} ×{n}"))
                 .collect();
             self.notes.push(format!(
-                "left out (AutoCAD recreates its defaults): {}",
+                "left out (the model keeps them only as DWG records, or they did not decode): {}",
                 list.join(", ")
             ));
         }
@@ -572,7 +572,8 @@ impl<'a> Writer<'a> {
 
     // ----- sections ------------------------------------------------------------
 
-    pub fn write(mut self) -> (Vec<Group>, Vec<String>) {
+    /// The groups, the notes, and the objects left out by type.
+    pub fn write(mut self) -> (Vec<Group>, Vec<String>, BTreeMap<String, usize>) {
         self.header();
         self.classes();
         self.tables();
@@ -580,7 +581,7 @@ impl<'a> Writer<'a> {
         self.entities();
         self.objects();
         self.s(0, "EOF");
-        (self.out, self.notes)
+        (self.out, self.notes, self.skipped)
     }
 
     fn begin(&mut self, name: &str) {

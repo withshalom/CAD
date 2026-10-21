@@ -29,7 +29,12 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone)]
 pub struct DwgOutput {
     pub bytes: Vec<u8>,
+    /// What was left out, for people to read.
     pub notes: Vec<String>,
+    /// The objects the file does not hold, by type name: those the model
+    /// cannot encode and keeps no record of in this version. Empty when the
+    /// file holds the whole drawing.
+    pub left_out: BTreeMap<String, usize>,
 }
 
 /// What a DWG file records about the program that wrote it, and the parts
@@ -116,6 +121,8 @@ struct Encoded {
     /// (handle, framed object bytes), in handle order.
     objects: Vec<(u64, Vec<u8>)>,
     notes: Vec<String>,
+    /// Objects left out, by type name.
+    left_out: BTreeMap<String, usize>,
 }
 
 fn named_entry(d: &Drawing, dict: Handle, name: &str) -> Option<Handle> {
@@ -193,6 +200,7 @@ fn encode_objects(d: &Drawing, ver: DwgVersion, opts: &WriteOptions<'_>) -> Enco
     };
     let mut objects = Vec::with_capacity(d.objects.len());
     let mut notes = Vec::new();
+    let mut left_out: BTreeMap<String, usize> = BTreeMap::new();
     let dxf_only = dxf_only_objects(d);
     let mut patched: Option<Object> = None;
     for o in d.objects.values() {
@@ -221,6 +229,7 @@ fn encode_objects(d: &Drawing, ver: DwgVersion, opts: &WriteOptions<'_>) -> Enco
         match bytes {
             Some(b) => objects.push((o.handle.0, b)),
             None => {
+                *left_out.entry(o.type_name.clone()).or_default() += 1;
                 if !notes.iter().any(|n| n.starts_with(&format!("{:X} ", o.handle.0))) {
                     let why = match &o.raw {
                         Some(r) => format!("kept only as a {} record", r.version.magic()),
@@ -231,7 +240,7 @@ fn encode_objects(d: &Drawing, ver: DwgVersion, opts: &WriteOptions<'_>) -> Enco
             }
         }
     }
-    Encoded { objects, notes }
+    Encoded { objects, notes, left_out }
 }
 
 /// Objects a DXF holds that the DWG of the same drawing does not: the
@@ -321,7 +330,7 @@ pub fn to_bytes(d: &Drawing) -> Result<DwgOutput> {
 /// graphics block is missing is written without one; a program that draws
 /// dimensions adds the blocks first, so that other programs show them.
 pub fn to_bytes_with(d: &Drawing, opts: &WriteOptions<'_>) -> Result<DwgOutput> {
-    let (stream, mut notes) = stream_sections(d, opts)?;
+    let (stream, mut notes, left_out) = stream_sections(d, opts)?;
     let bytes = container::pack(&file_info(d), &stream, &MAP_ORDER)?;
     if !notes.is_empty() {
         notes.insert(
@@ -329,7 +338,7 @@ pub fn to_bytes_with(d: &Drawing, opts: &WriteOptions<'_>) -> Result<DwgOutput> 
             format!("{} objects could not be written to AC1032", notes.len()),
         );
     }
-    Ok(DwgOutput { bytes, notes })
+    Ok(DwgOutput { bytes, notes, left_out })
 }
 
 fn file_info(d: &Drawing) -> container::FileInfo {
@@ -343,12 +352,15 @@ fn file_info(d: &Drawing) -> container::FileInfo {
     }
 }
 
+/// Every section of the file in stream order, the notes on what was left
+/// out, and what was left out by type.
+type Sections = (Vec<Section>, Vec<String>, BTreeMap<String, usize>);
+
 /// Every section of the file, in stream order, and notes on what was left
 /// out.
-fn stream_sections(d: &Drawing, opts: &WriteOptions<'_>) -> Result<(Vec<Section>, Vec<String>)> {
+fn stream_sections(d: &Drawing, opts: &WriteOptions<'_>) -> Result<Sections> {
     let ver = DwgVersion::R2018;
-    let Encoded { objects, mut notes } = encode_objects(d, ver, opts);
-    let _ = &mut notes;
+    let Encoded { objects, notes, left_out } = encode_objects(d, ver, opts);
     if objects.is_empty() {
         return Err(Error::format("the drawing has no objects to write"));
     }
@@ -425,5 +437,5 @@ fn stream_sections(d: &Drawing, opts: &WriteOptions<'_>) -> Result<(Vec<Section>
         compressed("AcDb:AuxHeader", sections::aux_header(d, handseed, saves)),
         compressed("AcDb:Header", sections::header_section(d, ver, handseed)),
     ];
-    Ok((stream, std::mem::take(&mut notes)))
+    Ok((stream, notes, left_out))
 }
