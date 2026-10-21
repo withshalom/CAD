@@ -177,10 +177,14 @@ fn clip_path(points: &[Vec2], closed: bool, r: &BBox, out: &mut Vec<Shape>) {
     }
 }
 
+/// One side of the clip rectangle: whether a point is on its inner side,
+/// and where the segment between two points crosses it.
+type ClipEdge = (fn(Vec2, &BBox) -> bool, fn(Vec2, Vec2, &BBox) -> Vec2);
+
 /// Sutherland–Hodgman: a ring clipped to the rectangle.
 fn clip_ring(ring: &[Vec2], r: &BBox) -> Vec<Vec2> {
     let mut poly = ring.to_vec();
-    let edges: [(fn(Vec2, &BBox) -> bool, fn(Vec2, Vec2, &BBox) -> Vec2); 4] = [
+    let edges: [ClipEdge; 4] = [
         (|p, r| p.x >= r.min.x, |a, b, r| lerp_x(a, b, r.min.x)),
         (|p, r| p.x <= r.max.x, |a, b, r| lerp_x(a, b, r.max.x)),
         (|p, r| p.y >= r.min.y, |a, b, r| lerp_y(a, b, r.min.y)),

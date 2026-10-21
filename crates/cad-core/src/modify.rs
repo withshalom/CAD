@@ -1373,10 +1373,14 @@ fn edge_of(kind: &ObjectKind) -> Result<Edge, String> {
     }
 }
 
-/// Lines `a` and `b`, kept on the sides of `pa` and `pb`: the corner
-/// point, and for each the unit direction from the corner along the kept
+/// Where two lines meet, as [`line_corner`] finds it: the corner point,
+/// then for each line the unit direction from the corner along the kept
 /// part and the far end of the kept part.
-fn line_corner(a: &Line, pa: Vec2, b: &Line, pb: Vec2) -> Result<(Vec2, (Vec2, Vec2), (Vec2, Vec2)), String> {
+type LineCorner = (Vec2, (Vec2, Vec2), (Vec2, Vec2));
+
+/// Lines `a` and `b`, kept on the sides of `pa` and `pb`, and the corner
+/// they make.
+fn line_corner(a: &Line, pa: Vec2, b: &Line, pb: Vec2) -> Result<LineCorner, String> {
     let (a0, a1, b0, b1) = (a.start.xy(), a.end.xy(), b.start.xy(), b.end.xy());
     let (da, db) = (a1 - a0, b1 - b0);
     let den = da.cross(db);

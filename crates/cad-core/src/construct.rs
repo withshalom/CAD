@@ -106,7 +106,7 @@ pub fn radial_dimension(d: &Drawing, h: Handle, at: Vec2, diameter: Option<bool>
 /// Multiline text filling the box between corners `a` and `b`: it starts
 /// at the top left and wraps at the box's width.
 pub fn mtext_in_box(a: Vec2, b: Vec2, height: f64, rotation: f64, text: &str) -> R<MText> {
-    if !(height > 0.0) {
+    if height.is_nan() || height <= 0.0 {
         return Err("the text height must be more than zero".into());
     }
     if text.trim().is_empty() {

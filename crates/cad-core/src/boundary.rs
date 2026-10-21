@@ -482,7 +482,7 @@ impl Graph {
         let nh = 2 * ne;
         let origin = |h: usize| {
             let (u, v, _) = self.edges[h / 2];
-            if h % 2 == 0 {
+            if h.is_multiple_of(2) {
                 u
             } else {
                 v
@@ -688,19 +688,28 @@ pub mod flags {
     pub const OUTERMOST: u32 = 16;
 }
 
-/// A hatch of `loops` (the first the outline) with a pattern from the
-/// library: `scale` (for USER, the spacing), `angle` in radians, `double`
-/// for a crossed USER hatch. Too fine a pattern for the area is refused.
+/// A pattern as HATCH asks for it: a name from the pattern library (or
+/// USER, or SOLID), its scale (for USER, the line spacing), its angle in
+/// radians, and for USER whether the lines are crossed.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HatchPattern<'a> {
+    pub name: &'a str,
+    pub scale: f64,
+    pub angle: f64,
+    pub double: bool,
+}
+
+/// A hatch of `loops` (the first the outline) with `pattern`. `derived`
+/// marks loops found by picking a point; `seed` is that point. Too fine a
+/// pattern for the area is refused.
 pub fn hatch(
     loops: &[Loop],
     derived: bool,
-    pattern: &str,
-    scale: f64,
-    angle: f64,
-    double: bool,
+    pattern: HatchPattern<'_>,
     unit: Unit,
     seed: Option<Vec2>,
 ) -> Result<Hatch, String> {
+    let HatchPattern { name: pattern, scale, angle, double } = pattern;
     if loops.is_empty() {
         return Err("nothing to hatch".into());
     }
@@ -850,17 +859,18 @@ mod tests {
         let r = region_of_curves(&cs, Vec2::new(70.0, 25.0)).unwrap();
         let mut loops = vec![r.outer.clone()];
         loops.extend(r.islands.iter().cloned());
-        let h = hatch(&loops, true, "ansi31", 1.0, 0.0, false, Unit::Millimeter, Some(Vec2::new(70.0, 25.0))).unwrap();
+        let p = |name, scale, angle, double| HatchPattern { name, scale, angle, double };
+        let h = hatch(&loops, true, p("ansi31", 1.0, 0.0, false), Unit::Millimeter, Some(Vec2::new(70.0, 25.0))).unwrap();
         assert_eq!(h.pattern_name, "ANSI31");
         assert_eq!(h.paths.len(), 2);
         assert_eq!(h.pattern_lines.len(), 1);
         assert!(!h.solid_fill);
-        let s = hatch(&loops, true, "SOLID", 1.0, 0.0, false, Unit::Millimeter, None).unwrap();
+        let s = hatch(&loops, true, p("SOLID", 1.0, 0.0, false), Unit::Millimeter, None).unwrap();
         assert!(s.solid_fill && s.pattern_lines.is_empty());
-        let u = hatch(&loops, false, "user", 3.0, PI / 4.0, true, Unit::Millimeter, None).unwrap();
+        let u = hatch(&loops, false, p("user", 3.0, PI / 4.0, true), Unit::Millimeter, None).unwrap();
         assert_eq!((u.pattern_name.as_str(), u.pattern_type, u.pattern_lines.len()), ("_USER", 0, 2));
-        assert!(hatch(&loops, true, "NOPE", 1.0, 0.0, false, Unit::Millimeter, None).is_err());
-        assert!(hatch(&loops, true, "ANSI31", 1e-6, 0.0, false, Unit::Millimeter, None).is_err());
+        assert!(hatch(&loops, true, p("NOPE", 1.0, 0.0, false), Unit::Millimeter, None).is_err());
+        assert!(hatch(&loops, true, p("ANSI31", 1e-6, 0.0, false), Unit::Millimeter, None).is_err());
         // Closed objects give loops.
         let c = ObjectKind::Circle(Circle::new(Vec2::new(0.0, 0.0), 5.0));
         assert_eq!(loop_of(&c).unwrap().len(), 2);
