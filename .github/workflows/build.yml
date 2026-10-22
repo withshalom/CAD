@@ -2,6 +2,9 @@ name: build
 
 on:
   push:
+    # gh-pages holds the published web app (the pages job), not sources.
+    branches-ignore: [gh-pages]
+    tags: ["**"]
   pull_request:
   workflow_dispatch:
 
@@ -113,15 +116,13 @@ jobs:
             || { bash .github/annotate-failure.sh "Check the APK" "$RUNNER_TEMP/step.log"; exit 1; }
 
   web:
-    # The browser workbench (apps/web): the core built for WebAssembly and
-    # the app put together in dist/web/. Uploaded as an artifact on every
-    # run; published to GitHub Pages from main when the repository variable
-    # PUBLISH_PAGES is "true" (Settings → Pages → Source: GitHub Actions).
+    # The browser workbench (apps/web): the core built for WebAssembly, the
+    # app put together in dist/web/ and as one file, dist/BlackCAD.html, and
+    # the core checked through the page's own glue (apps/web/tests). Both
+    # are uploaded on every run; the pages job publishes them from main.
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      pages: write
-      id-token: write
     steps:
       - uses: actions/checkout@v5
       - name: Toolchain
@@ -141,13 +142,52 @@ jobs:
         run: |
           cargo xtask web 2>&1 | tee "$RUNNER_TEMP/step.log" \
             || { bash .github/annotate-failure.sh "Web build" "$RUNNER_TEMP/step.log"; exit 1; }
-      - uses: actions/upload-artifact@v6
+      - name: Test the core in the page's glue
+        shell: bash
+        run: |
+          node --version
+          node apps/web/tests/core.test.mjs dist/web/core.wasm corpus/mosaiciron-mi201 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "Web core test" "$RUNNER_TEMP/step.log"; exit 1; }
+      - uses: actions/upload-artifact@v7
         with:
-          name: cad-web
+          name: blackcad-web
           path: dist/web
-      - uses: actions/upload-pages-artifact@v4
-        if: github.ref == 'refs/heads/main' && vars.PUBLISH_PAGES == 'true'
+      - uses: actions/upload-artifact@v7
+        # Not zipped: the run's page offers BlackCAD.html itself.
         with:
-          path: dist/web
-      - uses: actions/deploy-pages@v4
-        if: github.ref == 'refs/heads/main' && vars.PUBLISH_PAGES == 'true'
+          path: dist/BlackCAD.html
+          archive: false
+
+  pages:
+    # The web app and BlackCAD.html published from main once every job has
+    # passed: the gh-pages branch holds a single commit, replaced each time,
+    # which GitHub Pages serves (Settings → Pages → Build and deployment:
+    # Deploy from a branch, gh-pages, / (root)).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build, msrv, android, web]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    env:
+      # The custom domain, for this repository only (forks publish without one).
+      PAGES_DOMAIN: ${{ github.repository == 'withshalom/CAD' && 'cad.mosaiciron.com' || '' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: blackcad-web
+          path: site
+      - uses: actions/download-artifact@v8
+        with:
+          name: BlackCAD.html
+          path: site
+      - name: Publish to gh-pages
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash .github/publish-pages.sh site 2>&1 | tee "$RUNNER_TEMP/step.log" \
+            || { bash .github/annotate-failure.sh "Publish" "$RUNNER_TEMP/step.log"; exit 1; }
