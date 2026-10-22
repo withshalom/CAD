@@ -301,7 +301,7 @@ for platforms without a GPU path.
 | Windows, macOS, Linux | `cargo build --release`. The desktop app will call the core directly. |
 | Android | `cargo xtask android` builds `crates/cad-ffi` as `libcad_ffi.so` with the NDK's clang as the linker; the Java app in `apps/android` calls it through JNI. See below. |
 | iOS | `cargo build --target aarch64-apple-ios` into a static library, wrapped as an XCFramework and called from Swift through the same entry points. |
-| Web (PWA) | `cargo xtask web` builds `crates/cad-ffi` for `wasm32-unknown-unknown` and puts `apps/web` together in `dist/web/`; `cargo xtask serve` serves it locally. Decided 2026-10-08: the GUI is built and tested first as an installable PWA (the workbench, below). The native apps stay the goal, so the core keeps no browser-only code: everything the workbench does goes through `session.rs`, which a desktop or Android shell can drive the same way. |
+| Web (PWA) | `cargo xtask web` builds `crates/cad-ffi` for `wasm32-unknown-unknown` and puts `apps/web` together in `dist/web/` (and as one file, `dist/BlackCAD.html`); `cargo xtask serve` serves it locally. CI publishes the same build from `main` to the `gh-pages` branch, which GitHub Pages serves at cad.mosaiciron.com. Decided 2026-10-08: the GUI is built and tested first as an installable PWA (the workbench, below). The native apps stay the goal, so the core keeps no browser-only code: everything the workbench does goes through `session.rs`, which a desktop or Android shell can drive the same way. |
 
 ## Browser workbench (`apps/web`)
 
