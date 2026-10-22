@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.17.0 (2026-10-22)
+The native format's container and tagged records are public, so CADCraft's
+`.cad` can keep its own records in the same container. No change to the
+format (2.10) or to what BlackCAD writes.
+
+- `cad-native`: the `container` and `tags` modules are public.
+  `Builder::for_records` marks a file as holding another program's
+  records (`RECORDS_CADCRAFT`); `tags::put_record` and `tags::records`
+  frame and split a records section; `TagReader::next` is `next_tag`, so
+  it isn't mistaken for an iterator's. A container that isn't native
+  reports "not a native file (.blk or .cad)".
+- Fixed from 0.16.0: three places said CADCraft's files are `.blk`; they
+  are `.cad` (the doc of `EXTENSION`, and the message refusing a
+  CADCraft file).
+- Docs: the crate's README shows the container used from outside; FORMAT
+  says which sections are shared and which are BlackCAD's.
+- Tests: another program's records go through the container (compressed
+  or not, with or without recovery data) and are read back from outside
+  the crate; BlackCAD refuses them, naming them a CADCraft drawing (.cad);
+  a damaged front header still says whose records a file holds.
+
 ## 0.16.0 (2026-10-22)
 BlackCAD's native format is `.blk`, and its lock file `.bdl`. The names
 `.cad` and `.cdl` go to CADCraft's native format (developed in the

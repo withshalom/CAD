@@ -137,6 +137,24 @@ fn f64_at(data: &[u8], pos: &mut usize) -> Result<f64> {
     Ok(f64::from_le_bytes(fixed::<8>(data, pos)?))
 }
 
+/// Append a record to a records section: its length, then its tags.
+pub fn put_record(out: &mut Vec<u8>, w: TagWriter) {
+    put_varint(out, w.buf.len() as u64);
+    out.extend_from_slice(&w.buf);
+}
+
+/// Split a records section into its length-prefixed records.
+pub fn records(data: &[u8]) -> Result<Vec<&[u8]>> {
+    let mut out = Vec::new();
+    let mut p = 0usize;
+    while p < data.len() {
+        let n = get_len(data, &mut p, "record")?;
+        out.push(&data[p..p + n]);
+        p += n;
+    }
+    Ok(out)
+}
+
 // ---------------------------------------------------------------------------
 // Writer
 // ---------------------------------------------------------------------------
@@ -440,7 +458,7 @@ impl<'a> TagReader<'a> {
             .map(|b| u16::from_le_bytes([b[0], b[1]])))
     }
 
-    pub fn next(&mut self) -> Result<Option<Tag>> {
+    pub fn next_tag(&mut self) -> Result<Option<Tag>> {
         self.fill()?;
         Ok(self.peeked.take())
     }
@@ -451,7 +469,7 @@ impl<'a> TagReader<'a> {
     }
 
     pub fn expect(&mut self, code: u16) -> Result<Value> {
-        match self.next()? {
+        match self.next_tag()? {
             Some(t) if t.code == code => Ok(t.value),
             Some(t) => Err(Error::format(format!(
                 "expected group {code}, found group {}",
@@ -463,7 +481,7 @@ impl<'a> TagReader<'a> {
 
     pub fn opt(&mut self, code: u16) -> Result<Option<Value>> {
         if self.peek_code()? == Some(code) {
-            Ok(self.next()?.map(|t| t.value))
+            Ok(self.next_tag()?.map(|t| t.value))
         } else {
             Ok(None)
         }
@@ -639,7 +657,7 @@ mod tests {
         let mut r = TagReader::new(&data);
         assert_eq!(r.opt_f64(40).unwrap(), None);
         assert_eq!(
-            r.next().unwrap().unwrap().value,
+            r.next_tag().unwrap().unwrap().value,
             Value::Unknown {
                 ty: 0x7E,
                 bytes: vec![1, 2, 3]

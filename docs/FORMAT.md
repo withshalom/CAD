@@ -113,6 +113,11 @@ separate decision. It is a draft until the DWG test corpus passes
   records a file holds (0 BlackCAD's, 1 CADCraft's); earlier files have
   0 there and read as before. A 2.9 reader ignores the field.
 
+The container (§2–§5, §7.7) and the tagged records (§6) are public in the
+`cad-native` crate (`container`, `tags`, since 0.17.0), so CADCraft's
+`.cad` keeps its own records in the same container, marked in the header.
+Everything from §7.1 on that names records describes BlackCAD's.
+
 ## 1. Conventions
 
 - All fixed-width integers and floats are **little-endian**. Floats are

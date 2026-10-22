@@ -425,7 +425,7 @@ fn read_xdata(data: &[u8]) -> Result<Vec<XData>> {
     use xcode as x_;
     let mut r = TagReader::new(data);
     let mut out: Vec<XData> = Vec::new();
-    while let Some(t) = r.next()? {
+    while let Some(t) = r.next_tag()? {
         if t.code == x_::APP {
             let app = match t.value {
                 Value::Str(s) => XDataApp::Name(s),
@@ -1908,7 +1908,7 @@ pub fn read_header_checked(data: &[u8]) -> Result<(HeaderVars, Option<String>)> 
     let mut problem: Option<String> = None;
     loop {
         let at = r.position();
-        let t = match r.next() {
+        let t = match r.next_tag() {
             Ok(Some(t)) => t,
             Ok(None) => break,
             Err(e) => {

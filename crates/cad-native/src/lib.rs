@@ -54,13 +54,18 @@ use cad_model::{error, geom, model};
 
 pub mod codec;
 
-mod container;
+/// The container: header, named sections, codecs, CRCs, directory and
+/// recovery data, whatever records the sections hold. Public so that
+/// CADCraft's `.cad` can hold its own records in it ([`container::Builder::for_records`]).
+pub mod container;
 mod objects;
 mod records;
 mod recovery;
 pub mod schema;
 mod split;
-mod tags;
+/// Tagged records: group codes with typed values, as the record sections
+/// hold them ([`tags::TagWriter`], [`tags::TagReader`]).
+pub mod tags;
 
 pub mod audit;
 pub mod lock;
@@ -73,7 +78,7 @@ pub use container::{
 
 use container::{Builder, Codec, Container, DirEntry, Encoding, FileHeader};
 use records as rec;
-use tags::{get_len, get_varint, put_varint, TagReader, TagWriter};
+use tags::{get_len, get_varint, put_record, put_varint, records, TagReader, TagWriter};
 
 use codec::sha256::{hex, Sha256};
 use crate::dwg::DwgVersion;
@@ -85,7 +90,7 @@ use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 /// File extension of BlackCAD's native drawings. The format's container is
-/// shared with CADCraft's `.blk` files, which hold CADCraft's own records
+/// shared with CADCraft's `.cad` files, which hold CADCraft's own records
 /// (the header says whose: [`container::RECORDS_BLACKCAD`]).
 pub const EXTENSION: &str = "blk";
 
@@ -159,22 +164,6 @@ impl Default for WriteOptions {
 // Framing helpers
 // ---------------------------------------------------------------------------
 
-fn put_record(out: &mut Vec<u8>, w: TagWriter) {
-    put_varint(out, w.buf.len() as u64);
-    out.extend_from_slice(&w.buf);
-}
-
-/// Split a section into its length-prefixed records.
-fn records(data: &[u8]) -> Result<Vec<&[u8]>> {
-    let mut out = Vec::new();
-    let mut p = 0usize;
-    while p < data.len() {
-        let n = get_len(data, &mut p, "record")?;
-        out.push(&data[p..p + n]);
-        p += n;
-    }
-    Ok(out)
-}
 
 /// This crate's version: what [`WriteOptions::default`] records as the
 /// program that wrote a file, when the program names none of its own.
@@ -255,7 +244,7 @@ fn read_digest(data: &[u8]) -> Result<[u8; 32]> {
     let mut r = TagReader::new(data);
     let mut algorithm = String::new();
     let mut snapshot = None;
-    while let Some(t) = r.next()? {
+    while let Some(t) = r.next_tag()? {
         if let (9, tags::Value::Str(n)) = (t.code, &t.value) {
             match n.as_str() {
                 "$CAD_HASH" => algorithm = r.str(1)?,
@@ -313,7 +302,7 @@ struct Meta {
 fn read_meta(data: &[u8]) -> Result<Meta> {
     let mut r = TagReader::new(data);
     let mut m = Meta::default();
-    while let Some(t) = r.next()? {
+    while let Some(t) = r.next_tag()? {
         let tags::Value::Str(name) = t.value else {
             continue;
         };
@@ -590,7 +579,7 @@ fn decode_journal(data: &[u8]) -> Result<ChangeSet> {
 fn journal_previous(data: &[u8]) -> Option<[u8; 32]> {
     let first = records(data).ok()?.into_iter().next()?;
     let mut r = TagReader::new(first);
-    while let Ok(Some(t)) = r.next() {
+    while let Ok(Some(t)) = r.next_tag() {
         if let (9, tags::Value::Str(n)) = (t.code, &t.value) {
             if n == "$CAD_PREVIOUS" {
                 return r.bytes(310).ok()?.as_slice().try_into().ok();
@@ -610,7 +599,7 @@ fn decode_journal_checked(data: &[u8]) -> Result<(ChangeSet, Vec<String>)> {
         return Ok((set, partial));
     };
     let mut r = TagReader::new(first);
-    while let Some(t) = r.next()? {
+    while let Some(t) = r.next_tag()? {
         if let (9, tags::Value::Str(n)) = (t.code, &t.value) {
             match n.as_str() {
                 "$CAD_AUTHOR" => set.author = r.str(1)?,
@@ -1192,7 +1181,7 @@ impl NativeFile<'static> {
     }
 }
 
-/// The container, when it holds BlackCAD's records. A CADCraft `.blk` file
+/// The container, when it holds BlackCAD's records. A CADCraft `.cad` file
 /// (or a schema from a later program) shares the container but not the
 /// records, so it is refused with a message saying what it is.
 fn blackcad_records(c: Container<'_>) -> Result<Container<'_>> {
@@ -1200,7 +1189,7 @@ fn blackcad_records(c: Container<'_>) -> Result<Container<'_>> {
         container::RECORDS_BLACKCAD => Ok(c),
         container::RECORDS_CADCRAFT => Err(Error::new(
             ErrorKind::UnsupportedVersion,
-            "a CADCraft drawing (.blk): its records are CADCraft's; BlackCAD reads its own .blk files",
+            "a CADCraft drawing (.cad): its records are CADCraft's; BlackCAD reads its own .blk files",
         )),
         n => Err(Error::new(ErrorKind::UnsupportedVersion, format!("records of an unknown program (schema {n})"))),
     }
