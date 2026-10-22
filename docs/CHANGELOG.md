@@ -1,5 +1,59 @@
 # Changelog
 
+## 0.9.0 (2026-10-21)
+The repository builds and publishes BlackCAD in the browser: on every push
+CI compiles the core to WebAssembly, puts the workbench together and checks
+the core through the page's own glue, and from `main` it publishes the app
+and a single-file build, `BlackCAD.html`. The core, the open crates and the
+`.cad` format (2.4) are unchanged from 0.8.0; their version numbers move
+with the workspace.
+
+Web app (`apps/web`):
+- The workbench people used at cad.mosaiciron.com (BlackCAD with the
+  Blackboard, built on core 0.6.0) had been changed after its sources were
+  archived, so `apps/web` held an older page with the old name. Its files
+  are restored from the published page: `index.html`, `app.js`, `core.js`,
+  `icons.js` and `style.css`. Put together by `xtask`, they reproduce that
+  page byte for byte, apart from the changes below.
+- The installed app is named BlackCAD (manifest).
+- The single file says what it is: "single-file test build" on the start
+  screen and "(test build)" in the window title, and it no longer registers
+  the service worker when it is served beside the app.
+- PNG icons (192, 512 and maskable 512 pixels), which the manifest, the
+  service worker and iOS ask for, rendered from `icon.svg`. The service
+  worker could not install without them, so the app can now be installed
+  and work offline.
+- `apps/web/README.md`: the files, how the page talks to the core,
+  building, publishing and tests.
+
+Build and CI:
+- `cargo xtask web` writes `dist/BlackCAD.html` (was `dist/cad-test.html`).
+  `--core FILE` puts the app together around a core built before (one
+  from the `gh-pages` branch, say), for working on the page without the
+  WebAssembly target installed; `serve` takes it too.
+- `apps/web/tests/core.test.mjs` runs the core through `core.js` in Node:
+  its version against `Cargo.toml`, new drawings, the sample, drawing and
+  editing with undo and redo, the queries the page makes, saving in every
+  format and reading back, the corpus (every DWG but 2007 and every DXF,
+  34 entities each), and damaged input. The `web` job runs it after the
+  build; an `xtask` test checks that the single file still assembles from
+  `apps/web`.
+- The `pages` job publishes `dist/web` and `BlackCAD.html` to the
+  `gh-pages` branch from `main` once every job has passed (one commit,
+  replaced each time, with `CNAME` and `.nojekyll`); GitHub Pages serves
+  that branch at cad.mosaiciron.com. Each run keeps `blackcad-web` and
+  `BlackCAD.html` (not zipped) as artifacts.
+- The workflow runs for tags as before, and not for `gh-pages`.
+
+Documents:
+- `docs/blackboard/`: the Blackboard's curriculum, the shop advisory the
+  lessons were built from, and every lesson's sources and sign-off.
+- `docs/reviews/2026-10-08-advisory-0.5.0.md`: the outside advisory that
+  `TEST-PLAN.md` answers item by item, kept as received.
+- `PROVENANCE.md`: the restored web app and the Blackboard's lessons, the
+  icon renderer, and the fork of CADCraft that now uses `cad-dwg` and
+  `cad-dxf` (one way: nothing comes back).
+
 ## 0.8.0 (2026-10-21)
 The drawing database and the DWG and DXF readers and writers become crates
 of their own, open source under MIT OR Apache-2.0, so other programs can
