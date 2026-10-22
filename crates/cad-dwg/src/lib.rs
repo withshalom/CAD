@@ -251,6 +251,13 @@ pub fn read_bytes(bytes: &[u8]) -> Result<Drawing> {
             header.properties = p;
         }
     }
+    // MEASUREMENT (imperial or metric) is not a header variable in DWG
+    // but the last field of AcDb:Template.
+    if let Some((_, s)) = container.others.iter().find(|(n, _)| n == "AcDb:Template") {
+        if let Some(m) = template_measurement(s) {
+            header.measurement = Some(m);
+        }
+    }
 
     let mut drawing = Drawing {
         version: ver,
@@ -267,6 +274,17 @@ pub fn read_bytes(bytes: &[u8]) -> Result<Drawing> {
     drawing.rebuild_index();
     drawing.number_viewports();
     Ok(drawing)
+}
+
+/// MEASUREMENT from AcDb:Template (spec chapter 22): the section's last
+/// short, after the template description, which AutoCAD leaves empty (it
+/// writes `01 00 00 00` before it). 0 is imperial, 1 metric; anything else
+/// is not believed. R13–R15 files have no such section and keep the
+/// default.
+fn template_measurement(s: &[u8]) -> Option<u16> {
+    let at = s.len().checked_sub(2)?;
+    let m = u16::from_le_bytes([*s.get(at)?, *s.get(at + 1)?]);
+    (m <= 1).then_some(m)
 }
 
 /// One string of AcDb:SummaryInfo: RS length counting the terminating 0,
