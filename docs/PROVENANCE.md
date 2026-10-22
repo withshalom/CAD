@@ -94,9 +94,10 @@ and everything below still describes their sources.
 | `model/store.rs`, `model/edit.rs` (`Change`, `revert`, `ensure_model_space`, `ensure_layer_zero`), `render` (`entities_changed`, `update_model_space`, item boxes, block-cycle and visit limits), `export/display.rs` (`display_patch`), `dxf/read.rs` (files with no handles, tables or subclass markers) | Undo by recorded changes; patched scenes and displays; minimal DXF files | Original. The 2026-10-08 advisory (an outside black-box review of this build's own behaviour, stating that no third-party code or other program's output was used) described symptoms and required outcomes only; the designs here are this project's. That a DXF may hold only an ENTITIES section, without handles or subclass markers, is from the public DXF reference. |
 | `crates/cad-ffi/tests/damaged_inputs.rs`, `crates/cad-ffi/examples/history_bench.rs` | Damaged-input test (seeded from the core's own files) and the edit-cost benchmark | Original. |
 | `crates/cad-ffi/src/web.rs` | WebAssembly entry points | Original. Plain `extern "C"` exports over linear memory; no `wasm-bindgen` or other crate. |
-| `apps/web` | The browser workbench (PWA): `index.html`, `style.css`, `app.js`, `core.js`, `icons.js`, `sw.js`, `manifest.webmanifest`, icons | Original. Layout and colours from the project's own workspace mockups (2026-09-30) and DESIGN.md; icons drawn for this project. Browser APIs (canvas, pointer events, service workers, the web app manifest, File System Access) from their public specifications and MDN-style reference knowledge. The point-entry grammar (`x,y`, `@dx,dy`, `@d<a`) and the command-line conventions are common CAD practice, as COMMANDS.md records. |
+| `apps/web` | The browser workbench (PWA): `index.html`, `style.css`, `app.js` (with the Blackboard), `core.js`, `icons.js`, `sw.js`, `manifest.webmanifest`, icons, `tests/core.test.mjs` | Original. Layout and colours from the project's own workspace mockups (2026-09-30) and DESIGN.md; icons drawn for this project, the PNG icons rendered from `icons/icon.svg` (`tools/render_icons.py`). Browser APIs (canvas, pointer events, service workers, the web app manifest, File System Access) from their public specifications and MDN-style reference knowledge. The point-entry grammar (`x,y`, `@dx,dy`, `@d<a`) and the command-line conventions are common CAD practice, as COMMANDS.md records. The Blackboard's lessons (text, figures, exercises, default numbers) were drafted for this project by Claude in October 2026, not copied from tutorials, manuals or other software's help; `docs/blackboard/LESSON-SOURCES.md` names the public source of each rule, marks the placeholder numbers, and holds the reviewers' sign-off (pending). The files were restored on 2026-10-21 from the page published at cad.mosaiciron.com, this project's own build (CHANGELOG 0.9.0). |
 | `xtask/src/web.rs` | `cargo xtask web` / `serve`: build and assemble the workbench, a local web server | Original. HTTP/1.1 from its public specification; the WebAssembly import-section check from the WebAssembly core specification. |
 | `apps/android` | CAD Viewer, the Android test app | Original, Java, Android platform APIs only. Build files follow the documented Android Gradle plugin setup. |
+| `tools/render_icons.py` | The web app's PNG icons | Original. Draws `icon.svg`'s shapes with Pillow (a Python imaging library), a tool that is not part of the build or of the icons' design. |
 | `tools/compaction_lab.py`, `examples/lz77_segments.rs` | Measurements of record layouts and codecs (`FORMAT-ROADMAP.md` §5.2) | Original. The lab calls DEFLATE and LZMA from Python's standard library to measure what an entropy-coding codec would add; they are yardsticks only, not part of the build, and no code from them is used. |
 
 ## The Rust standard library for WebAssembly
@@ -135,6 +136,14 @@ dependencies into a project whose charter is to avoid both. Revisit only
 with an IP attorney's opinion. It may still serve later as a black-box
 comparison tool (run its binary on our own test files and compare output,
 without reading its source), recorded here if that happens.
+
+**Downstream use, one way (2026-10-21).** The owner's fork of CADCraft
+(`withshalom/dwgcraft`, a CAD program whose DWG support came from acadrust)
+now takes `cad-dwg` and `cad-dxf` from this repository, by git revision,
+as its first DWG reader and writer, and keeps acadrust there as the
+fallback for files these crates do not convert whole. That work happens
+in the fork only. Nothing from dwgcraft, CADCraft or acadrust comes back
+into this repository, and rule 3 above holds here unchanged.
 
 ## A caveat about how the code was written
 

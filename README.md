@@ -1,9 +1,10 @@
 # BlackCAD — clean-room CAD software with its own `.cad` format and DWG fluency (draft)
 
-*The program's name lives in this title and in one constant in the code
-(`cad_core::PRODUCT_NAME`), so it is easy to change; that is the name it
-writes into DWG files as the program that saved them. Elsewhere in these
-docs **`.cad`** and **CAD** mean the file format.*
+*The program's name lives in this title, in one constant in the core
+(`cad_core::PRODUCT_NAME`, the name it writes into DWG files as the program
+that saved them) and in the web app's page, manifest and window title
+(`apps/web`); the single-file build is named for it too (`xtask`).
+Elsewhere in these docs **`.cad`** and **CAD** mean the file format.*
 
 A clean-room CAD engine written from scratch in Rust. Drawings are saved
 in the project's own **native `.cad` format** (binary-DXF-style records in
@@ -34,16 +35,20 @@ crates/cad-core/     the core library on those three: native .cad format, drafti
                      editing commands, units, font, rendering, raster and vector output
 crates/cad-ffi/      bridge to the platform apps: the session (open drawings, undo, commands),
                      WebAssembly entry points for the browser, JNI entry points for Android
-apps/web/            the workspace GUI as a browser app (PWA), installable on desktop and Android
+apps/web/            the BlackCAD workbench as a browser app (PWA), installable on desktop and Android;
+                     published at https://cad.mosaiciron.com/ (apps/web/README.md)
 apps/cad-cli/        `cad`, a command-line test build
 apps/android/        CAD Viewer, an Android test app (Java, Android's own APIs only)
 xtask/               `cargo xtask web`/`serve`: builds and serves the browser app;
                      `cargo xtask android`: builds the core for the Android app
-docs/                ARCHITECTURE, DESIGN (look and behaviour), COMMANDS (commands and shortcuts), FORMAT (.cad spec), FORMAT-ROADMAP, PROVENANCE (clean-room record), TEST-PLAN
+docs/                ARCHITECTURE, DESIGN (look and behaviour), COMMANDS (commands and shortcuts), FORMAT (.cad spec), FORMAT-ROADMAP, PROVENANCE (clean-room record), TEST-PLAN;
+                     blackboard/ (the lessons' curriculum and sources), reviews/ (outside reviews)
 corpus/              real drawings (DWG with AutoCAD's DXF of each) that `cargo test` reads and checks
 scripts/             build helpers for Linux and Windows
-tools/               compaction_lab.py: format-layout measurements (Python, not part of the build)
-.github/workflows/   CI: builds and tests on Linux, Windows and macOS, builds the Android APK and the web app
+tools/               compaction_lab.py: format-layout measurements; render_icons.py: the web app's PNG
+                     icons (Python, not part of the build)
+.github/workflows/   CI: builds and tests on Linux, Windows and macOS, builds the Android APK and the web app,
+                     and publishes the web app from main (the gh-pages branch)
 ```
 
 ## Build
@@ -87,10 +92,17 @@ and macOS on every push, and the binaries are downloadable from the run.
 
 `apps/web` is the program's GUI: the drafting workspace from the design
 mockups (tool rail, model space, properties, layers, command line, status
-bar; on phones the title bar, aid chips and tool sheet). It runs the whole
-core in the browser as WebAssembly, so it opens and saves DWG, DXF and
-`.cad` itself, with no server. It is a Progressive Web App: open it once
-and it can be installed like any program, and it keeps working offline.
+bar; on phones the title bar, aid chips and tool sheet), with the
+Blackboard of drafting and shop lessons beside it. It runs the whole core
+in the browser as WebAssembly, so it opens and saves DWG, DXF and `.cad`
+itself, with no server. It is a Progressive Web App: open it once and it
+can be installed like any program, and it keeps working offline.
+`apps/web/README.md` describes its files and how the page talks to the
+core.
+
+**Use it now:** <https://cad.mosaiciron.com/>, built by the workflow from
+the latest `main` (below), or the single file
+<https://cad.mosaiciron.com/BlackCAD.html>.
 
 **Run it on this computer:**
 
@@ -111,33 +123,47 @@ Browsers install apps and run their service workers only from
 `localhost` or HTTPS, which is why the port is forwarded rather than
 opened by the computer's network address.
 
-**Host it** anywhere that serves static files over HTTPS: `cargo xtask
-web` puts the finished app in `dist/web/`, and those files are all there
-is. The `web` job in the workflow builds the same folder on every push
-(artifact `cad-web`) and can publish it to GitHub Pages: set the
-repository variable `PUBLISH_PAGES` to `true` and choose GitHub Actions as
-the Pages source. A site published that way is public, even from a
-private repository.
+**How it is published:** the workflow's `web` job builds the core for
+WebAssembly and puts the app together on every push, then checks the core
+through the page's own glue (`apps/web/tests`); every run keeps the app
+(artifact `blackcad-web`) and the single file (`BlackCAD.html`). When every
+job has passed on `main`, the `pages` job replaces the `gh-pages` branch
+with that build (one commit, with `CNAME` and `.nojekyll`), and GitHub
+Pages serves the branch at the custom domain (Settings → Pages: deploy from
+the branch `gh-pages`, folder `/`). A site published this way is public,
+even from a private repository.
+
+**Host it** anywhere else that serves static files over HTTPS: `cargo
+xtask web` puts the finished app in `dist/web/`, and those files are all
+there is.
 
 **One file for testing:** `cargo xtask web` also writes
-`dist/cad-test.html`, the whole workbench in a single file (about 2.5 MB:
+`dist/BlackCAD.html`, the whole workbench in a single file (about 4 MB:
 scripts, styles and the core inlined, the core as base64). Open it by
 double-clicking, or send it to a phone and open it in the browser; it
 needs no server. It runs the same code as the app, but has no service
 worker, so it cannot be installed and does not open DWG files from the
-file manager. The start screen says "single-file test build".
+file manager. The start screen says "single-file test build", and the
+window title "(test build)". The newest one is on the `gh-pages` branch.
 
-**What works:** opening and saving (`.cad`, DWG 2018, ASCII and binary
-DXF, SVG export); LINE, PLINE, CIRCLE, ARC, RECTANGLE, TEXT, DIM (linear,
-aligned, radius, diameter), MOVE, COPY, ROTATE, MIRROR, ERASE, DIST, ID,
-ZOOM, PAN, undo and redo; object snaps, ORTHO, POLAR, grid and grid
-stepping; window and crossing selection, grips that edit by dragging;
-values edited in place in the properties panel (lengths in any unit:
-`1/2"`, `10mm`); layers: current, on/off, lock, colour, new. Typed points
-follow COMMANDS.md §17 (`x,y`, `@dx,dy`, `@len<angle`, a length along the
-cursor). Offset, trim and fillet show in the tool rail but are not built
-yet. A sample drawing (the P-1042 plate from the mockups) is on the start
-screen.
+**What it does:** opens and saves `.cad`, DWG 2018 and ASCII and binary
+DXF, and exports SVG and PDF. Its commands (typed, with AutoCAD's usual
+aliases, or picked from the tools): LINE, PLINE, CIRCLE, ARC, RECTANGLE,
+TEXT, MTEXT, XLINE, RAY, HATCH; DIM (one command for every kind),
+DIMLINEAR, DIMALIGNED, DIMRADIUS, DIMDIAMETER, DIMANGULAR, DIMBASELINE,
+DIMCONTINUE, LEADER, QLEADER, MLEADER; MOVE, COPY, ROTATE, MIRROR, SCALE,
+STRETCH, OFFSET, TRIM, EXTEND, FILLET, CHAMFER, ARRAY (rows and columns,
+or polar), EXPLODE, ERASE; BLOCK, INSERT, ATTDEF, ATTEDIT; UNITS, LINETYPE,
+LTSCALE, LWEIGHT, COLOR; LAYOUT, MVIEW, PAGESETUP, PLOT; DIST, ID, ZOOM,
+PAN, undo and redo. Object snaps, ORTHO, POLAR, grid and grid stepping;
+window and crossing selection, grips that edit by dragging; values edited
+in place in the properties panel (lengths in any unit: `1/2"`, `10mm`);
+layers: current, on/off, lock, colour, new. Typed points follow
+COMMANDS.md §17 (`x,y`, `@dx,dy`, `@len<angle`, a length along the
+cursor). The Blackboard (BOARD, F1) teaches drafting, shop practice and
+electronics on figures drawn from live numbers, and SHOPCHECK checks a
+drawing's holes against the shop's rules. A sample drawing (the P-1042
+plate from the mockups) is on the start screen.
 
 ## Android test viewer
 
