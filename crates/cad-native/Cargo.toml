@@ -1,6 +1,6 @@
 [package]
 name = "cad-native"
-description = "BlackCAD's native .blk drawing format: DWG-style container, DXF-coded records, change journal, hash chain, recovery data"
+description = "BlackCAD's native .blc drawing format: DWG-style container, DXF-coded records, change journal, hash chain, recovery data"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

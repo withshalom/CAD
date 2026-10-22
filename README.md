@@ -1,13 +1,13 @@
-# BlackCAD — clean-room CAD software with its own `.blk` format and DWG fluency (draft)
+# BlackCAD — clean-room CAD software with its own `.blc` format and DWG fluency (draft)
 
 *The program's name lives in this title, in one constant in the core
 (`cad_core::PRODUCT_NAME`, the name it writes into DWG files as the program
 that saved them) and in the web app's page, manifest and window title
 (`apps/web`); the single-file build is named for it too (`xtask`).
-Elsewhere in these docs **CAD** means the program and **`.blk`** its file format.*
+Elsewhere in these docs **CAD** means the program and **`.blc`** its file format.*
 
 A clean-room CAD engine written from scratch in Rust. Drawings are saved
-in the project's own **native `.blk` format** (binary-DXF-style records in
+in the project's own **native `.blc` format** (binary-DXF-style records in
 a DWG-style compressed, sectioned container, with incremental saves and
 `.bdl` edit locks). It opens **.dwg** files and AutoCAD 2018 **DXF**
 (ASCII and binary) directly, and writes DXF (ASCII and binary) and
@@ -31,7 +31,7 @@ See [Status](#status).
 crates/cad-model/    the drawing database, geometry and text code pages      (MIT OR Apache-2.0)
 crates/cad-dwg/      the DWG reader and writer                                (MIT OR Apache-2.0)
 crates/cad-dxf/      the DXF reader and writer                                (MIT OR Apache-2.0)
-crates/cad-native/   the native .blk format, and its DEFLATE and SHA-256 code (MIT OR Apache-2.0)
+crates/cad-native/   the native .blc format, and its DEFLATE and SHA-256 code (MIT OR Apache-2.0)
 crates/cad-core/     the core library on those four: drafting standards, editing commands,
                      units, font, rendering, raster and vector output
 crates/cad-ffi/      bridge to the platform apps: the session (open drawings, undo, commands),
@@ -42,7 +42,7 @@ apps/cad-cli/        `cad`, a command-line test build
 apps/android/        CAD Viewer, an Android test app (Java, Android's own APIs only)
 xtask/               `cargo xtask web`/`serve`: builds and serves the browser app;
                      `cargo xtask android`: builds the core for the Android app
-docs/                ARCHITECTURE, DESIGN (look and behaviour), COMMANDS (commands and shortcuts), FORMAT (.blk spec), FORMAT-ROADMAP, PROVENANCE (clean-room record), TEST-PLAN;
+docs/                ARCHITECTURE, DESIGN (look and behaviour), COMMANDS (commands and shortcuts), FORMAT (.blc spec), FORMAT-ROADMAP, PROVENANCE (clean-room record), TEST-PLAN;
                      blackboard/ (the lessons' curriculum and sources), reviews/ (outside reviews)
 corpus/              real drawings (DWG with AutoCAD's DXF of each) that `cargo test` reads and checks
 scripts/             build helpers for Linux and Windows
@@ -95,7 +95,7 @@ and macOS on every push, and the binaries are downloadable from the run.
 mockups (tool rail, model space, properties, layers, command line, status
 bar; on phones the title bar, aid chips and tool sheet), with the
 Blackboard of drafting and shop lessons beside it. It runs the whole core
-in the browser as WebAssembly, so it opens and saves DWG, DXF and `.blk`
+in the browser as WebAssembly, so it opens and saves DWG, DXF and `.blc`
 itself, with no server. It is a Progressive Web App: open it once and it
 can be installed like any program, and it keeps working offline.
 `apps/web/README.md` describes its files and how the page talks to the
@@ -115,7 +115,7 @@ cargo xtask serve                           # builds, then serves http://127.0.0
 Open <http://127.0.0.1:8080/> in Chrome or Edge. To install it, use the
 install button in the address bar (or "Install app" in the top bar):
 it then has its own window, Start menu or app-launcher entry, and can
-open `.dwg`, `.dxf` and `.blk` files from the file manager.
+open `.dwg`, `.dxf` and `.blc` files from the file manager.
 
 **On an Android phone,** with the phone plugged in and USB debugging on:
 `adb reverse tcp:8080 tcp:8080`, then open <http://localhost:8080/> in
@@ -147,7 +147,7 @@ worker, so it cannot be installed and does not open DWG files from the
 file manager. The start screen says "single-file test build", and the
 window title "(test build)". The newest one is on the `gh-pages` branch.
 
-**What it does:** opens and saves `.blk`, DWG 2018 and ASCII and binary
+**What it does:** opens and saves `.blc`, DWG 2018 and ASCII and binary
 DXF, and exports SVG and PDF. Its commands (typed, with AutoCAD's usual
 aliases, or picked from the tools): LINE, PLINE, CIRCLE, ARC, RECTANGLE,
 TEXT, MTEXT, XLINE, RAY, HATCH; DIM (one command for every kind),
@@ -169,7 +169,7 @@ plate from the mockups) is on the start screen.
 ## Android test viewer
 
 `apps/android` is CAD Viewer, a small Android app for trying the core on a
-phone or tablet. Open a `.blk` or DWG file from the file picker, or with
+phone or tablet. Open a `.blc` or DWG file from the file picker, or with
 "Open with" from another app, and it shows a short summary and model space,
 with pinch zoom. It is written in Java against Android's own APIs, with no
 libraries, so the APK contains no third-party code. All the drawing work
@@ -212,36 +212,36 @@ cad header  part.dwg                 # header variables as read
 cad svg     part.dwg part.svg        # render model space (--light: black on white paper)
 cad png     part.dwg part.png        # draw it as the canvas shows it (--light [--color],
                                      #   --no-grid, --width N, --height N)
-cad dxf     part.blk part.dxf        # AutoCAD 2018 DXF of the whole drawing (--binary for binary DXF)
+cad dxf     part.blc part.dxf        # AutoCAD 2018 DXF of the whole drawing (--binary for binary DXF)
 cad dxf     part.dwg part.dxf --r12  # model space as R12 DXF, blocks exploded
-cad dwg     part.blk part.dwg        # AutoCAD 2018 (AC1032) .dwg file
+cad dwg     part.blc part.dwg        # AutoCAD 2018 (AC1032) .dwg file
 cad layers  part.dwg                 # layers: colour, linetype, lineweight, state, use
 
-cad new     part.blk [--imperial]    # a new drawing from the Metric or Imperial template
-cad sample  plate.blk                # the sample plate, drawn on the default layers
+cad new     part.blc [--imperial]    # a new drawing from the Metric or Imperial template
+cad sample  plate.blc                # the sample plate, drawn on the default layers
 cad length  "1'-2 1/2\"" --unit mm   # read a typed length and show it
                                      #   (--format decimal|fractional|architectural|…)
 
-cad save    part.dwg part.blk        # save as native .blk (from .dwg, .dxf or .blk)
-cad verify  part.dwg                 # .blk round trip in memory; reports any difference
-cad info    part.blk                 # every command above also takes .blk files
-cad compact part.blk                 # fold incremental change sets into a new snapshot
-cad inspect part.blk --tags 2        # byte map, structure checks (audit), tag dump
-cad preview part.blk thumb.svg       # the preview stored in the file
-cad presence part.blk                # who has it open (.bdl lock), and whether it is stale
-cad props   part.blk --set title="Bracket" --set author=Shalom
+cad save    part.dwg part.blc        # save as native .blc (from .dwg, .dxf or .blc)
+cad verify  part.dwg                 # .blc round trip in memory; reports any difference
+cad info    part.blc                 # every command above also takes .blc files
+cad compact part.blc                 # fold incremental change sets into a new snapshot
+cad inspect part.blc --tags 2        # byte map, structure checks (audit), tag dump
+cad preview part.blc thumb.svg       # the preview stored in the file
+cad presence part.blc                # who has it open (.bdl lock), and whether it is stale
+cad props   part.blc --set title="Bracket" --set author=Shalom
                                      # drawing properties, saved as a change set
-cad part    part.blk --set material=Steel --set thickness=6mm --set quantity=10
-cad takeoff part.blk                 # length, contours, holes, net area, weight (Proposed)
-cad schema                           # the record schema every .blk file carries
+cad part    part.blc --set material=Steel --set thickness=6mm --set quantity=10
+cad takeoff part.blc                 # length, contours, holes, net area, weight (Proposed)
+cad schema                           # the record schema every .blc file carries
 ```
 
 ## Use the core from Rust
 
 ```rust
-let drawing = cad_core::open("part.dwg")?;          // .dwg, .dxf or .blk, detected by content
+let drawing = cad_core::open("part.dwg")?;          // .dwg, .dxf or .blc, detected by content
 println!("{}: {} objects", drawing.version, drawing.objects.len());
-cad_core::save(&drawing, "part.blk")?;              // native format, atomic replace
+cad_core::save(&drawing, "part.blc")?;              // native format, atomic replace
 
 let scene = cad_core::render::model_space(&drawing);
 let svg = cad_core::export::svg::to_svg(&scene, &Default::default());
@@ -279,7 +279,7 @@ TEST-PLAN.md §7):**
   scales, multiline styles, placeholders, dictionary variables) and the
   VPORT and DIMSTYLE records whole.
 - DXF, ASCII and binary (AC1015 and later): everything the DXF writer
-  writes reads back into the same drawing, so DXF → `.blk` → DXF gives the
+  writes reads back into the same drawing, so DXF → `.blc` → DXF gives the
   same bytes (TEST-PLAN.md §7).
 
 **Writes:**
@@ -320,7 +320,7 @@ Arcs stay true arcs where the transform allows. Output: PNG from the
 core's own multi-core rasteriser (the dark canvas, or paper), SVG, and R12
 DXF with linetypes.
 
-**Native format (`.blk` 2.3, spec in `docs/FORMAT.md`):** full save and
+**Native format (`.blc` 2.3, spec in `docs/FORMAT.md`):** full save and
 load of everything the model holds, lossless (tested on every object
 kind); records that leave out default values and a schema in every file
 that describes them; sections split into streams and compressed with the
@@ -349,7 +349,7 @@ and `--example native_bench` for size and speed on 200,000 entities
   signatures (the format reserves the flags). Paper-space drafting.
 - Apps: the Android viewer only views; saving from it needs the storage
   design in `docs/ARCHITECTURE.md`. No desktop or iOS app yet.
-- Unmodelled fields of decoded DWG objects are not kept in `.blk` yet.
+- Unmodelled fields of decoded DWG objects are not kept in `.blc` yet.
   Hatch patterns (outlines only), TrueType fonts, angular and ordinate
   dimensions without a block, dimension styles from DWG.
 - Snaps, tracking, ortho and polar (DESIGN.md §9): next.
@@ -361,7 +361,7 @@ database and the file formats: the crates [`cad-model`](crates/cad-model),
 [`cad-dwg`](crates/cad-dwg), [`cad-dxf`](crates/cad-dxf) and
 [`cad-native`](crates/cad-native) are licensed under either of the MIT
 License or the Apache License, Version 2.0, at your option. Other programs
-can use them to read and write DWG, DXF and `.blk` without the rest of
+can use them to read and write DWG, DXF and `.blc` without the rest of
 BlackCAD.
 
 ## Working on it

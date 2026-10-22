@@ -7,7 +7,7 @@
 //! A back reference copies `compressedBytes` bytes starting `compOffset + 1`
 //! bytes behind the current output position; overlapping copies are legal.
 //!
-//! [`compress`] is original work, used for DWG pages and the native `.blk`
+//! [`compress`] is original work, used for DWG pages and the native `.blc`
 //! format alike. The spec leaves room the decoder in AutoCAD does not
 //! accept, so the compressor writes only what AutoCAD's own streams use,
 //! observed across its MI-201 files from 2004 to 2018 (black-box: the

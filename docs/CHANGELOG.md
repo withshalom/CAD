@@ -10,8 +10,8 @@ format (2.10) or to what BlackCAD writes.
   records (`RECORDS_CADCRAFT`); `tags::put_record` and `tags::records`
   frame and split a records section; `TagReader::next` is `next_tag`, so
   it isn't mistaken for an iterator's. A container that isn't native
-  reports "not a native file (.blk or .cad)".
-- Fixed from 0.16.0: three places said CADCraft's files are `.blk`; they
+  reports "not a native file (.blc or .cad)".
+- Fixed from 0.16.0: three places said CADCraft's files are `.blc`; they
   are `.cad` (the doc of `EXTENSION`, and the message refusing a
   CADCraft file).
 - Docs: the crate's README shows the container used from outside; FORMAT
@@ -22,25 +22,25 @@ format (2.10) or to what BlackCAD writes.
   a damaged front header still says whose records a file holds.
 
 ## 0.16.0 (2026-10-22)
-BlackCAD's native format is `.blk`, and its lock file `.bdl`. The names
+BlackCAD's native format is `.blc`, and its lock file `.bdl`. The names
 `.cad` and `.cdl` go to CADCraft's native format (developed in the
 owner's CADCraft fork), which shares this format's container, encoding
 and structure but holds CADCraft's own records. The format is 2.10.
 
-- `cad-native`: `EXTENSION` is `blk`. Header bytes 40–41 (reserved
+- `cad-native`: `EXTENSION` is `blc`. Header bytes 40–41 (reserved
   before) say whose records a file holds: 0 BlackCAD's, 1 CADCraft's
   (`RECORDS_BLACKCAD`, `RECORDS_CADCRAFT`, `records_of`). Earlier files
   have 0 there and read as before; a CADCraft file is refused with a
   message saying what it is. The `lock` module writes either kind
-  (`LockKind::BLACKCAD`: `.bdl` beside `.blk`; `LockKind::CADCRAFT`:
+  (`LockKind::BLACKCAD`: `.bdl` beside `.blc`; `LockKind::CADCRAFT`:
   `.cdl` beside `.cad`) and reads both; the functions without a kind are
   BlackCAD's.
 - Programs: the web app, the Android viewer and `cad` save and open
-  `.blk` (the web app's save format is `blk`); they still open older
+  `.blc` (the web app's save format is `blc`); they still open older
   BlackCAD files named `.cad`, telling formats apart by content as before.
 - Docs: FORMAT (title, header, lock file, 2.10), README, ARCHITECTURE,
   DESIGN, COMMANDS, TEST-PLAN, FORMAT-ROADMAP, the app READMEs. The 1.1
-  test fixture is `sample-1.1.blk`.
+  test fixture is `sample-1.1.blc`.
 - Tests: the header says whose records a file holds, through either copy;
   CADCraft's records are refused; each lock kind writes its own name and
   reads both; lock paths of each kind.

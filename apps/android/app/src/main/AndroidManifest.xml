@@ -23,7 +23,7 @@
             </intent-filter>
 
             <!-- "Open with": DWG under the MIME types in common use, and
-                 untyped files, which is how .blk files arrive. The app
+                 untyped files, which is how .blc files arrive. The app
                  checks the contents, not the name. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

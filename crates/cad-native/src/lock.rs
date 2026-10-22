@@ -1,5 +1,5 @@
 //! Drawing locks and presence: the sidecar file beside an open drawing.
-//! BlackCAD's is `.bdl` (beside `.blk` drawings); CADCraft's `.cdl` (beside
+//! BlackCAD's is `.bdl` (beside `.blc` drawings); CADCraft's `.cdl` (beside
 //! its `.cad` drawings) is the same file under its own name ([`LockKind`]).
 //!
 //! This plays the role AutoCAD's `.dwl` file plays for DWG: while someone
@@ -46,7 +46,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 /// Whose lock: the lock file's extension, and the drawings that take it in
-/// place of their own extension (`part.blk` → `part.bdl`; any other file
+/// place of their own extension (`part.blc` → `part.bdl`; any other file
 /// gets it appended, `part.dwg` → `part.dwg.bdl`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LockKind {
@@ -55,8 +55,8 @@ pub struct LockKind {
 }
 
 impl LockKind {
-    /// BlackCAD's: `.bdl` beside `.blk` drawings.
-    pub const BLACKCAD: LockKind = LockKind { lock: "bdl", native: "blk" };
+    /// BlackCAD's: `.bdl` beside `.blc` drawings.
+    pub const BLACKCAD: LockKind = LockKind { lock: "bdl", native: "blc" };
     /// CADCraft's: `.cdl` beside `.cad` drawings.
     pub const CADCRAFT: LockKind = LockKind { lock: "cdl", native: "cad" };
 }
@@ -181,7 +181,7 @@ pub fn lock_path(drawing: &Path) -> PathBuf {
     lock_path_for(drawing, LockKind::BLACKCAD)
 }
 
-/// The lock file for a drawing: `part.blk` → `part.bdl` for BlackCAD's
+/// The lock file for a drawing: `part.blc` → `part.bdl` for BlackCAD's
 /// kind; any other file gets the extension appended (`part.dwg` →
 /// `part.dwg.bdl`) so a DWG and a native file of the same name never share
 /// a lock.
@@ -464,8 +464,8 @@ mod tests {
 
     #[test]
     fn paths() {
-        assert_eq!(lock_path(Path::new("/x/part.blk")), Path::new("/x/part.bdl"));
-        assert_eq!(lock_path(Path::new("/x/part.BLK")), Path::new("/x/part.bdl"));
+        assert_eq!(lock_path(Path::new("/x/part.blc")), Path::new("/x/part.bdl"));
+        assert_eq!(lock_path(Path::new("/x/part.BLC")), Path::new("/x/part.bdl"));
         assert_eq!(lock_path(Path::new("/x/part.dwg")), Path::new("/x/part.dwg.bdl"));
         // A CADCraft drawing is not BlackCAD's own: its name is kept whole.
         assert_eq!(lock_path(Path::new("/x/part.cad")), Path::new("/x/part.cad.bdl"));
@@ -486,18 +486,18 @@ mod tests {
         assert!(text.starts_with("cdl 1\n"), "{text}");
         assert_eq!(presence_for(&d, LockKind::CADCRAFT).unwrap().unwrap().user, "alice");
         drop(lock);
-        let b = dir.join("b.blk");
+        let b = dir.join("b.blc");
         let Acquire::Acquired(_lock) = acquire_as(&b, "bob".into()).unwrap() else { panic!("not acquired") };
         assert!(std::fs::read_to_string(dir.join("b.bdl")).unwrap().starts_with("bdl 1\n"));
         // A lock written under the other name still reads.
         std::fs::write(dir.join("c.bdl"), "cdl 1\nuser=carol\nsession=s\nheartbeat=1\n").unwrap();
-        assert_eq!(presence(dir.join("c.blk")).unwrap().unwrap().user, "carol");
+        assert_eq!(presence(dir.join("c.blc")).unwrap().unwrap().user, "carol");
     }
 
     #[test]
     fn acquire_hold_release() {
         let dir = tmpdir("a");
-        let dwg = dir.join("d.blk");
+        let dwg = dir.join("d.blc");
         let Acquire::Acquired(mut lock) = acquire_as(&dwg, "alice".into()).unwrap() else {
             panic!("first acquire should succeed");
         };
@@ -523,7 +523,7 @@ mod tests {
     #[test]
     fn stale_lock_is_taken_over() {
         let dir = tmpdir("b");
-        let dwg = dir.join("d.blk");
+        let dwg = dir.join("d.blc");
         let old = LockInfo {
             user: "crashed".into(),
             host: "h".into(),
@@ -554,7 +554,7 @@ mod tests {
     #[test]
     fn lock_cut_short_counts_as_fresh_by_mtime() {
         let dir = tmpdir("d");
-        let dwg = dir.join("d.blk");
+        let dwg = dir.join("d.blc");
         // Written up to the session line, then interrupted.
         std::fs::write(lock_path(&dwg), "bdl 1\nuser=a\nsession=abc\n").unwrap();
         assert!(matches!(
@@ -567,7 +567,7 @@ mod tests {
     #[test]
     fn garbage_lock_counts_as_fresh_by_mtime() {
         let dir = tmpdir("c");
-        let dwg = dir.join("d.blk");
+        let dwg = dir.join("d.blc");
         std::fs::write(lock_path(&dwg), "half-writ").unwrap();
         assert!(matches!(
             acquire_as(&dwg, "a".into()).unwrap(),

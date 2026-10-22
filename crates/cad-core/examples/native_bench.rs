@@ -8,7 +8,7 @@
 //! compression. `--rounded` snaps coordinates to 0.01, as drafted geometry
 //! often is. `--lines` makes every entity a line. `--no-recovery` leaves
 //! out the recovery data (about 1/16 of the file). `--save-uncompressed
-//! PATH` also writes the drawing as an uncompressed `.blk`, the input for
+//! PATH` also writes the drawing as an uncompressed `.blc`, the input for
 //! `tools/compaction_lab.py`.
 
 use cad_core::export::dxf;
@@ -391,19 +391,19 @@ fn main() {
     let per = |b: u64| format!("{:.1} B", b as f64 / n as f64);
     println!(
         "{:<46} {:>12} {:>14}",
-        ".blk, compressed",
+        ".blc, compressed",
         mb(bytes.len() as u64),
         per(bytes.len() as u64)
     );
     println!(
         "{:<46} {:>12} {:>14}",
-        ".blk, uncompressed",
+        ".blc, uncompressed",
         mb(raw.len() as u64),
         per(raw.len() as u64)
     );
     println!(
         "{:<46} {:>12} {:>14}",
-        "object records as .blk tags",
+        "object records as .blc tags",
         mb(rep.tags.cad_bytes),
         per(rep.tags.cad_bytes)
     );
@@ -444,7 +444,7 @@ fn main() {
     // Incremental saves.
     let dir = std::env::temp_dir().join(format!("cad-bench-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("temp dir");
-    let path = dir.join("bench.blk");
+    let path = dir.join("bench.blc");
     native::write_file(&d, &path, &opts).expect("save");
     let before = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
     let sets = 100;

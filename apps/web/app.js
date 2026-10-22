@@ -332,7 +332,7 @@ function fileMenu() {
     ["Check my drawing against shop rules", "", () => Board.check(), !has],
     "-",
     ["Save", "Ctrl+S", () => save(), !has],
-    ["Save as .blk…", "Ctrl+Shift+S", () => saveAs("blk"), !has],
+    ["Save as .blc…", "Ctrl+Shift+S", () => saveAs("blc"), !has],
     ["Save as .dwg (2018 format)…", "", () => saveAs("dwg"), !has],
     ["Export DXF…", "", () => saveAs("dxf"), !has],
     ["Export binary DXF…", "", () => saveAs("dxfb"), !has],
@@ -414,7 +414,7 @@ function newDrawing(imperial) {
   } catch (e) {
     return handleError(e);
   }
-  addDoc({ id, name: `Drawing${n}.blk`, format: "blk", fileHandle: null, orig: null, imperial });
+  addDoc({ id, name: `Drawing${n}.blc`, format: "blc", fileHandle: null, orig: null, imperial });
 }
 
 function openSample() {
@@ -425,7 +425,7 @@ function openSample() {
   } catch (e) {
     return handleError(e);
   }
-  addDoc({ id, name: "P-1042 plate.blk", format: "blk", fileHandle: null, orig: null, sample: true });
+  addDoc({ id, name: "P-1042 plate.blc", format: "blc", fileHandle: null, orig: null, sample: true });
 }
 
 async function openFile(file, handle) {
@@ -440,7 +440,7 @@ async function openFile(file, handle) {
     return;
   }
   const ext = (file.name.split(".").pop() || "").toLowerCase();
-  addDoc({ id, name: file.name, format: ext === "dwg" || ext === "dxf" ? ext : "blk", fileHandle: handle, orig: bytes });
+  addDoc({ id, name: file.name, format: ext === "dwg" || ext === "dxf" ? ext : "blc", fileHandle: handle, orig: bytes });
 }
 
 function addDoc(d) {
@@ -2974,7 +2974,7 @@ function plotPdf(print = false) {
   } catch (e) {
     return handleError(e);
   }
-  const base = doc.name.replace(/\.(dwg|dxf|blk|svg)$/i, "");
+  const base = doc.name.replace(/\.(dwg|dxf|blc|svg)$/i, "");
   const name = `${base}${doc.info.paper ? `-${doc.info.space}` : ""}.pdf`;
   const url = URL.createObjectURL(new Blob([out.bytes], { type: "application/pdf" }));
   if (print) {
@@ -3068,7 +3068,7 @@ const COMMANDS = [
   { name: "NEW", aliases: [], desc: "new drawing (Ctrl+N)", instant: true, run: () => newDrawing(false) },
   { name: "OPEN", aliases: [], desc: "open a drawing (Ctrl+O)", instant: true, run: () => openDialog() },
   { name: "SAVE", aliases: [], desc: "save (Ctrl+S)", instant: true, needsDoc: true, run: () => save() },
-  { name: "SAVEAS", aliases: [], desc: "save as .blk (Ctrl+Shift+S)", instant: true, needsDoc: true, run: () => saveAs("blk") },
+  { name: "SAVEAS", aliases: [], desc: "save as .blc (Ctrl+Shift+S)", instant: true, needsDoc: true, run: () => saveAs("blc") },
   { name: "EXPORT", aliases: [], desc: "DWG, DXF or SVG", instant: true, needsDoc: true, run: () => showMenu($("#mark"), fileMenu()) },
   { name: "BOARD", aliases: ["BB", "COACH"], desc: "the blackboard: lessons (F1)", instant: true, run: () => Board.toggle() },
   { name: "SHOPCHECK", aliases: ["CHECK", "CHK"], desc: "check holes against shop rules", instant: true, needsDoc: true, run: () => Board.check() },
@@ -3457,7 +3457,7 @@ function closeNumpad() {
 // ---------------------------------------------------------------- files
 
 const TYPES = {
-  blk: { description: "BlackCAD drawing", accept: { "application/octet-stream": [".blk"] } },
+  blc: { description: "BlackCAD drawing", accept: { "application/octet-stream": [".blc"] } },
   dwg: { description: "DWG drawing (2018 format)", accept: { "application/acad": [".dwg"] } },
   dxf: { description: "DXF drawing", accept: { "application/dxf": [".dxf"] } },
   dxfb: { description: "Binary DXF drawing", accept: { "application/dxf": [".dxf"] } },
@@ -3469,7 +3469,7 @@ async function openDialog() {
   if (!core) return;
   if (window.showOpenFilePicker) {
     try {
-      const hs = await window.showOpenFilePicker({ multiple: true, types: [{ description: "Drawings", accept: { "application/octet-stream": [".dwg", ".dxf", ".blk", ".cad"] } }] });
+      const hs = await window.showOpenFilePicker({ multiple: true, types: [{ description: "Drawings", accept: { "application/octet-stream": [".dwg", ".dxf", ".blc", ".cad"] } }] });
       for (const h of hs) await openFile(await h.getFile(), h);
     } catch (e) {
       if (e.name !== "AbortError") toast(e.message, true);
@@ -3507,7 +3507,7 @@ async function save() {
 async function saveAs(format) {
   if (!doc) return;
   const ext = format === "dxfb" ? "dxf" : format;
-  const name = `${doc.name.replace(/\.(dwg|dxf|blk|svg)$/i, "")}.${ext}`;
+  const name = `${doc.name.replace(/\.(dwg|dxf|blc|svg)$/i, "")}.${ext}`;
   let out;
   try {
     out = core.save(doc.id, format, user());
@@ -3540,7 +3540,7 @@ async function saveAs(format) {
 }
 
 function saved(d, name, notes, exportOnly = false, bytes = null) {
-  // What a restart reopens (a .blk, DWG or DXF the core reads back).
+  // What a restart reopens (a .blc, DWG or DXF the core reads back).
   if (!exportOnly && bytes) Object.assign(d, { orig: bytes, sample: false, imperial: false });
   refresh(d);
   log(`${exportOnly ? "Exported" : "Saved"} ${name}${notes.length ? ` (${notes[0]})` : ""}`, "ok");
@@ -7244,7 +7244,7 @@ const Board = (() => {
     return svg(g, "A revision table with revision A, first release, and revision B describing a changed hole size.", "50 70 500 190");
   }
   function filesFig() {
-    const f = [[".blk", "BlackCAD's own"], [".dwg", "2018 format"], [".dxf", "exchange"], [".svg", "picture"]];
+    const f = [[".blc", "BlackCAD's own"], [".dwg", "2018 format"], [".dxf", "exchange"], [".svg", "picture"]];
     let g = "";
     f.forEach(([e, w], i) => {
       const x = 80 + i * 120;
@@ -7252,7 +7252,7 @@ const Board = (() => {
       label(x + 45, 200, e, i ? "w" : "a", 22, "middle");
       label(x + 45, 270, w, "b", 15, "middle");
     });
-    return svg(g, "Four file icons: .blk, BlackCAD's own format; .dwg in the 2018 format; .dxf for exchange; and .svg as a picture.", "60 100 500 190");
+    return svg(g, "Four file icons: .blc, BlackCAD's own format; .dwg in the 2018 format; .dxf for exchange; and .svg as a picture.", "60 100 500 190");
   }
   const SHEET = {
     id: "d-sheet",
@@ -7286,7 +7286,7 @@ const Board = (() => {
       },
       {
         t: "Save it so others can open it",
-        p: "Save (Ctrl+S) keeps BlackCAD's own .blk format. Save as .dwg writes the 2018 format other drafting programs open, and DXF and SVG are in the file menu. PLOT (Ctrl+P) writes the sheet you are on as a PDF at its scale, and PRINT opens it for your printer; layers set not to plot, such as the viewport outline, stay off the page. Set Your name on saves, in the same menu, so every file records who saved it.",
+        p: "Save (Ctrl+S) keeps BlackCAD's own .blc format. Save as .dwg writes the 2018 format other drafting programs open, and DXF and SVG are in the file menu. PLOT (Ctrl+P) writes the sheet you are on as a PDF at its scale, and PRINT opens it for your printer; layers set not to plot, such as the viewport outline, stay off the page. Set Your name on saves, in the same menu, so every file records who saved it.",
         ctl: [],
         fig: filesFig,
         math: () => ln(`saves record: ${V_(esc(user() || "no name set"))}`) + ["PLOT", "PRINT"].filter(hasCmd).map((c) => ln(`${V_(aliasOf(c) === c ? "Ctrl+P" : aliasOf(c))} ${c} · ${esc(COMMANDS.find((x) => x.name === c).desc)}`)).join(""),

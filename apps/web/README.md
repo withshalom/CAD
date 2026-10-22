@@ -4,7 +4,7 @@ The BlackCAD workbench as a web app: the drafting workspace (tool rail,
 model space, properties, layers, command line, status bar; on phones the
 title bar, aid chips and tool sheet) and the Blackboard beside it. The
 whole Rust core runs in the page as WebAssembly, so the app opens and saves
-DWG, DXF and `.blk` itself, with no server: the files here are the entire
+DWG, DXF and `.blc` itself, with no server: the files here are the entire
 front end, and `core.wasm` (built from `crates/cad-ffi`) is the rest.
 
 Published from `main` at <https://cad.mosaiciron.com/> (see
@@ -20,7 +20,7 @@ Published from `main` at <https://cad.mosaiciron.com/> (see
 | `core.js` | The only glue to the core: loads `core.wasm`, wraps its entry points (`crates/cad-ffi/src/web.rs`) and reads its display list. Restarts the core after a crash. |
 | `icons.js` | The tool and button icons, drawn as SVG paths for this project. |
 | `sw.js` | The service worker: caches the app so it works offline after one visit; the build stamps its cache name. |
-| `manifest.webmanifest` | Makes the app installable, and lets the installed app open `.dwg`, `.dxf` and `.blk` files from the file manager. |
+| `manifest.webmanifest` | Makes the app installable, and lets the installed app open `.dwg`, `.dxf` and `.blc` files from the file manager. |
 | `icons/icon.svg` | The app icon. `icon-192.png`, `icon-512.png` and `icon-maskable-512.png` are renderings of it (`tools/render_icons.py`). |
 | `tests/core.test.mjs` | Checks a built core through `core.js` in Node, as the page uses it (see [Tests](#tests)). Not shipped. |
 

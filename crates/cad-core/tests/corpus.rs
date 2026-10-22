@@ -11,7 +11,7 @@
 //! - every model-space LINE, ARC, CIRCLE, TEXT and DIMENSION of the DXF is
 //!   in the drawing under the same handle, on the same layer, with the same
 //!   geometry and text, and the drawing has no others;
-//! - the drawing survives the `.blk` round trip unchanged.
+//! - the drawing survives the `.blc` round trip unchanged.
 //!
 //! A version this build cannot open yet (AC1021) is reported and skipped,
 //! so the test starts checking it as soon as the reader supports it.
@@ -216,7 +216,7 @@ fn compare(d: &Drawing, dxf: &BTreeMap<u64, DxfEntity>) -> Vec<String> {
 }
 
 /// Problems with the drawing on its own: failed objects, notes, warnings,
-/// an unverified header, a lossy round trip through `.blk`.
+/// an unverified header, a lossy round trip through `.blc`.
 fn health(d: &Drawing) -> Vec<String> {
     let mut problems = Vec::new();
     if !d.header.verified {
@@ -236,9 +236,9 @@ fn health(d: &Drawing) -> Vec<String> {
         }
     }
     let back = native::read_bytes(&native::to_bytes(d, &native::WriteOptions::default()))
-        .expect("read back the .blk");
+        .expect("read back the .blc");
     if back.objects != d.objects || back.header != d.header || back.classes != d.classes {
-        problems.push(".blk round trip changed the drawing".into());
+        problems.push(".blc round trip changed the drawing".into());
     }
     problems
 }

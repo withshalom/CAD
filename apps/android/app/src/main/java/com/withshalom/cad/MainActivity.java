@@ -31,7 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Test viewer for the CAD core: opens a .blk or .dwg file and shows a short
+ * Test viewer for the CAD core: opens a .blc or .dwg file and shows a short
  * summary and model space.
  *
  * <p>The drawing work happens in the native library (crates/cad-ffi). This
@@ -65,7 +65,7 @@ public final class MainActivity extends Activity {
         if (nativeProblem != null) {
             info.setText(nativeProblem);
         } else if (!openFrom(getIntent())) {
-            info.setText("Open a .blk or .dwg drawing.");
+            info.setText("Open a .blc or .dwg drawing.");
         }
     }
 

@@ -898,7 +898,7 @@ fn temp(tag: &str) -> PathBuf {
         now_unix()
     ));
     std::fs::create_dir_all(&dir).unwrap();
-    dir.join("t.blk")
+    dir.join("t.blc")
 }
 
 #[test]
@@ -2331,7 +2331,7 @@ fn files_written_by_format_1_1_still_read() {
     // it was then (no drawing properties), followed by one change set: line
     // 0x100 moved, circle 0x101 deleted, $INSUNITS set to 4. If `sample()`
     // changes, compare against what it held then.
-    let bytes: &[u8] = include_bytes!("../tests/fixtures/sample-1.1.blk");
+    let bytes: &[u8] = include_bytes!("../tests/fixtures/sample-1.1.blc");
     let f = NativeFile::from_bytes(bytes).unwrap();
     assert_eq!((f.format(), f.generation()), ((1, 1), 2));
     let d = f.drawing().unwrap();
@@ -2811,7 +2811,7 @@ fn the_format_document_lists_the_schema() {
         "docs/FORMAT.md §8.2 differs from the schema; replace it with the output of `cad schema`:\n{table}"
     );
     assert!(DOC.starts_with(&format!(
-        "# Native file format (`.blk`) — version {FORMAT_MAJOR}.{FORMAT_MINOR}"
+        "# Native file format (`.blc`) — version {FORMAT_MAJOR}.{FORMAT_MINOR}"
     )));
 }
 
@@ -2820,7 +2820,7 @@ fn records_for_1x_files_are_written_exactly_as_1_1_wrote_them() {
     // Every object record in the 1.1 fixture, decoded and written again in
     // the 1.x form, must come out byte for byte as the 1.1 code wrote it:
     // change sets appended to 1.x files stay readable by 1.x readers.
-    let bytes: &[u8] = include_bytes!("../tests/fixtures/sample-1.1.blk");
+    let bytes: &[u8] = include_bytes!("../tests/fixtures/sample-1.1.blc");
     let c = Container::parse(bytes).unwrap();
     let page = c.read(c.entry("Objects.0").unwrap()).unwrap().0;
     let mut kinds = std::collections::HashSet::new();
