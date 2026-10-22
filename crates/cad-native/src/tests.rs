@@ -1041,6 +1041,35 @@ fn tolerances_kept_as_bytes_by_older_readers_are_decoded() {
     assert_eq!(o.raw, None);
 }
 
+/// MLINE (2.9) goes through the format as it was read, with every
+/// element's segment and fill parameters.
+#[test]
+fn multilines_roundtrip() {
+    let mut d = sample();
+    let vertex = |x: f64, y: f64| MLineVertex {
+        point: v3(x, y, 0.0),
+        direction: v3(1.0, 0.0, 0.0),
+        miter: v3(0.0, 1.0, 0.0),
+        params: vec![(vec![0.0, 0.0], vec![]), (vec![-1.0, 0.0, 2.5, 3.5], vec![0.5, 1.5])],
+    };
+    let m = MLine {
+        style: Handle(0x10),
+        scale: 2.0,
+        justification: 2,
+        base: v3(1.0, 2.0, 0.0),
+        flags: 3,
+        lines_in_style: 2,
+        vertices: vec![vertex(1.0, 2.0), vertex(5.0, 2.0)],
+        ..Default::default()
+    };
+    let e = || Some(ent(Space::Model, 0x10));
+    d.objects.insert(Handle(0xA20), obj(0xA20, "MLINE", 0x2F, 0, e(), ObjectKind::MLine(m)));
+    d.objects.insert(Handle(0xA21), obj(0xA21, "MLINE", 0x2F, 0, e(), ObjectKind::MLine(MLine::default())));
+    d.rebuild_index();
+    let back = read_bytes(&to_bytes(&d, &WriteOptions::default())).unwrap();
+    assert_same(&d, &back);
+}
+
 #[test]
 fn detects_format_and_stores_the_programs_preview_and_name() {
     let d = sample();

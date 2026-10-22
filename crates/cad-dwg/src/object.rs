@@ -521,10 +521,11 @@ pub(crate) fn decode(ctx: &DecodeCtx, data: &[u8], offset: usize) -> Result<Obje
     }
 
     // Types decoded from version 0.6 on (construction lines, leaders,
-    // viewports; tolerances from 0.13, images and wipeouts from 0.14) are
+    // viewports; tolerances from 0.13, images and wipeouts from 0.14,
+    // multilines from 0.15) are
     // kept as their bytes whenever the layout read here does not fit the
     // record exactly, as they were before.
-    let newer = matches!(type_code, 0x22 | 0x28 | 0x29 | 0x2D | 0x2E)
+    let newer = matches!(type_code, 0x22 | 0x28 | 0x29 | 0x2D | 0x2E | 0x2F)
         || matches!(o.type_name.as_str(), "IMAGE" | "WIPEOUT");
     let misfit = newer
         && (specific.is_err() || (ver.has_string_stream() && o.s.dat.remaining() != 0));
@@ -662,6 +663,7 @@ fn decode_specific(code: u16, name: &str, s: &mut Streams) -> Result<(ObjectKind
         0x29 => (K::Xline(entities::construction_line(s)?), Pending::None),
         0x2D => (K::Leader(entities::leader(s)?), Pending::None),
         0x2E => (K::Tolerance(entities::tolerance(s)?), Pending::None),
+        0x2F => (K::MLine(entities::mline(s)?), Pending::None),
         0x22 => {
             let (v, frozen) = entities::viewport(s)?;
             (K::PaperViewport(Box::new(v)), Pending::Viewport { frozen })
@@ -764,6 +766,7 @@ fn read_specific_handles(
             l.dimstyle = Handle(s.h_abs(own)?);
         }
         ObjectKind::Tolerance(t) => t.dimstyle = Handle(s.h_abs(own)?),
+        ObjectKind::MLine(m) => m.style = Handle(s.h_abs(own)?),
         ObjectKind::Image(r) | ObjectKind::Wipeout(r) => {
             r.definition = Handle(s.h_abs(own)?);
             r.reactor = Handle(s.h_abs(own)?);
@@ -960,6 +963,36 @@ mod tests {
             other => panic!("{other:?}"),
         }
         assert_eq!(o.note, None, "handles read cleanly");
+    }
+
+    /// The MLINE example printed in the ODA specification (§20.4.50.1), an
+    /// R14 object (handle 010D).
+    #[test]
+    fn the_specifications_mline_example_decodes() {
+        let bytes = hex("e4004bc0804366c83000055b200461ad1ef213a88a0181933c67d42bc07f528081206461ad1ef213a88a0181933c67d42bc07f13e9cf70de473cc7e4f86a7b9c002f39fc4e86a7b9c002f3df93e9cf70de473cc7f2055204000000000000785fd038dd69b078de3880440a1c33bde105204062c65315c95771f9fb6cf09b58b3ab7f05473cf47b0b79b7e08f921ddcd12f79fc81548118d6ba82c020de77f42750a165460292a013161543da240028101cb194c57255dc7e7f5b3c26d62ceadfc765b3c26d62cea9f820b194c57255dc7f2055204000000000000785fd182887c05087288e4c9188");
+        let ctx = DecodeCtx { ver: V::R14, codepage: 30, classes: &[] };
+        let o = decode(&ctx, &bytes, 0).unwrap();
+        assert_eq!((o.type_name.as_str(), o.handle), ("MLINE", Handle(0x10D)));
+        assert_eq!(o.note, None, "handles read cleanly");
+        let ObjectKind::MLine(m) = &o.kind else { panic!("{:?}", o.kind) };
+        // A three-vertex multiline in a two-element style (STANDARD, one
+        // unit apart), top justified, open: unit directions, miters at
+        // right angles to the first and last segments, each element's
+        // start along the miter (0, then 1 unit or more at the bend).
+        assert_eq!((m.scale, m.justification, m.flags, m.lines_in_style), (1.0, 0, 1, 2));
+        assert_eq!(m.style, Handle(0x1C));
+        assert_eq!(m.base, m.vertices[0].point);
+        assert_eq!(m.vertices.len(), 3);
+        for v in &m.vertices {
+            assert!((v.direction.length() - 1.0).abs() < 1e-12);
+            assert!((v.miter.length() - 1.0).abs() < 1e-12);
+            assert_eq!(v.params.len(), 2);
+            assert!(v.params.iter().all(|(seg, fill)| seg.len() == 2 && fill.is_empty()));
+        }
+        assert!(m.vertices[0].direction.dot(m.vertices[0].miter).abs() < 1e-12);
+        assert_eq!(m.vertices[0].params[1].0, vec![-1.0, 0.0]);
+        assert!((m.vertices[1].params[1].0[0] + 1.188_965_882_476_041_6).abs() < 1e-12);
+        assert!((m.vertices[2].point.x - 10.510_839_768_060_261).abs() < 1e-12);
     }
 
     /// The raster examples printed in the ODA specification, R14 objects

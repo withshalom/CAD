@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.15.0 (2026-10-22)
+The drawing model holds multilines. MLINE was kept only as DWG bytes and
+dropped from DXF; now it's read, written and stored with every vertex,
+miter and element parameter, through DWG, DXF and `.cad`, as the CADCraft
+fork models it. The `.cad` format is 2.9.
+
+- `cad-model`: `MLine` and `MLineVertex` (`ObjectKind::MLine`): style,
+  scale, justification, start point, extrusion, flags (open, closed,
+  caps suppressed), the style's element count, and per vertex its point,
+  direction, miter and each element's segment and fill parameters.
+- `cad-dwg`: read and written (ODA specification §20.4.50, checked
+  against the text); multilines older `.cad` files kept as DWG bytes are
+  decoded when read.
+- `cad-dxf`: MLINE read and written in the DXF reference's group order; a
+  multiline that names its style without a handle finds it by name.
+- `cad-native`: format 2.9, object kind 45 MLINE. A 2.8 reader keeps it
+  as unknown data.
+- `cad-core`: keeps multilines and writes them back; it does not draw
+  them yet.
+- Tests: the specification's MLINE example (an R14 object) decodes to a
+  three-vertex STANDARD multiline with unit directions and miters; a
+  closed three-element multiline with breaks and fill parameters
+  survives DWG, DXF and DXF by style name; `.cad` round trips.
+
 ## 0.14.0 (2026-10-22)
 The drawing model holds raster images and wipeouts, and the objects an
 image needs. IMAGE and WIPEOUT were kept only as DWG bytes and dropped

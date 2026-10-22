@@ -757,6 +757,35 @@ fn specific(w: &mut ObjW, o: &Object, ctx: &Ctx) -> Result<()> {
             w.h(Ref::HardPtr, l.annotation);
             w.h(Ref::HardPtr, l.dimstyle);
         }
+        ObjectKind::MLine(m) => {
+            // §20.4.50, the mirror of `entities::mline`.
+            w.dat.bd(m.scale);
+            w.dat.rc(m.justification);
+            w.dat.bd3(v3(m.base));
+            w.dat.bd3(v3(if m.extrusion == Vec3::ZERO { Vec3::Z } else { m.extrusion }));
+            w.dat.bs(m.flags);
+            w.dat.rc(m.lines_in_style);
+            w.dat.bs(m.vertices.len().min(usize::from(u16::MAX)) as u16);
+            for v in m.vertices.iter().take(usize::from(u16::MAX)) {
+                w.dat.bd3(v3(v.point));
+                w.dat.bd3(v3(v.direction));
+                w.dat.bd3(v3(v.miter));
+                // Exactly one parameter list per element of the style.
+                for i in 0..usize::from(m.lines_in_style) {
+                    let (seg, fill) = v.params.get(i).map(|(a, b)| (a.as_slice(), b.as_slice())).unwrap_or((&[], &[]));
+                    w.dat.bs(seg.len().min(usize::from(u16::MAX)) as u16);
+                    for x in seg.iter().take(usize::from(u16::MAX)) {
+                        w.dat.bd(*x);
+                    }
+                    w.dat.bs(fill.len().min(usize::from(u16::MAX)) as u16);
+                    for x in fill.iter().take(usize::from(u16::MAX)) {
+                        w.dat.bd(*x);
+                    }
+                }
+            }
+            common_handles(w, o);
+            w.h(Ref::HardPtr, m.style);
+        }
         ObjectKind::Image(r) | ObjectKind::Wipeout(r) => {
             // §20.4.80, the mirror of `entities::raster_image`.
             w.dat.bl(r.class_version);

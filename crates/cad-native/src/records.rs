@@ -181,8 +181,10 @@ pub(crate) mod kind {
     // Format 2.8.
     pub const IMAGE: i16 = 43;
     pub const WIPEOUT: i16 = 44;
+    // Format 2.9.
+    pub const MLINE: i16 = 45;
     /// The highest kind this version reads.
-    pub const LAST: i16 = WIPEOUT;
+    pub const LAST: i16 = MLINE;
 }
 
 const P2_BYTES: usize = 3 + 16;
@@ -875,6 +877,10 @@ fn write_kind(w: &mut TagWriter, k: &ObjectKind) {
         K::Tolerance(t) => {
             w.i16(c::KIND, kind::TOLERANCE);
             super::objects::write_tolerance(w, t);
+        }
+        K::MLine(m) => {
+            w.i16(c::KIND, kind::MLINE);
+            super::objects::write_mline(w, m);
         }
         K::Image(r) => {
             w.i16(c::KIND, kind::IMAGE);
@@ -1619,6 +1625,7 @@ fn read_kind(r: &mut TagReader) -> Result<ObjectKind> {
         kind::VIEWPORT => K::PaperViewport(Box::new(super::objects::read_paper_viewport(r)?)),
         kind::TOLERANCE => K::Tolerance(super::objects::read_tolerance(r)?),
         kind::IMAGE => K::Image(Box::new(super::objects::read_raster(r)?)),
+        kind::MLINE => K::MLine(super::objects::read_mline(r)?),
         kind::WIPEOUT => K::Wipeout(Box::new(super::objects::read_raster(r)?)),
         kind::BLOCK_BEGIN => K::BlockBegin { name: r.str(2)? },
         kind::BLOCK_END => K::BlockEnd,

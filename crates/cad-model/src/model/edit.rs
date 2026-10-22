@@ -121,6 +121,7 @@ pub fn entity_type(kind: &ObjectKind) -> Option<(&'static str, u16)> {
         K::Ray(_) => ("RAY", 0x28),
         K::Leader(_) => ("LEADER", 0x2D),
         K::Tolerance(_) => ("TOLERANCE", 0x2E),
+        K::MLine(_) => ("MLINE", 0x2F),
         // Class-based: the number is the drawing's (`Drawing::class_number`).
         K::Image(_) => ("IMAGE", 0),
         K::Wipeout(_) => ("WIPEOUT", 0),

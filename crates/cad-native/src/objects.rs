@@ -968,3 +968,68 @@ pub(super) fn read_raster(r: &mut TagReader) -> Result<RasterImage> {
         reactor: r.opt_handle(360)?,
     })
 }
+
+// ----- Format 2.9: MLINE --------------------------------------------------------------
+
+const F64_BYTES: usize = 3 + 8;
+
+pub(super) fn write_mline(w: &mut TagWriter, m: &MLine) {
+    w.opt_handle(340, m.style);
+    w.f64_d(40, m.scale, 1.0);
+    w.u8_d(70, m.justification, 0);
+    w.p3_d(10, m.base, ORIGIN3);
+    w.p3_d(210, m.extrusion, Z);
+    w.u16_d(71, m.flags, 1);
+    w.u8_d(73, m.lines_in_style, 0);
+    w.count_d(72, m.vertices.len());
+    for v in &m.vertices {
+        w.p3(11, v.point);
+        w.p3(12, v.direction);
+        w.p3(13, v.miter);
+        // One pair of lists per element of the style.
+        for i in 0..usize::from(m.lines_in_style) {
+            let (seg, fill) = v.params.get(i).map(|(a, b)| (a.as_slice(), b.as_slice())).unwrap_or((&[], &[]));
+            w.count(74, seg.len());
+            for x in seg {
+                w.f64(41, *x);
+            }
+            w.count(75, fill.len());
+            for x in fill {
+                w.f64(42, *x);
+            }
+        }
+    }
+}
+
+pub(super) fn read_mline(r: &mut TagReader) -> Result<MLine> {
+    let style = r.opt_handle(340)?;
+    let scale = r.f64_or(40, 1.0)?;
+    let justification = r.u8_or(70, 0)?;
+    let base = r.p3_or(10, ORIGIN3)?;
+    let extrusion = r.p3_or(210, Z)?;
+    let flags = r.u16_or(71, 1)?;
+    let lines_in_style = r.u8_or(73, 0)?;
+    let n = r.count_or(72, 3 * P3_BYTES)?;
+    let mut vertices = Vec::with_capacity(n);
+    for _ in 0..n {
+        let point = r.p3(11)?;
+        let direction = r.p3(12)?;
+        let miter = r.p3(13)?;
+        let mut params = Vec::with_capacity(usize::from(lines_in_style));
+        for _ in 0..lines_in_style {
+            let k = r.count(74, F64_BYTES)?;
+            let mut seg = Vec::with_capacity(k);
+            for _ in 0..k {
+                seg.push(r.f64(41)?);
+            }
+            let k = r.count(75, F64_BYTES)?;
+            let mut fill = Vec::with_capacity(k);
+            for _ in 0..k {
+                fill.push(r.f64(42)?);
+            }
+            params.push((seg, fill));
+        }
+        vertices.push(MLineVertex { point, direction, miter, params });
+    }
+    Ok(MLine { style, scale, justification, base, extrusion, flags, lines_in_style, vertices })
+}
