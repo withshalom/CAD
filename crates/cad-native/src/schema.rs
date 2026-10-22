@@ -1052,6 +1052,35 @@ pub static KINDS: &[KindSpec] = &[
             f(361, ty::HANDLE, Null, "sun"),
         ],
     },
+    KindSpec {
+        kind: 42,
+        name: "TOLERANCE",
+        fields: &[
+            f(
+                1,
+                ty::STR,
+                Str(""),
+                "frame contents, in the DXF reference's GD&T codes",
+            ),
+            f(
+                10,
+                ty::P3,
+                P3(ORIGIN3),
+                "insertion point (WCS): the middle of the first line's left edge",
+            ),
+            f(11, ty::P3, P3(X), "X direction (WCS)"),
+            f(210, ty::P3, P3(Z), "extrusion"),
+            f(2105, ty::HANDLE, Null, "dimension style"),
+            f(
+                2191,
+                ty::I16,
+                Cond,
+                "R13/R14 DWG only: undocumented short (2191 to 2193 appear together)",
+            ),
+            f(2192, ty::F64, Cond, "R13/R14 DWG only: text height"),
+            f(2193, ty::F64, Cond, "R13/R14 DWG only: gap"),
+        ],
+    },
 ];
 
 /// The description of one kind.

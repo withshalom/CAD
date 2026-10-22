@@ -864,6 +864,42 @@ impl Default for Leader {
     }
 }
 
+/// TOLERANCE (ODA spec §20.4.49, DXF TOLERANCE): a geometric tolerance
+/// feature control frame. Its text holds the frame's contents in the GD&T
+/// codes the DXF reference describes (`%%v` separates boxes, `^J` starts a
+/// new line, `{\Fgdt;…}` symbols); its size, gap and colours come from the
+/// dimension style.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Tolerance {
+    /// DXF 10: the middle of the left edge of the first frame line (WCS).
+    pub insertion: Vec3,
+    /// DXF 11: the frame's X direction (WCS).
+    pub x_direction: Vec3,
+    /// DXF 210.
+    pub extrusion: Vec3,
+    /// DXF 1: the frame contents.
+    pub text: String,
+    /// DXF 3 (by name) / DWG hard pointer: the dimension style.
+    pub dimstyle: Handle,
+    /// R13 and R14 only: an undocumented short, the text height and the
+    /// gap (DIMGAP × DIMSCALE when it was made). Later versions take both
+    /// from the dimension style and don't store them; kept as read.
+    pub r14: Option<(u16, f64, f64)>,
+}
+
+impl Default for Tolerance {
+    fn default() -> Self {
+        Tolerance {
+            insertion: Vec3::ZERO,
+            x_direction: Vec3::X,
+            extrusion: Vec3::Z,
+            text: String::new(),
+            dimstyle: Handle::NULL,
+            r14: None,
+        }
+    }
+}
+
 /// A VIEWPORT entity: a window on a layout that shows model space at a
 /// scale (ODA spec §20.4.38, DXF VIEWPORT). The first viewport of each
 /// layout (id 1) is the layout's own view of the paper, not a window.
@@ -1352,6 +1388,7 @@ pub enum ObjectKind {
     /// RAY: a construction line from its base point on.
     Ray(ConstructionLine),
     Leader(Leader),
+    Tolerance(Tolerance),
     /// A VIEWPORT entity on a layout.
     PaperViewport(Box<PaperViewport>),
     /// BLOCK entity that opens a block definition.
@@ -1547,6 +1584,7 @@ impl Object {
             }
             ObjectKind::Hatch(h) => h.paths.len() * 256 + h.pattern_lines.len() * 64,
             ObjectKind::Leader(l) => l.vertices.len() * size_of::<Vec3>(),
+            ObjectKind::Tolerance(t) => t.text.len(),
             ObjectKind::PaperViewport(v) => size_of::<PaperViewport>() + v.frozen_layers.len() * 8,
             ObjectKind::BlockHeader(b) => b.entities.len() * size_of::<Handle>(),
             ObjectKind::Failed(m) | ObjectKind::Damaged(m) => m.len(),

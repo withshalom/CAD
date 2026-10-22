@@ -757,6 +757,25 @@ fn specific(w: &mut ObjW, o: &Object, ctx: &Ctx) -> Result<()> {
             w.h(Ref::HardPtr, l.annotation);
             w.h(Ref::HardPtr, l.dimstyle);
         }
+        ObjectKind::Tolerance(t) => {
+            // §20.4.49, the mirror of `entities::tolerance`.
+            if ver <= V::R14 {
+                let (short, height, gap) = t.r14.unwrap_or((0, 0.0, 0.0));
+                w.dat.bs(short);
+                w.dat.bd(height);
+                w.dat.bd(gap);
+            }
+            w.dat.bd3(v3(t.insertion));
+            w.dat.bd3(v3(t.x_direction));
+            w.dat.bd3(v3(if t.extrusion == Vec3::ZERO {
+                Vec3::Z
+            } else {
+                t.extrusion
+            }));
+            w.tv(&t.text);
+            common_handles(w, o);
+            w.h(Ref::HardPtr, t.dimstyle);
+        }
         ObjectKind::PaperViewport(v) => {
             viewport_data(w, v);
             common_handles(w, o);

@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.13.0 (2026-10-22)
+The drawing model holds geometric tolerances. TOLERANCE is the first of the
+entity types the CADCraft fork models and BlackCAD kept only as DWG bytes
+(and dropped from DXF): from now on it is read, written and stored as what
+it is, so the two programs carry the same tolerance frames through DWG,
+DXF and `.cad`. The `.cad` format is 2.7.
+
+- `cad-model`: `Tolerance` (`ObjectKind::Tolerance`): insertion point, X
+  direction, extrusion, frame text in the DXF reference's GD&T codes, the
+  dimension style, and the short, text height and gap that only R13 and
+  R14 DWG files store.
+- `cad-dwg`: read and written (ODA specification §20.4.49, checked against
+  the specification text). Like the other types decoded since 0.6, a
+  record that doesn't fit the layout is still kept as its DWG bytes.
+- `cad-dxf`: read from and written to TOLERANCE (AcDbFcf: 3, 10, 1, 210,
+  11). Before, DXF tolerances were left out with a note.
+- `cad-native`: format 2.7, object kind 42 TOLERANCE, private codes
+  2191–2193 for the R13/R14 fields. A 2.6 reader keeps the new kind as
+  unknown data and writes it back.
+- `cad-core`: keeps tolerances and writes them back; it does not draw or
+  edit them yet.
+- Tests: the specification's own TOLERANCE example (§20.4.49.1, an R14
+  object) decodes to its frame text, DIMTXT and DIMGAP; a tolerance
+  survives DWG and DXF; `.cad` round trips with and without the R14
+  fields.
+
 ## 0.12.0 (2026-10-22)
 Hatches keep the objects their boundaries were made from. An associative
 hatch in DWG lists, path by path, the objects it follows, and those carry
