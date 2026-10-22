@@ -130,8 +130,9 @@ through the page's own glue (`apps/web/tests`); every run keeps the app
 job has passed on `main`, the `pages` job replaces the `gh-pages` branch
 with that build (one commit, with `CNAME` and `.nojekyll`), and GitHub
 Pages serves the branch at the custom domain (Settings → Pages: deploy from
-the branch `gh-pages`, folder `/`). A site published this way is public,
-even from a private repository.
+the branch `gh-pages`, folder `/`). The sources on `main` hold no built
+files. A site published this way is public, even from a private
+repository.
 
 **Host it** anywhere else that serves static files over HTTPS: `cargo
 xtask web` puts the finished app in `dist/web/`, and those files are all
