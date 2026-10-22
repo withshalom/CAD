@@ -11,7 +11,9 @@ unzip -l "$apk"
 classes="$("$bt/dexdump" "$apk" | grep "Class descriptor" | sed "s/.*'\(.*\)'.*/\1/" | sort -u)"
 echo "Classes defined in the APK, by package:"
 echo "$classes" | sed -E 's|^L(([^/;]+/){0,2}).*|\1|' | sort | uniq -c
-echo "$classes" | grep -qx "Lcom/withshalom/cad/MainActivity;" \
+# A here-string, not `echo | grep -q`: grep -q stops at the first match, and
+# with pipefail the echo it cut off fails the check (it did, at random).
+grep -qx "Lcom/withshalom/cad/MainActivity;" <<<"$classes" \
   || { echo "dexdump output not understood"; exit 1; }
 # D8 also defines stubs of platform classes newer than the app's minimum
 # API level (android.*, dalvik.*: its API modelling), so that older

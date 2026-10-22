@@ -34,6 +34,9 @@ after read the same.
   writes are the same as before. `cad_core::codec`, `now_unix` and
   `set_time` are `cad_native`'s.
 
+CI: the APK check no longer fails at random (`echo | grep -q` under
+`pipefail` broke its own pipe when grep matched early).
+
 Tests: the format's 64 tests move with it; two that started from the core's
 templates now start from the format's own sample drawing. New tests check
 that the core still stores its preview and name, that the crate alone
