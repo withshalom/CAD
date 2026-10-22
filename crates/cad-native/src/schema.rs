@@ -1125,6 +1125,27 @@ pub static KINDS: &[KindSpec] = &[
             f(360, ty::HANDLE, Null, "image definition reactor (none for a wipeout)"),
         ],
     },
+    KindSpec {
+        kind: 45,
+        name: "MLINE",
+        fields: &[
+            f(340, ty::HANDLE, Null, "multiline style (MLINESTYLE)"),
+            f(40, ty::F64, F64(1.0), "scale"),
+            f(70, ty::I16, I16(0), "justification: 0 top, 1 zero, 2 bottom"),
+            f(10, ty::P3, P3(ORIGIN3), "start point (WCS)"),
+            f(210, ty::P3, P3(Z), "extrusion"),
+            f(71, ty::I16, I16(1), "flags: 1 has vertices, 2 closed, 4 no start caps, 8 no end caps"),
+            f(73, ty::I16, I16(0), "elements in the style"),
+            count(72, "vertex count"),
+            item(11, ty::P3, Req, "vertex (WCS)"),
+            item(12, ty::P3, Req, "direction of the segment from the vertex"),
+            item(13, ty::P3, Req, "miter direction"),
+            item(74, ty::I32, Req, "per element (73 times): segment parameter count"),
+            item(41, ty::F64, Req, "segment parameter"),
+            item(75, ty::I32, Req, "per element: area fill parameter count"),
+            item(42, ty::F64, Req, "area fill parameter"),
+        ],
+    },
 ];
 
 /// The description of one kind.

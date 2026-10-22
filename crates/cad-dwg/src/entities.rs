@@ -843,6 +843,44 @@ pub(crate) fn tolerance(s: &mut Streams) -> Result<Tolerance> {
     })
 }
 
+/// MLINE (§20.4.50, checked against the specification text). The style
+/// handle comes after. Lists are bounded by the record's size.
+pub(crate) fn mline(s: &mut Streams) -> Result<MLine> {
+    let scale = s.dat.bd()?;
+    let justification = s.dat.rc()?;
+    let base = v3(s.dat.bd3()?);
+    let extrusion = v3(s.dat.bd3()?);
+    let flags = s.dat.bs()?;
+    let lines_in_style = s.dat.rc()?;
+    let n = s.dat.bs()?;
+    // A vertex is at least nine doubles' worth of bits (2 each).
+    let n = s.check_count(u32::from(n), 18, "multiline vertex")?;
+    let mut vertices = Vec::with_capacity(n);
+    for _ in 0..n {
+        let point = v3(s.dat.bd3()?);
+        let direction = v3(s.dat.bd3()?);
+        let miter = v3(s.dat.bd3()?);
+        let mut params = Vec::with_capacity(usize::from(lines_in_style));
+        for _ in 0..lines_in_style {
+            let k = s.dat.bs()?;
+            let k = s.check_count(u32::from(k), 2, "multiline segment parameter")?;
+            let mut seg = Vec::with_capacity(k);
+            for _ in 0..k {
+                seg.push(s.dat.bd()?);
+            }
+            let k = s.dat.bs()?;
+            let k = s.check_count(u32::from(k), 2, "multiline fill parameter")?;
+            let mut fill = Vec::with_capacity(k);
+            for _ in 0..k {
+                fill.push(s.dat.bd()?);
+            }
+            params.push((seg, fill));
+        }
+        vertices.push(MLineVertex { point, direction, miter, params });
+    }
+    Ok(MLine { style: Handle::NULL, scale, justification, base, extrusion, flags, lines_in_style, vertices })
+}
+
 /// IMAGE and WIPEOUT (AcDbRasterImage, §20.4.80, checked against the
 /// specification text; WIPEOUT, which the text doesn't describe, has the
 /// same record). The handles (definition, reactor) come after.

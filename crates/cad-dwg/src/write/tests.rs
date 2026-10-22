@@ -1294,3 +1294,49 @@ fn images_and_wipeouts_survive_dwg_and_dxf() {
     let bare = cad_dxf::read_bytes(stripped.as_bytes()).unwrap();
     check(&bare, "DXF without classes");
 }
+
+/// MLINE (0.15.0) is held by the model: a closed three-element multiline
+/// with breaks and fill parameters goes through DWG and DXF as it was,
+/// pointing at its style.
+#[test]
+fn multilines_survive_dwg_and_dxf() {
+    use crate::geom::Vec3;
+    let Some(file) = corpus() else { return };
+    let mut d = super::super::read_bytes(&file).unwrap();
+    let layer = d.layer_by_name("0").unwrap().0;
+    let style = d.objects.values().find(|o| o.type_code == 0x49).map(|o| o.handle).unwrap();
+    let vertex = |x: f64, y: f64, dx: f64, dy: f64| MLineVertex {
+        point: Vec3::new(x, y, 0.0),
+        direction: Vec3::new(dx, dy, 0.0),
+        miter: Vec3::new(-dy, dx, 0.0),
+        params: vec![(vec![0.0, 0.0], vec![]), (vec![-0.5, 0.0, 2.0, 3.0], vec![0.25]), (vec![-1.0, 0.0], vec![])],
+    };
+    let m = MLine {
+        style,
+        scale: 2.0,
+        justification: 1,
+        base: Vec3::new(1.0, 2.0, 0.0),
+        flags: 3,
+        lines_in_style: 3,
+        vertices: vec![vertex(1.0, 2.0, 1.0, 0.0), vertex(11.0, 2.0, 0.0, 1.0), vertex(11.0, 12.0, -1.0, 0.0)],
+        ..Default::default()
+    };
+    let h = d.add_entity(layer, ObjectKind::MLine(m.clone())).unwrap();
+    let out = super::to_bytes(&d).unwrap();
+    assert!(out.left_out.is_empty(), "{:?}", out.notes);
+    let back = super::super::read_bytes(&out.bytes).unwrap();
+    assert_eq!(back.objects[&h].raw, None, "decoded, not kept as bytes");
+    assert_eq!(back.objects[&h].kind, ObjectKind::MLine(m.clone()), "DWG");
+    let dxf = cad_dxf::to_bytes(&back, cad_dxf::DxfFormat::Ascii);
+    assert!(dxf.left_out.is_empty(), "{:?}", dxf.notes);
+    let again = cad_dxf::read_bytes(&dxf.bytes).unwrap();
+    assert_eq!(again.objects[&h].kind, ObjectKind::MLine(m.clone()), "DXF");
+    // Without the style handle, the name finds it.
+    let text = String::from_utf8(dxf.bytes).unwrap();
+    let lines: Vec<&str> = text.split_inclusive('\n').collect();
+    let at = lines.iter().position(|l| l.trim() == "AcDbMline").unwrap();
+    let h340 = at + lines[at..].iter().position(|l| l.trim() == "340").unwrap();
+    let named: String = lines[..h340].iter().chain(&lines[h340 + 2..]).copied().collect();
+    let by_name = cad_dxf::read_bytes(named.as_bytes()).unwrap();
+    assert_eq!(by_name.objects[&h].kind, ObjectKind::MLine(m), "DXF by style name");
+}

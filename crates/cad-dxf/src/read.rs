@@ -51,6 +51,7 @@ pub fn read_bytes(bytes: &[u8]) -> Result<Drawing> {
         vars: Vec::new(),
         names: HashMap::new(),
         class_numbers: HashMap::new(),
+            mline_names: Vec::new(),
         owned: BTreeMap::new(),
         table_records: BTreeMap::new(),
         notes: Vec::new(),
@@ -429,6 +430,9 @@ struct Reader {
     fresh: u64,
     /// Entity records in the ENTITIES section.
     entities_seen: usize,
+    /// Multilines that name their style (DXF 2) without a handle (340),
+    /// resolved once the objects are read.
+    mline_names: Vec<(Handle, String)>,
 }
 
 impl Reader {
@@ -1777,6 +1781,14 @@ impl Reader {
                     unknown: (false, 0, false, false),
                 })
             }
+            "MLINE" => {
+                let b = body.sub("AcDbMline");
+                let m = mline(&b);
+                if m.style.is_null() {
+                    self.mline_names.push((r.handle, b.s_or(2, "STANDARD")));
+                }
+                ObjectKind::MLine(m)
+            }
             "IMAGE" | "WIPEOUT" => {
                 // IMAGE's groups follow AcDbRasterImage; WIPEOUT's, as
                 // AutoCAD writes them, follow AcDbWipeout.
@@ -2332,6 +2344,13 @@ impl Reader {
     // ----- finishing ----------------------------------------------------------
 
     fn finish(&mut self) {
+        // Multilines' styles by name.
+        for (h, name) in std::mem::take(&mut self.mline_names) {
+            let style = self.mline_style(&name);
+            if let Some(ObjectKind::MLine(m)) = self.d.objects.get_mut(&h).map(|o| &mut o.kind) {
+                m.style = style;
+            }
+        }
         // Owned entity lists.
         let owned = std::mem::take(&mut self.owned);
         for (owner, list) in &owned {
@@ -2469,6 +2488,77 @@ impl Reader {
             _ => Handle::NULL,
         }
     }
+}
+
+/// An MLINE's groups after AcDbMline, read in order: the vertex and
+/// parameter groups repeat, so their order is their meaning. Counts are
+/// bounded by the groups the record has.
+fn mline(b: &G) -> MLine {
+    let mut m = MLine {
+        style: b.h(340),
+        scale: b.f(40, 1.0),
+        justification: b.i(70, 0).clamp(0, 255) as u8,
+        base: b.p3(10, Vec3::ZERO),
+        extrusion: b.p3(210, Vec3::Z),
+        flags: b.i(71, 1) as u16,
+        lines_in_style: b.i(73, 0).clamp(0, 255) as u8,
+        vertices: Vec::new(),
+    };
+    let g = b.0;
+    let at = |i: usize| g.get(i).map(|x| (x.code, &x.value));
+    let mut i = 0;
+    while let Some((code, _)) = at(i) {
+        if code != 11 {
+            i += 1;
+            continue;
+        }
+        let mut v = MLineVertex::default();
+        let p3 = |code: u16, i: &mut usize| -> Vec3 {
+            let mut p = Vec3::ZERO;
+            for (k, axis) in [code, code + 10, code + 20].into_iter().enumerate() {
+                if let Some((c, val)) = at(*i) {
+                    if c == axis {
+                        match k {
+                            0 => p.x = vf(val),
+                            1 => p.y = vf(val),
+                            _ => p.z = vf(val),
+                        }
+                        *i += 1;
+                    }
+                }
+            }
+            p
+        };
+        v.point = p3(11, &mut i);
+        v.direction = p3(12, &mut i);
+        v.miter = p3(13, &mut i);
+        for _ in 0..m.lines_in_style {
+            let list = |count: u16, item: u16, i: &mut usize| -> Vec<f64> {
+                let mut out = Vec::new();
+                if let Some((c, val)) = at(*i) {
+                    if c == count {
+                        let n = usize::try_from(vi(val)).unwrap_or(0);
+                        *i += 1;
+                        while out.len() < n {
+                            match at(*i) {
+                                Some((c, val)) if c == item => {
+                                    out.push(vf(val));
+                                    *i += 1;
+                                }
+                                _ => break,
+                            }
+                        }
+                    }
+                }
+                out
+            };
+            let seg = list(74, 41, &mut i);
+            let fill = list(75, 42, &mut i);
+            v.params.push((seg, fill));
+        }
+        m.vertices.push(v);
+    }
+    m
 }
 
 /// An anonymous block's name as DWG stores it: DXF numbers them ("*D0",

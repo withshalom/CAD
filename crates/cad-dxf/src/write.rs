@@ -342,6 +342,7 @@ fn entity_type(o: &Object) -> Option<&'static str> {
         ObjectKind::Ray(_) => "RAY",
         ObjectKind::Leader(_) => "LEADER",
         ObjectKind::Tolerance(_) => "TOLERANCE",
+        ObjectKind::MLine(_) => "MLINE",
         ObjectKind::Image(_) => "IMAGE",
         ObjectKind::Wipeout(_) => "WIPEOUT",
         ObjectKind::PaperViewport(_) => "VIEWPORT",
@@ -1576,6 +1577,7 @@ impl<'a> Writer<'a> {
             }
             ObjectKind::Leader(l) => self.leader_body(l),
             ObjectKind::Tolerance(t) => self.tolerance_body(t),
+            ObjectKind::MLine(m) => self.mline_body(m),
             ObjectKind::Image(r) => self.raster_body(r, "AcDbRasterImage"),
             ObjectKind::Wipeout(r) => self.raster_body(r, "AcDbWipeout"),
             ObjectKind::PaperViewport(v) => self.viewport_body(v),
@@ -1903,6 +1905,43 @@ impl<'a> Writer<'a> {
         self.p3(211, l.x_direction);
         self.p3(212, l.block_offset);
         self.p3(213, l.annotation_offset);
+    }
+
+    /// MLINE in the DXF reference's group order.
+    fn mline_body(&mut self, m: &MLine) {
+        let d = self.d;
+        self.s(100, "AcDbMline");
+        let name = match d.get(m.style).map(|o| &o.kind) {
+            Some(ObjectKind::NonGraphic(NonGraphic::MLineStyle(st))) => st.name.clone(),
+            _ => "STANDARD".to_string(),
+        };
+        self.s(2, name);
+        if self.ok(m.style) {
+            self.h(340, m.style);
+        }
+        self.r(40, m.scale);
+        self.i(70, m.justification as i64);
+        self.i(71, m.flags as i64);
+        self.i(72, m.vertices.len() as i64);
+        self.i(73, m.lines_in_style as i64);
+        self.p3(10, m.base);
+        self.p3(210, if m.extrusion == Vec3::ZERO { Vec3::Z } else { m.extrusion });
+        for v in &m.vertices {
+            self.p3(11, v.point);
+            self.p3(12, v.direction);
+            self.p3(13, v.miter);
+            for i in 0..usize::from(m.lines_in_style) {
+                let (seg, fill) = v.params.get(i).map(|(a, b)| (a.as_slice(), b.as_slice())).unwrap_or((&[], &[]));
+                self.i(74, seg.len() as i64);
+                for x in seg {
+                    self.r(41, *x);
+                }
+                self.i(75, fill.len() as i64);
+                for x in fill {
+                    self.r(42, *x);
+                }
+            }
+        }
     }
 
     /// IMAGE and WIPEOUT in the DXF reference's group order.

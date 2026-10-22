@@ -900,6 +900,60 @@ impl Default for Tolerance {
     }
 }
 
+/// One vertex of a multiline (ODA spec §20.4.50, DXF MLINE 11, 12, 13,
+/// 74, 41, 75, 42).
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct MLineVertex {
+    /// DXF 11 (WCS).
+    pub point: Vec3,
+    /// DXF 12: the direction of the segment that starts here.
+    pub direction: Vec3,
+    /// DXF 13: the miter direction at this vertex.
+    pub miter: Vec3,
+    /// Per element of the style, in style order: the segment parameters
+    /// (DXF 41: where the element's line starts along the miter, then
+    /// where its breaks start and end along the segment) and the area fill
+    /// parameters (DXF 42).
+    pub params: Vec<(Vec<f64>, Vec<f64>)>,
+}
+
+/// MLINE (ODA spec §20.4.50, DXF MLINE): a multiline, parallel lines drawn
+/// with the elements of its MLINESTYLE.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MLine {
+    /// DXF 340 (and 2, by name): the MLINESTYLE.
+    pub style: Handle,
+    /// DXF 40: element offsets are multiplied by this.
+    pub scale: f64,
+    /// DXF 70: 0 top, 1 zero, 2 bottom.
+    pub justification: u8,
+    /// DXF 10: the start point (WCS).
+    pub base: Vec3,
+    /// DXF 210.
+    pub extrusion: Vec3,
+    /// DXF 71: 1 has vertices, 2 closed, 4 start caps suppressed, 8 end
+    /// caps suppressed. DWG stores the same word ("open 1, closed 3").
+    pub flags: u16,
+    /// DXF 73: the number of elements of the style when it was drawn.
+    pub lines_in_style: u8,
+    pub vertices: Vec<MLineVertex>,
+}
+
+impl Default for MLine {
+    fn default() -> Self {
+        MLine {
+            style: Handle::NULL,
+            scale: 1.0,
+            justification: 0,
+            base: Vec3::ZERO,
+            extrusion: Vec3::Z,
+            flags: 1,
+            lines_in_style: 0,
+            vertices: Vec::new(),
+        }
+    }
+}
+
 /// IMAGE and WIPEOUT (AcDbRasterImage; ODA spec §20.4.80, DXF IMAGE and
 /// WIPEOUT): a raster image placed by its pixel vectors, or a wipeout, an
 /// image-less raster entity whose clip polygon masks what lies under it.
@@ -1447,6 +1501,7 @@ pub enum ObjectKind {
     Ray(ConstructionLine),
     Leader(Leader),
     Tolerance(Tolerance),
+    MLine(MLine),
     /// IMAGE.
     Image(Box<RasterImage>),
     /// WIPEOUT.
@@ -1647,6 +1702,11 @@ impl Object {
             ObjectKind::Hatch(h) => h.paths.len() * 256 + h.pattern_lines.len() * 64,
             ObjectKind::Leader(l) => l.vertices.len() * size_of::<Vec3>(),
             ObjectKind::Tolerance(t) => t.text.len(),
+            ObjectKind::MLine(m) => m
+                .vertices
+                .iter()
+                .map(|v| size_of::<MLineVertex>() + v.params.iter().map(|(a, b)| 48 + (a.len() + b.len()) * 8).sum::<usize>())
+                .sum(),
             ObjectKind::Image(r) | ObjectKind::Wipeout(r) => size_of::<RasterImage>() + r.clip.len() * size_of::<Vec2>(),
             ObjectKind::PaperViewport(v) => size_of::<PaperViewport>() + v.frozen_layers.len() * 8,
             ObjectKind::BlockHeader(b) => b.entities.len() * size_of::<Handle>(),

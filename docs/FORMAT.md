@@ -1,4 +1,4 @@
-# Native file format (`.cad`) — version 2.8
+# Native file format (`.cad`) — version 2.9
 
 This is the byte-level specification of the native drawing format written
 and read by the `cad-native` crate (MIT OR Apache-2.0 since 0.10.0;
@@ -103,6 +103,10 @@ separate decision. It is a draft until the DWG test corpus passes
   wipeouts), with DXF's own group codes. The objects an image uses
   (IMAGEDEF, IMAGEDEF_REACTOR, RASTERVARIABLES) are kind 38 GROUPS
   records. A 2.7 reader keeps the new kinds as unknown data.
+- **2.9**: object kind 45 MLINE (multilines), with DXF's own group
+  codes: per vertex its point, direction and miter, then for each
+  element of the style its segment parameters (74, 41) and area fill
+  parameters (75, 42). A 2.8 reader keeps the new kind as unknown data.
 
 ## 1. Conventions
 
@@ -649,6 +653,7 @@ still change before the format is published.
 | 42 | TOLERANCE | 1 STR frame contents, in the DXF reference's GD&T codes *[default empty]*; 10 P3 insertion point (WCS): the middle of the first line's left edge *[default (0, 0, 0)]*; 11 P3 X direction (WCS) *[default (1, 0, 0)]*; 210 P3 extrusion *[default (0, 0, 1)]*; 2105 HANDLE dimension style *[absent when null]*; 2191 I16 R13/R14 DWG only: undocumented short (2191 to 2193 appear together) *[conditional]*; 2192 F64 R13/R14 DWG only: text height *[conditional]*; 2193 F64 R13/R14 DWG only: gap *[conditional]* |
 | 43 | IMAGE | 90 I32 class version *[default 0]*; 10 P3 insertion point (WCS): the image's lower-left corner *[default (0, 0, 0)]*; 11 P3 one pixel's width vector (U) *[default (1, 0, 0)]*; 12 P3 one pixel's height vector (V) *[default (0, 1, 0)]*; 13 P2 size in pixels *[default (1, 1)]*; 70 I16 display: 1 show, 2 show unaligned, 4 use the clip boundary, 8 transparency *[default 7]*; 280 BOOL clipping on *[default false]*; 281 I16 brightness, 0-100 *[default 50]*; 282 I16 contrast, 0-100 *[default 50]*; 283 I16 fade, 0-100 *[default 0]*; 290 BOOL the inside of the clip boundary is clipped away *[default false]*; 71 I16 clip boundary: 1 rectangle (two corners), 2 polygon *[default 1]*; 91 I32 clip boundary vertex count *[default 0]*; each: 14 P2 clip boundary vertex, in pixels; 340 HANDLE image definition (IMAGEDEF) *[absent when null]*; 360 HANDLE image definition reactor, owned *[absent when null]* |
 | 44 | WIPEOUT | 90 I32 class version *[default 0]*; 10 P3 insertion point (WCS): the image's lower-left corner *[default (0, 0, 0)]*; 11 P3 one pixel's width vector (U) *[default (1, 0, 0)]*; 12 P3 one pixel's height vector (V) *[default (0, 1, 0)]*; 13 P2 size in pixels *[default (1, 1)]*; 70 I16 display: 1 show, 2 show unaligned, 4 use the clip boundary, 8 transparency *[default 7]*; 280 BOOL clipping on *[default false]*; 281 I16 brightness, 0-100 *[default 50]*; 282 I16 contrast, 0-100 *[default 50]*; 283 I16 fade, 0-100 *[default 0]*; 290 BOOL the inside of the clip boundary is clipped away *[default false]*; 71 I16 clip boundary: 1 rectangle (two corners), 2 polygon *[default 1]*; 91 I32 clip boundary vertex count *[default 0]*; each: 14 P2 clip boundary vertex, in pixels; 340 HANDLE image definition (none for a wipeout) *[absent when null]*; 360 HANDLE image definition reactor (none for a wipeout) *[absent when null]* |
+| 45 | MLINE | 340 HANDLE multiline style (MLINESTYLE) *[absent when null]*; 40 F64 scale *[default 1]*; 70 I16 justification: 0 top, 1 zero, 2 bottom *[default 0]*; 10 P3 start point (WCS) *[default (0, 0, 0)]*; 210 P3 extrusion *[default (0, 0, 1)]*; 71 I16 flags: 1 has vertices, 2 closed, 4 no start caps, 8 no end caps *[default 1]*; 73 I16 elements in the style *[default 0]*; 72 I32 vertex count *[default 0]*; each: 11 P3 vertex (WCS); each: 12 P3 direction of the segment from the vertex; each: 13 P3 miter direction; each: 74 I32 per element (73 times): segment parameter count; each: 41 F64 segment parameter; each: 75 I32 per element: area fill parameter count; each: 42 F64 area fill parameter |
 
 Notes on the table:
 
