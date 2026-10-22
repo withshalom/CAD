@@ -120,6 +120,7 @@ pub fn entity_type(kind: &ObjectKind) -> Option<(&'static str, u16)> {
         K::Xline(_) => ("XLINE", 0x29),
         K::Ray(_) => ("RAY", 0x28),
         K::Leader(_) => ("LEADER", 0x2D),
+        K::Tolerance(_) => ("TOLERANCE", 0x2E),
         K::PaperViewport(_) => ("VIEWPORT", 0x22),
         K::Attribute(a) if a.is_definition => ("ATTDEF", 0x03),
         K::Attribute(_) => ("ATTRIB", 0x02),

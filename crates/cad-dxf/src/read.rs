@@ -1768,6 +1768,17 @@ impl Reader {
                     unknown: (false, 0, false, false),
                 })
             }
+            "TOLERANCE" => {
+                let b = body.sub("AcDbFcf");
+                ObjectKind::Tolerance(Tolerance {
+                    insertion: b.p3(10, Vec3::ZERO),
+                    x_direction: b.p3(11, Vec3::X),
+                    extrusion: b.p3(210, Vec3::Z),
+                    text: b.s_or(1, ""),
+                    dimstyle: self.lookup(0x45, &b.s_or(3, "Standard")),
+                    r14: None,
+                })
+            }
             "VIEWPORT" => {
                 let b = body.sub("AcDbViewport");
                 let mut v = PaperViewport::new(

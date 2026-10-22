@@ -1161,3 +1161,41 @@ fn hatch_boundary_objects_survive_dwg_and_dxf() {
     let again = cad_dxf::read_bytes(&dxf.bytes).unwrap();
     assert_eq!(sources(&again), vec![vec![outline], vec![]], "DXF");
 }
+
+/// TOLERANCE (0.13.0) is held by the model, not kept as bytes: it goes
+/// through DWG and DXF with its frame text, placement and dimension style.
+#[test]
+fn tolerances_survive_dwg_and_dxf() {
+    let Some(file) = corpus() else { return };
+    let mut d = super::super::read_bytes(&file).unwrap();
+    let layer = d.layer_by_name("0").unwrap().0;
+    let dimstyle = d
+        .objects
+        .values()
+        .find(|o| o.type_code == 0x45)
+        .map(|o| o.handle)
+        .unwrap();
+    let t = Tolerance {
+        insertion: crate::geom::Vec3::new(10.0, 20.0, 0.0),
+        x_direction: crate::geom::Vec3::new(0.0, 1.0, 0.0),
+        text: "{\\Fgdt;j}%%v0.05%%v{\\Fgdt;m}%%vA".into(),
+        dimstyle,
+        ..Default::default()
+    };
+    let h = d
+        .add_entity(layer, ObjectKind::Tolerance(t.clone()))
+        .unwrap();
+    let get = |d: &Drawing| match &d.objects[&h].kind {
+        ObjectKind::Tolerance(x) => x.clone(),
+        other => panic!("{other:?}"),
+    };
+    let out = super::to_bytes(&d).unwrap();
+    assert!(out.left_out.is_empty(), "{:?}", out.notes);
+    let back = super::super::read_bytes(&out.bytes).unwrap();
+    assert_eq!(back.objects[&h].raw, None, "decoded, not kept as bytes");
+    assert_eq!(get(&back), t, "DWG");
+    let dxf = cad_dxf::to_bytes(&back, cad_dxf::DxfFormat::Ascii);
+    assert!(dxf.left_out.is_empty(), "{:?}", dxf.notes);
+    let again = cad_dxf::read_bytes(&dxf.bytes).unwrap();
+    assert_eq!(get(&again), t, "DXF");
+}

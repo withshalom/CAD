@@ -341,6 +341,7 @@ fn entity_type(o: &Object) -> Option<&'static str> {
         ObjectKind::Xline(_) => "XLINE",
         ObjectKind::Ray(_) => "RAY",
         ObjectKind::Leader(_) => "LEADER",
+        ObjectKind::Tolerance(_) => "TOLERANCE",
         ObjectKind::PaperViewport(_) => "VIEWPORT",
         ObjectKind::BlockBegin { .. } => "BLOCK",
         ObjectKind::BlockEnd => "ENDBLK",
@@ -1572,6 +1573,7 @@ impl<'a> Writer<'a> {
                 self.p3(11, x.direction);
             }
             ObjectKind::Leader(l) => self.leader_body(l),
+            ObjectKind::Tolerance(t) => self.tolerance_body(t),
             ObjectKind::PaperViewport(v) => self.viewport_body(v),
             ObjectKind::BlockBegin { name } => {
                 let b = d.block_header(o.owner).or_else(|| {
@@ -1897,6 +1899,25 @@ impl<'a> Writer<'a> {
         self.p3(211, l.x_direction);
         self.p3(212, l.block_offset);
         self.p3(213, l.annotation_offset);
+    }
+
+    /// TOLERANCE in the DXF reference's group order.
+    fn tolerance_body(&mut self, t: &Tolerance) {
+        let d = self.d;
+        self.s(100, "AcDbFcf");
+        let style = d.record_name(t.dimstyle).unwrap_or("Standard").to_string();
+        self.s(3, style);
+        self.p3(10, t.insertion);
+        self.s(1, t.text.clone());
+        self.p3(
+            210,
+            if t.extrusion == Vec3::ZERO {
+                Vec3::Z
+            } else {
+                t.extrusion
+            },
+        );
+        self.p3(11, t.x_direction);
     }
 
     fn viewport_body(&mut self, v: &PaperViewport) {

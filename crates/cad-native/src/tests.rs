@@ -925,6 +925,62 @@ fn roundtrip_every_kind() {
     }
 }
 
+/// TOLERANCE (2.7), with and without the fields only R13 and R14 DWG files
+/// store, goes through the format as it was read.
+#[test]
+fn tolerances_roundtrip() {
+    let mut d = sample();
+    let frame = Tolerance {
+        insertion: v3(1.0, 2.0, 0.0),
+        x_direction: v3(0.0, 1.0, 0.0),
+        extrusion: Vec3::Z,
+        text: "{\\Fgdt;j}%%v0.05%%vA".into(),
+        dimstyle: Handle::NULL,
+        r14: None,
+    };
+    let old = Tolerance {
+        r14: Some((0, 0.18, 0.09)),
+        insertion: v3(-3.0, 4.5, 0.0),
+        ..frame.clone()
+    };
+    d.objects.insert(
+        Handle(0xA00),
+        obj(
+            0xA00,
+            "TOLERANCE",
+            0x2E,
+            0,
+            Some(ent(Space::Model, 0x10)),
+            ObjectKind::Tolerance(frame),
+        ),
+    );
+    d.objects.insert(
+        Handle(0xA01),
+        obj(
+            0xA01,
+            "TOLERANCE",
+            0x2E,
+            0,
+            Some(ent(Space::Model, 0x10)),
+            ObjectKind::Tolerance(old),
+        ),
+    );
+    d.objects.insert(
+        Handle(0xA02),
+        obj(
+            0xA02,
+            "TOLERANCE",
+            0x2E,
+            0,
+            Some(ent(Space::Model, 0x10)),
+            ObjectKind::Tolerance(Tolerance::default()),
+        ),
+    );
+    d.rebuild_index();
+    let back = read_bytes(&to_bytes(&d, &WriteOptions::default())).unwrap();
+    assert_same(&d, &back);
+}
+
 #[test]
 fn detects_format_and_stores_the_programs_preview_and_name() {
     let d = sample();

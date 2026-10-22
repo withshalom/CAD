@@ -176,8 +176,10 @@ pub(crate) mod kind {
     pub const XLINE: i16 = 39;
     pub const LEADER: i16 = 40;
     pub const VIEWPORT: i16 = 41;
+    // Format 2.7.
+    pub const TOLERANCE: i16 = 42;
     /// The highest kind this version reads.
-    pub const LAST: i16 = VIEWPORT;
+    pub const LAST: i16 = TOLERANCE;
 }
 
 const P2_BYTES: usize = 3 + 16;
@@ -866,6 +868,10 @@ fn write_kind(w: &mut TagWriter, k: &ObjectKind) {
         K::PaperViewport(v) => {
             w.i16(c::KIND, kind::VIEWPORT);
             super::objects::write_paper_viewport(w, v);
+        }
+        K::Tolerance(t) => {
+            w.i16(c::KIND, kind::TOLERANCE);
+            super::objects::write_tolerance(w, t);
         }
         K::BlockBegin { name } => {
             w.i16(c::KIND, kind::BLOCK_BEGIN);
@@ -1600,6 +1606,7 @@ fn read_kind(r: &mut TagReader) -> Result<ObjectKind> {
         }
         kind::LEADER => K::Leader(super::objects::read_leader(r)?),
         kind::VIEWPORT => K::PaperViewport(Box::new(super::objects::read_paper_viewport(r)?)),
+        kind::TOLERANCE => K::Tolerance(super::objects::read_tolerance(r)?),
         kind::BLOCK_BEGIN => K::BlockBegin { name: r.str(2)? },
         kind::BLOCK_END => K::BlockEnd,
         kind::BLOCK_HEADER => {

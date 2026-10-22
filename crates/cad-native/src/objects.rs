@@ -72,6 +72,11 @@ pub(crate) mod code {
     pub const HATCH_SOURCES: u16 = 2189;
     /// HATCH (2.6): a boundary object (the record's 330 is its owner).
     pub const HATCH_SOURCE: u16 = 2190;
+    /// TOLERANCE (2.7): what R13 and R14 DWG files store and later ones
+    /// don't: an undocumented short, the text height and the gap.
+    pub const TOLERANCE_R14_SHORT: u16 = 2191;
+    pub const TOLERANCE_R14_HEIGHT: u16 = 2192;
+    pub const TOLERANCE_R14_GAP: u16 = 2193;
 }
 
 use code as o;
@@ -859,5 +864,44 @@ pub(super) fn read_paper_viewport(r: &mut TagReader) -> Result<PaperViewport> {
         visual_style: r.opt_handle(348)?,
         shade_plot: r.opt_handle(333)?,
         sun: r.opt_handle(361)?,
+    })
+}
+
+// ----- Format 2.7: TOLERANCE -------------------------------------------------------
+
+pub(super) fn write_tolerance(w: &mut TagWriter, t: &Tolerance) {
+    w.str_d(1, &t.text, "");
+    w.p3_d(10, t.insertion, ORIGIN3);
+    w.p3_d(11, t.x_direction, X);
+    w.p3_d(210, t.extrusion, Z);
+    w.opt_handle(c::DIMSTYLE, t.dimstyle);
+    if let Some((short, height, gap)) = t.r14 {
+        w.u16(o::TOLERANCE_R14_SHORT, short);
+        w.f64(o::TOLERANCE_R14_HEIGHT, height);
+        w.f64(o::TOLERANCE_R14_GAP, gap);
+    }
+}
+
+pub(super) fn read_tolerance(r: &mut TagReader) -> Result<Tolerance> {
+    let text = r.str_or(1, "")?;
+    let insertion = r.p3_or(10, ORIGIN3)?;
+    let x_direction = r.p3_or(11, X)?;
+    let extrusion = r.p3_or(210, Z)?;
+    let dimstyle = r.opt_handle(c::DIMSTYLE)?;
+    let r14 = match r.opt_i16(o::TOLERANCE_R14_SHORT)? {
+        Some(short) => Some((
+            short as u16,
+            r.f64_or(o::TOLERANCE_R14_HEIGHT, 0.0)?,
+            r.f64_or(o::TOLERANCE_R14_GAP, 0.0)?,
+        )),
+        None => None,
+    };
+    Ok(Tolerance {
+        insertion,
+        x_direction,
+        extrusion,
+        text,
+        dimstyle,
+        r14,
     })
 }

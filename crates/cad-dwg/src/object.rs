@@ -521,9 +521,10 @@ pub(crate) fn decode(ctx: &DecodeCtx, data: &[u8], offset: usize) -> Result<Obje
     }
 
     // Types decoded from version 0.6 on (construction lines, leaders,
-    // viewports) are kept as their bytes whenever the layout read here does
-    // not fit the record exactly, as they were before.
-    let newer = matches!(type_code, 0x22 | 0x28 | 0x29 | 0x2D);
+    // viewports, and from 0.13 tolerances) are kept as their bytes whenever
+    // the layout read here does not fit the record exactly, as they were
+    // before.
+    let newer = matches!(type_code, 0x22 | 0x28 | 0x29 | 0x2D | 0x2E);
     let misfit = newer
         && (specific.is_err() || (ver.has_string_stream() && o.s.dat.remaining() != 0));
     let kind = match specific {
@@ -659,6 +660,7 @@ fn decode_specific(code: u16, name: &str, s: &mut Streams) -> Result<(ObjectKind
         0x28 => (K::Ray(entities::construction_line(s)?), Pending::None),
         0x29 => (K::Xline(entities::construction_line(s)?), Pending::None),
         0x2D => (K::Leader(entities::leader(s)?), Pending::None),
+        0x2E => (K::Tolerance(entities::tolerance(s)?), Pending::None),
         0x22 => {
             let (v, frozen) = entities::viewport(s)?;
             (K::PaperViewport(Box::new(v)), Pending::Viewport { frozen })
@@ -758,6 +760,7 @@ fn read_specific_handles(
             l.annotation = Handle(s.h_abs(own)?);
             l.dimstyle = Handle(s.h_abs(own)?);
         }
+        ObjectKind::Tolerance(t) => t.dimstyle = Handle(s.h_abs(own)?),
         ObjectKind::PaperViewport(v) => {
             if ver <= V::R14 {
                 let _header = s.h()?;
@@ -865,6 +868,7 @@ fn read_specific_handles(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::geom::Vec3;
 
     /// xorshift64* — a tiny deterministic generator for robustness tests.
     struct Rng(u64);
@@ -908,6 +912,43 @@ mod tests {
                 assert_eq!(t.width_factor, 1.0);
                 assert_eq!(t.oblique, 0.0);
                 assert_eq!(t.last_height, 0.2);
+            }
+            other => panic!("{other:?}"),
+        }
+        assert_eq!(o.note, None, "handles read cleanly");
+    }
+
+    /// The TOLERANCE example printed in the ODA specification (§20.4.49.1),
+    /// an R14 object (handle 010C).
+    #[test]
+    fn the_specifications_tolerance_example_decodes() {
+        let bytes = [
+            0x65, 0x00, 0x4B, 0x80, 0x80, 0x43, 0x27, 0x18, 0x10, 0x00, 0x05, 0x5B, 0x40, 0x56,
+            0xBD, 0x1B, 0x81, 0xE8, 0x56, 0x39, 0xF8, 0x15, 0xAF, 0x46, 0xE0, 0x7A, 0x15, 0x6E,
+            0x7E, 0x51, 0x19, 0xA0, 0x47, 0x00, 0xC7, 0x13, 0xA0, 0x18, 0x09, 0x38, 0x21, 0x8A,
+            0x5E, 0xA1, 0x48, 0x13, 0x54, 0xA5, 0xCF, 0x6B, 0x88, 0xCC, 0xEC, 0x8E, 0x87, 0x6D,
+            0x4F, 0xA4, 0xA4, 0xAE, 0xCF, 0x6B, 0x88, 0xCC, 0xEC, 0x8E, 0x87, 0x6D, 0xCF, 0xAC,
+            0x2E, 0x6C, 0x8C, 0xCF, 0x6B, 0x88, 0xCC, 0xEC, 0x8E, 0x87, 0x6D, 0xAF, 0xA4, 0xA4,
+            0xAE, 0xC4, 0xA4, 0xAE, 0xC4, 0xA4, 0xAE, 0xC4, 0xA4, 0xAE, 0xC6, 0x0A, 0x21, 0xF8,
+            0x20, 0x4C, 0x0A, 0x23, 0xB4, 0x45, 0x2F,
+        ];
+        let ctx = DecodeCtx {
+            ver: V::R14,
+            codepage: 30,
+            classes: &[],
+        };
+        let o = decode(&ctx, &bytes, 0).unwrap();
+        assert_eq!(o.type_name, "TOLERANCE");
+        assert_eq!(o.handle, Handle(0x10C));
+        match &o.kind {
+            ObjectKind::Tolerance(t) => {
+                assert_eq!(t.text, "{\\Fgdt;j}%%v{\\Fgdt;n}asdf{\\Fgdt;m}%%v%%v%%v%%v");
+                assert_eq!(t.r14, Some((0, 0.18, 0.09)), "DIMTXT and DIMGAP's defaults");
+                assert!((t.insertion.x - 11.777_355_618_798_37).abs() < 1e-12);
+                assert!((t.insertion.y - 3.369_785_403_870_281_5).abs() < 1e-12);
+                assert_eq!(t.x_direction, Vec3::X);
+                assert_eq!(t.extrusion, Vec3::Z);
+                assert_eq!(t.dimstyle, Handle(0x1D));
             }
             other => panic!("{other:?}"),
         }

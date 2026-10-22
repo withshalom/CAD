@@ -818,6 +818,31 @@ pub(crate) fn construction_line(s: &mut Streams) -> Result<ConstructionLine> {
 }
 
 /// LEADER (§20.4.47), up to its handles.
+/// TOLERANCE (§20.4.49, checked against the specification text). The
+/// text names its text field "BS"; it is a string (DXF 1), read as TV as
+/// the specification's own example shows. R13 and R14 store a short, the
+/// text height and the gap first; the short is printed as "S", which the
+/// example shows to be a bit short.
+pub(crate) fn tolerance(s: &mut Streams) -> Result<Tolerance> {
+    let r14 = if s.ver <= V::R14 {
+        Some((s.dat.bs()?, s.dat.bd()?, s.dat.bd()?))
+    } else {
+        None
+    };
+    let insertion = v3(s.dat.bd3()?);
+    let x_direction = v3(s.dat.bd3()?);
+    let extrusion = v3(s.dat.bd3()?);
+    let text = s.tv()?;
+    Ok(Tolerance {
+        insertion,
+        x_direction,
+        extrusion,
+        text,
+        dimstyle: Handle::NULL,
+        r14,
+    })
+}
+
 pub(crate) fn leader(s: &mut Streams) -> Result<Leader> {
     let unknown_bit = s.dat.b()?;
     let annotation_type = s.dat.bs()?;
