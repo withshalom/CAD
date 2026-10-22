@@ -963,3 +963,101 @@ fn left_out_objects_are_counted() {
     assert_eq!(out.left_out.get("MATERIAL"), Some(&3), "{:?}", out.left_out);
     assert_eq!(out.notes.len(), 68, "a count, then one note per object");
 }
+
+/// AutoCAD's table style, multileader style and dimension associations
+/// rewritten in the DXF reference's layout, as other writers give them
+/// (the CADCraft fork does): the table style without its version and with
+/// each row's borders by kind and no data type, unit type or format; the
+/// multileader style without its last group (298); each point reference of
+/// a dimension association with an empty 301. Written as DWG, each must
+/// give AutoCAD's bytes.
+#[test]
+fn reference_dxf_layouts_encode_to_autocads_bytes() {
+    let Some(file) = corpus() else { return };
+    let d = super::super::read_bytes(&file).unwrap();
+    let c = r2004::read(&file, DwgVersion::R2018).unwrap();
+    let rewrite = |g: &Groups| -> Option<Vec<(u16, XrValue)>> {
+        let items = &g.items;
+        match g.kind.as_str() {
+            "TABLESTYLE" => {
+                let mut out: Vec<(u16, XrValue)> = Vec::new();
+                let mut version_dropped = false;
+                let mut i = 0;
+                while i < items.len() {
+                    let (code, v) = &items[i];
+                    if *code == 280 && !version_dropped {
+                        version_dropped = true;
+                        i += 1;
+                        continue;
+                    }
+                    if *code != 7 {
+                        out.push((*code, v.clone()));
+                        i += 1;
+                        continue;
+                    }
+                    // A row: its text style, the rest but the data type, unit
+                    // type, format and borders, then the borders by kind.
+                    out.push((7, v.clone()));
+                    let mut j = i + 1;
+                    let mut borders: Vec<(u16, XrValue)> = Vec::new();
+                    while j < items.len() && items[j].0 != 7 {
+                        let (c2, v2) = &items[j];
+                        match c2 {
+                            90 | 91 | 1 => {}
+                            274..=279 | 284..=289 | 64..=69 => borders.push((*c2, v2.clone())),
+                            _ => out.push((*c2, v2.clone())),
+                        }
+                        j += 1;
+                    }
+                    let rank = |c: u16| match c {
+                        274..=279 => (0, c),
+                        284..=289 => (1, c),
+                        _ => (2, c),
+                    };
+                    borders.sort_by_key(|(c, _)| rank(*c));
+                    out.extend(borders);
+                    i = j;
+                }
+                Some(out)
+            }
+            "MLEADERSTYLE" => {
+                let mut out = items.clone();
+                (out.last().map(|x| x.0) == Some(298)).then(|| {
+                    out.pop();
+                    out
+                })
+            }
+            "DIMASSOC" => {
+                let mut out = Vec::new();
+                for (code, v) in items {
+                    out.push((*code, v.clone()));
+                    if *code == 91 {
+                        out.push((301, XrValue::Str(String::new())));
+                    }
+                }
+                Some(out)
+            }
+            _ => None,
+        }
+    };
+    let mut d2 = d.clone();
+    let mut rewritten = Vec::new();
+    for o in d2.objects.values_mut() {
+        if let ObjectKind::NonGraphic(NonGraphic::Groups(g)) = &mut o.kind {
+            if let Some(items) = rewrite(g) {
+                assert_ne!(g.items, items, "{} unchanged by the rewrite", g.kind);
+                g.items = items;
+                rewritten.push(o.type_name.clone());
+            }
+        }
+    }
+    rewritten.sort();
+    assert_eq!(rewritten, ["DIMASSOC", "DIMASSOC", "MLEADERSTYLE", "TABLESTYLE"]);
+    let (matched, bad) = compare_all(&d2, &c.objects);
+    let unexpected: Vec<&String> = bad
+        .iter()
+        .filter(|b| b.split_whitespace().nth(1).is_none_or(|t| t != "MTEXT"))
+        .collect();
+    assert!(unexpected.is_empty(), "{unexpected:#?}");
+    assert!(matched >= 150, "only {matched} objects compared");
+}

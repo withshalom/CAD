@@ -48,6 +48,9 @@ enum G {
     X(u16, i64),
     /// A handle DXF leaves out when it is null.
     OptH(u16),
+    /// A whole number or flag at the end of a record that DXF in the
+    /// reference's older layout leaves out, and the value it has then.
+    Tail(u16, D, i64),
     /// A count and that many values: DXF count group, item group.
     Rep(u16, D, u16, D),
 }
@@ -137,7 +140,7 @@ fn layout(kind: &str) -> Option<Layout> {
                 V(271, Bs),
                 V(272, Bs),
                 V(273, Bs),
-                V(298, B),
+                Tail(298, B, 0),
             ];
             // The spec's order: 273 before 272.
             let mut dwg: Vec<W> = (1..dxf.len()).map(W::I).collect();
@@ -402,7 +405,7 @@ fn decode_layout(s: &mut Streams, own: u64, l: &Layout) -> Result<Vec<(u16, XrVa
             }
             W::I(i) => {
                 vals[i] = match &l.dxf[i] {
-                    G::V(_, d) => read(s, own, *d)?,
+                    G::V(_, d) | G::Tail(_, d, _) => read(s, own, *d)?,
                     G::OptH(_) => read(s, own, D::H(5))?,
                     G::Rep(_, cd, _, id) => {
                         let n = match read(s, own, *cd)? {
@@ -433,7 +436,7 @@ fn decode_layout(s: &mut Streams, own: u64, l: &Layout) -> Result<Vec<(u16, XrVa
                 Val::Color(w) => out.push((*code, XrValue::Int32(*w as i32))),
                 _ => return Err(Error::format("colour expected")),
             },
-            G::V(code, _) => out.push((*code, xr(*code, v))),
+            G::V(code, _) | G::Tail(code, _, _) => out.push((*code, xr(*code, v))),
             G::OptH(code) => {
                 if let Val::Handle(h) = v {
                     if !h.is_null() {
@@ -615,6 +618,7 @@ fn encode_layout(w: &mut ObjW, g: &Groups, l: &Layout) -> Result<()> {
             G::V(code, D::H(_)) => Val::Handle(c.handle(*code)?),
             G::V(code, D::Bd) => Val::Real(c.real(*code)?),
             G::V(code, _) => Val::Int(c.int(*code)?),
+            G::Tail(code, _, missing) => Val::Int(if c.peek() == Some(*code) { c.int(*code)? } else { *missing }),
             G::OptH(code) => {
                 if c.peek() == Some(*code) {
                     Val::Handle(c.handle(*code)?)
@@ -643,7 +647,7 @@ fn encode_layout(w: &mut ObjW, g: &Groups, l: &Layout) -> Result<()> {
         match *step {
             W::K(d, v) => write(w, d, &Val::Int(v))?,
             W::I(i) => match (&l.dxf[i], &vals[i]) {
-                (G::V(_, d), v) => write(w, *d, v)?,
+                (G::V(_, d) | G::Tail(_, d, _), v) => write(w, *d, v)?,
                 (G::OptH(_), v) => write(w, D::H(5), v)?,
                 (G::Rep(_, cd, _, id), Val::List(list)) => {
                     write(w, *cd, &Val::Int(list.len() as i64))?;
@@ -795,6 +799,12 @@ fn encode_dimassoc(w: &mut ObjW, g: &Groups) -> Result<()> {
         }
         w.dat.bs(c.int(73)? as u16);
         w.dat.bl(c.int(91)? as u32);
+        // Writers that follow the DXF reference give a 301 here, empty when
+        // the reference has no intersection or xref data (AutoCAD leaves it
+        // out then).
+        if c.peek() == Some(301) && !c.str(301)?.is_empty() {
+            return Err(Error::unsupported("DIMASSOC: intersection or xref data"));
+        }
         w.dat.bl(0);
         w.dat.bd(c.real(40)?);
         let p = match from_xr(c.take(10)?) {
@@ -1063,12 +1073,75 @@ fn write_cell_style(w: &mut ObjW, row: &RowStyle, merge: u32, text_style: Handle
     w.dat.bl(0);
 }
 
+/// Groups a table style's row may hold after its text style (7).
+fn is_row_group(code: u16) -> bool {
+    matches!(code, 140 | 170 | 62 | 63 | 283 | 90 | 91 | 1 | 274..=279 | 284..=289 | 64..=69)
+}
+
+/// One row style of a table style: its text style (7), then its groups up
+/// to the next row's text style or the end, in whatever order the file has
+/// them. AutoCAD interleaves each border's lineweight, visibility and
+/// colour (274, 284, 64, 275, …); the DXF reference lists them by kind
+/// (274–279, 284–289, 64–69), which other writers follow, and its older
+/// layout has no cell data type, unit type or format (90, 91, 1), which
+/// then take the values AutoCAD writes (512, 0, none).
+fn row_style(c: &mut Cur<'_>, d: &Lookup) -> Result<RowStyle> {
+    let style = c.str(7)?;
+    let start = c.at;
+    while c.peek().is_some_and(|code| code != 7) {
+        c.at += 1;
+    }
+    let groups = c.items.get(start..c.at).unwrap_or_default();
+    let kind = c.kind;
+    if let Some((code, _)) = groups.iter().find(|(code, _)| !is_row_group(*code)) {
+        return Err(Error::format(format!("{kind}: unexpected group {code} in a row style")));
+    }
+    let value = |code: u16| groups.iter().find(|(c, _)| *c == code).map(|(_, v)| v);
+    let number = |code: u16, missing: Option<f64>| -> Result<f64> {
+        match value(code).map(from_xr) {
+            Some(Val::Int(i)) => Ok(i as f64),
+            Some(Val::Real(f)) => Ok(f),
+            Some(v) => Err(Error::format(format!("{kind}: group {code}: number expected, {v:?}"))),
+            None => missing.ok_or_else(|| Error::format(format!("{kind}: a row style without group {code}"))),
+        }
+    };
+    let int = |code: u16, missing: Option<i64>| number(code, missing.map(|m| m as f64)).map(|f| f as i64);
+    let format = match value(1) {
+        Some(XrValue::Str(s)) => s.clone(),
+        Some(v) => return Err(Error::format(format!("{kind}: group 1: text expected, {v:?}"))),
+        None => String::new(),
+    };
+    for k in 0..6u16 {
+        let border = (
+            int(274 + k, Some(DEFAULT_BORDER.0))?,
+            int(284 + k, Some(DEFAULT_BORDER.1))?,
+            int(64 + k, Some(DEFAULT_BORDER.2))?,
+        );
+        if border != DEFAULT_BORDER {
+            return Err(Error::unsupported("TABLESTYLE: borders other than the default"));
+        }
+    }
+    Ok(RowStyle {
+        text_style: d.style_handle(&style),
+        height: number(140, None)?,
+        alignment: int(170, None)?,
+        text_color: int(62, None)?,
+        fill_color: int(63, None)?,
+        fill_on: int(283, None)? != 0,
+        data_type: int(90, Some(512))?,
+        unit_type: int(91, Some(0))?,
+        format,
+    })
+}
+
 fn encode_tablestyle(w: &mut ObjW, g: &Groups, d: &Lookup) -> Result<()> {
     let mut c = Cur::new(g);
     if c.str(100)? != "AcDbTableStyle" {
         return Err(Error::format("TABLESTYLE: subclass"));
     }
-    let version = c.int(280)?;
+    // The DXF of AutoCAD 2007 and later starts with the version; the
+    // reference's older layout, which other writers follow, has none.
+    let version = if c.peek() == Some(280) { c.int(280)? } else { 0 };
     let description = c.str(3)?;
     let flow = c.int(70)?;
     let flags = c.int(71)?;
@@ -1081,25 +1154,7 @@ fn encode_tablestyle(w: &mut ObjW, g: &Groups, d: &Lookup) -> Result<()> {
     }
     let mut rows = Vec::new();
     for _ in 0..3 {
-        let style = c.str(7)?;
-        let row = RowStyle {
-            text_style: d.style_handle(&style),
-            height: c.real(140)?,
-            alignment: c.int(170)?,
-            text_color: c.int(62)?,
-            fill_color: c.int(63)?,
-            fill_on: c.int(283)? != 0,
-            data_type: c.int(90)?,
-            unit_type: c.int(91)?,
-            format: c.str(1)?,
-        };
-        for k in 0..6u16 {
-            let border = (c.int(274 + k)?, c.int(284 + k)?, c.int(64 + k)?);
-            if border != DEFAULT_BORDER {
-                return Err(Error::unsupported("TABLESTYLE: borders other than the default"));
-            }
-        }
-        rows.push(row);
+        rows.push(row_style(&mut c, d)?);
     }
     c.done()?;
     let (data, title, header) = (&rows[0], &rows[1], &rows[2]);
@@ -1156,6 +1211,7 @@ mod tests {
                 G::V(code, _) => items.push((*code, XrValue::Int32(0))),
                 G::X(code, v) => items.push((*code, XrValue::Int16(*v as i16))),
                 G::OptH(_) => {}
+                G::Tail(code, _, v) => items.push((*code, XrValue::Int16(*v as i16))),
                 G::Rep(count, _, item, _) => {
                     items.push((*count, XrValue::Int32(claimed)));
                     items.push((*item, XrValue::Real(0.5)));

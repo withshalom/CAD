@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.10.1 (2026-10-22)
+The DWG writer takes three objects in the DXF reference's layout as well as
+AutoCAD's. The CADCraft fork writes them that way, and BlackCAD's writer
+refused them, so the fork's 2018 DWG saves went to its second engine
+(acadrust) and came back with 29 more objects BlackCAD could keep only as
+raw bytes. Found by the fork's round-trip test on the MI-201 corpus.
+
+`cad-dwg`:
+- TABLESTYLE: the version group (280) is optional (0 without it, as
+  AutoCAD writes it); each row's groups are read in any order, so the
+  borders may come by kind (274–279, 284–289, 64–69) as the reference lists
+  them or interleaved as AutoCAD writes them; the cell data type, unit
+  type and format (90, 91, 1), which the older layout has none of, take
+  AutoCAD's values (512, 0, none). A group a row doesn't have is still an
+  error.
+- MLEADERSTYLE: the last group (298) is optional (0 without it).
+- DIMASSOC: each point reference may carry a 301, which must be empty (no
+  intersection or xref data).
+- Test: AutoCAD's three objects from the corpus, rewritten in the
+  reference's layout, encode to AutoCAD's bytes.
+
 ## 0.10.0 (2026-10-22)
 The native `.cad` format is open source: it moves out of the core into a
 crate of its own, `cad-native`, licensed MIT OR Apache-2.0 like
