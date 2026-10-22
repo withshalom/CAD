@@ -1094,3 +1094,23 @@ fn attribute_lock_position_survives_dwg_and_dxf() {
     let back = cad_dxf::read_bytes(&dxf.bytes).unwrap();
     assert_eq!((lock_of(&back, locked), lock_of(&back, free)), (true, false), "DXF");
 }
+
+/// MEASUREMENT (imperial or metric) comes from AcDb:Template: AutoCAD's
+/// file is imperial, and a metric drawing written and read back is metric.
+#[test]
+fn measurement_reads_from_the_template_section() {
+    let Some(file) = corpus() else { return };
+    let mut d = super::super::read_bytes(&file).unwrap();
+    assert_eq!(d.header.measurement, Some(0), "AutoCAD's MI-201 is imperial");
+    for m in [1u16, 0] {
+        d.header.measurement = Some(m);
+        let out = super::to_bytes(&d).unwrap();
+        let back = super::super::read_bytes(&out.bytes).unwrap();
+        assert_eq!(back.header.measurement, Some(m));
+        // And DXF says so.
+        let dxf = String::from_utf8(cad_dxf::to_bytes(&back, cad_dxf::DxfFormat::Ascii).bytes).unwrap();
+        let at = dxf.find("$MEASUREMENT").unwrap();
+        let value = dxf[at..].lines().nth(2).unwrap().trim();
+        assert_eq!(value, m.to_string());
+    }
+}

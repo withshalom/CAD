@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.11.1 (2026-10-22)
+The DWG reader takes MEASUREMENT (imperial or metric) from AcDb:Template,
+the section DWG keeps it in. It never did, although the DXF reader's
+comments said so, so every DWG BlackCAD opened was imperial in the DXF it
+wrote and in what it handed on: a metric DWG saved by BlackCAD and opened
+again came back imperial. Found by the CADCraft fork's template test once
+its saves went through BlackCAD.
+
+- `cad-dwg`: MEASUREMENT is the section's last short (0 or 1; anything
+  else is not believed). R13 to 2000 files have no such section and keep
+  the default.
+- Test: AutoCAD's MI-201 reads as imperial; a metric drawing written and
+  read back is metric, in the model and in its DXF.
+
 ## 0.11.0 (2026-10-22)
 Attributes keep Lock position. AutoCAD 2007 and later store it with every
 attribute; BlackCAD read it from DWG and dropped it, wrote "unlocked" to
