@@ -926,7 +926,7 @@ fn roundtrip_every_kind() {
 fn detects_format_and_stores_the_programs_preview_and_name() {
     let d = sample();
     let opts = WriteOptions {
-        preview_svg: Some(|_| Some("<svg xmlns=\"http://www.w3.org/2000/svg\"/>".into())),
+        preview_svg: Some(PreviewSvg::Draw(|_| Some("<svg xmlns=\"http://www.w3.org/2000/svg\"/>".into()))),
         writer: Some("Test 1.0".into()),
         ..Default::default()
     };
@@ -935,7 +935,13 @@ fn detects_format_and_stores_the_programs_preview_and_name() {
     assert_same(&d, &read_bytes(&bytes).unwrap());
     let svg = preview_svg(&bytes).unwrap().expect("preview");
     assert!(svg.starts_with("<svg"), "{svg}");
-    // Without a preview drawer there is no preview, and the crate names itself.
+    // One drawn already is stored as given.
+    let drawn = WriteOptions {
+        preview_svg: Some(PreviewSvg::Drawn("<svg id=\"drawn\"/>".into())),
+        ..Default::default()
+    };
+    assert_eq!(preview_svg(&to_bytes(&d, &drawn)).unwrap().as_deref(), Some("<svg id=\"drawn\"/>"));
+    // Without a preview there is none, and the crate names itself.
     let plain = to_bytes(&d, &WriteOptions::default());
     assert_eq!(preview_svg(&plain).unwrap(), None);
     assert_eq!(inspect(&plain).unwrap().writer, format!("cad-native {VERSION}"));
