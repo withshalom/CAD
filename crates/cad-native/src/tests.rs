@@ -376,6 +376,7 @@ pub(super) fn sample() -> Drawing {
                 flags: 8,
                 field_length: 3,
                 is_definition: true,
+                lock_position: true,
             }),
         ),
         obj(
@@ -2176,6 +2177,12 @@ fn files_written_by_format_1_1_still_read() {
     }
     if let ObjectKind::BlockHeader(b) = &mut want.objects.get_mut(&Handle(0x40)).unwrap().kind {
         b.part = Part::default();
+    }
+    // Nor attributes' lock position (2.5).
+    for o in want.objects.values_mut() {
+        if let ObjectKind::Attribute(a) = &mut o.kind {
+            a.lock_position = false;
+        }
     }
     let mut line = want.objects[&Handle(0x100)].clone();
     if let ObjectKind::Line(l) = &mut line.kind {

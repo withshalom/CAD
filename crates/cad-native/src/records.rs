@@ -695,6 +695,11 @@ fn write_kind(w: &mut TagWriter, k: &ObjectKind) {
             w.u8_d(70, a.flags, 0);
             w.u16_d(73, a.field_length, 0);
             w.bool_d(c::IS_DEFINITION, a.is_definition, false);
+            // 2.5; only when set, so records without it read as before in
+            // every version (and 1.x records stay as 1.1 wrote them).
+            if a.lock_position {
+                w.bool(280, true);
+            }
         }
         K::MText(m) => {
             w.i16(c::KIND, kind::MTEXT);
@@ -1419,6 +1424,7 @@ fn read_kind(r: &mut TagReader) -> Result<ObjectKind> {
             flags: r.u8_or(70, 0)?,
             field_length: r.u16_or(73, 0)?,
             is_definition: r.bool_or(c::IS_DEFINITION, false)?,
+            lock_position: r.bool_or(280, false)?,
         }),
         kind::MTEXT => K::MText(MText {
             insertion: r.p3(10)?,

@@ -1061,3 +1061,36 @@ fn reference_dxf_layouts_encode_to_autocads_bytes() {
     assert!(unexpected.is_empty(), "{unexpected:#?}");
     assert!(matched >= 150, "only {matched} objects compared");
 }
+
+/// An attribute's Lock position (AutoCAD 2007 and later) survives DWG and
+/// DXF, for a definition that has it and one that doesn't.
+#[test]
+fn attribute_lock_position_survives_dwg_and_dxf() {
+    let Some(file) = corpus() else { return };
+    let mut d = super::super::read_bytes(&file).unwrap();
+    let layer = d.layer_by_name("0").unwrap().0;
+    let attdef = |tag: &str, lock_position: bool| {
+        ObjectKind::Attribute(Attribute {
+            text: Text::new(crate::geom::Vec2::new(10.0, 10.0), 2.5, tag),
+            tag: tag.into(),
+            prompt: format!("{tag}?"),
+            flags: 0,
+            field_length: 0,
+            is_definition: true,
+            lock_position,
+        })
+    };
+    let locked = d.add_entity(layer, attdef("LOCKED", true)).unwrap();
+    let free = d.add_entity(layer, attdef("FREE", false)).unwrap();
+    let lock_of = |d: &Drawing, h: Handle| match &d.objects[&h].kind {
+        ObjectKind::Attribute(a) => a.lock_position,
+        other => panic!("{other:?}"),
+    };
+    let out = super::to_bytes(&d).unwrap();
+    assert!(out.left_out.is_empty(), "{:?}", out.notes);
+    let back = super::super::read_bytes(&out.bytes).unwrap();
+    assert_eq!((lock_of(&back, locked), lock_of(&back, free)), (true, false), "DWG");
+    let dxf = cad_dxf::to_bytes(&d, cad_dxf::DxfFormat::Ascii);
+    let back = cad_dxf::read_bytes(&dxf.bytes).unwrap();
+    assert_eq!((lock_of(&back, locked), lock_of(&back, free)), (true, false), "DXF");
+}

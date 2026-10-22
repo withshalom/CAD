@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.11.0 (2026-10-22)
+Attributes keep Lock position. AutoCAD 2007 and later store it with every
+attribute; BlackCAD read it from DWG and dropped it, wrote "unlocked" to
+every DWG, and neither read nor wrote it in DXF or `.cad`. It showed when
+the CADCraft fork's 2018 saves started going through BlackCAD (0.10.1):
+the fork's own test of attribute modes failed. The `.cad` format is 2.5.
+
+- `cad-model`: `Attribute::lock_position`. A reference's attributes take
+  it from their definitions (`cad-core`'s INSERT).
+- `cad-dwg`: read and written for AutoCAD 2007 and later.
+- `cad-dxf`: read from the 280 after the flags (the 280 before the tag is
+  the subclass version) and written there when set.
+- `cad-native`: format 2.5 adds lock position (280) at the end of ATTRIB /
+  ATTDEF records, written only when set, so records without it are as 2.4
+  wrote them and a 2.4 reader keeps it as a field from a newer writer.
+- Tests: a locked and an unlocked definition survive DWG and DXF; the
+  format's sample has a locked definition, so every `.cad` round trip
+  checks it.
+
 ## 0.10.1 (2026-10-22)
 The DWG writer takes three objects in the DXF reference's layout as well as
 AutoCAD's. The CADCraft fork writes them that way, and BlackCAD's writer

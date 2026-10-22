@@ -514,7 +514,7 @@ fn specific(w: &mut ObjW, o: &Object, ctx: &Ctx) -> Result<()> {
             w.dat.bs(a.field_length);
             w.dat.rc(a.flags);
             if ver >= V::R2007 {
-                w.dat.b(false);
+                w.dat.b(a.lock_position);
             }
             if a.is_definition {
                 if ver >= V::R2010 {

@@ -393,6 +393,7 @@ pub static KINDS: &[KindSpec] = &[
                 f(70, ty::I16, I16(0), "flags"),
                 f(73, ty::I16, I16(0), "field length"),
                 f(2102, ty::BOOL, Bool(false), "is an ATTDEF"),
+                f(280, ty::BOOL, Bool(false), "lock position (2.5)"),
             ]
         ),
     },

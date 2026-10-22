@@ -1446,6 +1446,11 @@ impl<'a> Writer<'a> {
                 if a.text.v_align != 0 {
                     self.i(74, a.text.v_align as i64);
                 }
+                // AutoCAD 2007 and later: after the flags, unlike the
+                // subclass version (280) before the tag.
+                if a.lock_position {
+                    self.i(280, 1);
+                }
             }
             ObjectKind::MText(m) => {
                 self.s(100, "AcDbMText");

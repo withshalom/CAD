@@ -173,9 +173,7 @@ pub(crate) fn attribute(s: &mut Streams, definition: bool) -> Result<Attribute> 
     let tag = s.tv()?;
     let field_length = s.dat.bs()?;
     let flags = s.dat.rc()?;
-    if s.ver >= V::R2007 {
-        let _lock_position = s.dat.b()?;
-    }
+    let lock_position = if s.ver >= V::R2007 { s.dat.b()? } else { false };
     let prompt = if definition {
         if s.ver >= V::R2010 {
             let _version = s.dat.rc()?; // uncertain
@@ -191,6 +189,7 @@ pub(crate) fn attribute(s: &mut Streams, definition: bool) -> Result<Attribute> 
         flags,
         field_length,
         is_definition: definition,
+        lock_position,
     })
 }
 
