@@ -981,6 +981,66 @@ fn tolerances_roundtrip() {
     assert_same(&d, &back);
 }
 
+/// IMAGE and WIPEOUT (2.8) go through the format as they were read: a
+/// clipped image with its definition and reactor, an unclipped one with
+/// every default, and a wipeout.
+#[test]
+fn images_and_wipeouts_roundtrip() {
+    let mut d = sample();
+    let clipped = RasterImage {
+        class_version: 0,
+        insertion: v3(5.0, 6.0, 0.0),
+        u: v3(0.01, 0.0, 0.0),
+        v: v3(0.0, 0.01, 0.0),
+        size: v2(640.0, 480.0),
+        display: 15,
+        clipping: true,
+        brightness: 60,
+        contrast: 40,
+        fade: 10,
+        clip_inside: true,
+        clip_type: 2,
+        clip: vec![v2(-0.5, -0.5), v2(300.0, -0.5), v2(150.0, 200.0), v2(-0.5, -0.5)],
+        definition: Handle(0x10),
+        reactor: Handle(0x11),
+    };
+    let wipeout = RasterImage { clip_type: 2, clip: vec![v2(-0.5, 0.5), v2(0.5, 0.5), v2(0.5, -0.5)], ..Default::default() };
+    let e = || Some(ent(Space::Model, 0x10));
+    d.objects.insert(Handle(0xA10), obj(0xA10, "IMAGE", 501, 0, e(), ObjectKind::Image(Box::new(clipped))));
+    d.objects.insert(Handle(0xA11), obj(0xA11, "IMAGE", 501, 0, e(), ObjectKind::Image(Box::default())));
+    d.objects.insert(Handle(0xA12), obj(0xA12, "WIPEOUT", 502, 0, e(), ObjectKind::Wipeout(Box::new(wipeout))));
+    d.rebuild_index();
+    let back = read_bytes(&to_bytes(&d, &WriteOptions::default())).unwrap();
+    assert_same(&d, &back);
+}
+
+/// A tolerance an older reader kept as its DWG bytes (an R14 record, the
+/// ODA specification's example, §20.4.49.1) is decoded when the file is
+/// read now.
+#[test]
+fn tolerances_kept_as_bytes_by_older_readers_are_decoded() {
+    let mut d = sample();
+    let data: Vec<u8> = (0.."4b80804327181000055b4056bd1b81e85639f815af46e07a156e7e5119a04700c713a0180938218a5ea1481354a5cf6b88ccec8e876d4fa4a4aecf6b88ccec8e876dcfac2e6c8ccf6b88ccec8e876dafa4a4aec4a4aec4a4aec4a4aec60a21f8204c0a23b4".len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&"4b80804327181000055b4056bd1b81e85639f815af46e07a156e7e5119a04700c713a0180938218a5ea1481354a5cf6b88ccec8e876d4fa4a4aecf6b88ccec8e876dcfac2e6c8ccf6b88ccec8e876dafa4a4aec4a4aec4a4aec4a4aec60a21f8204c0a23b4"[i..i + 2], 16).unwrap())
+        .collect();
+    assert_eq!(data.len(), 101);
+    let mut o = obj(0x10C, "TOLERANCE", 0x2E, 0, Some(ent(Space::Model, 0x10)), ObjectKind::Unsupported);
+    o.raw = Some(RawDwgObject { version: crate::dwg::DwgVersion::R14, handle_stream_bits: 0, data });
+    d.objects.insert(Handle(0x10C), o);
+    d.rebuild_index();
+    let back = read_bytes(&to_bytes(&d, &WriteOptions::default())).unwrap();
+    let o = &back.objects[&Handle(0x10C)];
+    match &o.kind {
+        ObjectKind::Tolerance(t) => {
+            assert!(t.text.starts_with("{\\Fgdt;j}"), "{t:?}");
+            assert_eq!(t.r14, Some((0, 0.18, 0.09)));
+        }
+        other => panic!("{other:?}"),
+    }
+    assert_eq!(o.raw, None);
+}
+
 #[test]
 fn detects_format_and_stores_the_programs_preview_and_name() {
     let d = sample();

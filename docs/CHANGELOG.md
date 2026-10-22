@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.14.0 (2026-10-22)
+The drawing model holds raster images and wipeouts, and the objects an
+image needs. IMAGE and WIPEOUT were kept only as DWG bytes and dropped
+from DXF, as were image definitions; now they're read, written and stored
+as what they are, through DWG, DXF and `.cad`, as the CADCraft fork models
+them. The `.cad` format is 2.8.
+
+- `cad-model`: `RasterImage` (`ObjectKind::Image`, `ObjectKind::Wipeout`):
+  placement by pixel vectors, size, display flags, brightness, contrast,
+  fade, the clip boundary and mode, and the image's definition and
+  reactor. IMAGEDEF, IMAGEDEF_REACTOR and RASTERVARIABLES are kept as
+  their DXF groups (`Groups`). `Drawing::class_number` registers the
+  classes these types need when a drawing lacks them (`KNOWN_CLASSES`),
+  so `add_entity` can make images and wipeouts.
+- `cad-dwg`: IMAGE and WIPEOUT read and written (ODA specification
+  §20.4.80, checked against the text; WIPEOUT has IMAGE's record), and
+  the three objects (§20.4.81, §20.4.82, §20.4.91) in every version. An
+  image with no clip boundary is written with the whole-image rectangle.
+  Tolerances, images and wipeouts that older `.cad` files kept as DWG
+  bytes are decoded when read.
+- `cad-dxf`: IMAGE and WIPEOUT read and written; a DXF without a CLASSES
+  section still gives these types, from the classes the model knows.
+- `cad-native`: format 2.8, object kinds 43 IMAGE and 44 WIPEOUT, with
+  DXF's group codes. A 2.7 reader keeps them as unknown data.
+- `cad-core`: keeps images and wipeouts and writes them back; it does not
+  draw them yet.
+- Tests: the specification's IMAGE, IMAGEDEF, IMAGEDEF_REACTOR and
+  RASTERVARIABLES examples (R14 objects) decode to a 128 × 128 image with
+  its definition, reactor and settings; an image with its definition and
+  reactor and a wipeout survive DWG, DXF, and DXF without classes; `.cad`
+  round trips; a tolerance an older reader kept as bytes is decoded.
+
 ## 0.13.0 (2026-10-22)
 The drawing model holds geometric tolerances. TOLERANCE is the first of the
 entity types the CADCraft fork models and BlackCAD kept only as DWG bytes

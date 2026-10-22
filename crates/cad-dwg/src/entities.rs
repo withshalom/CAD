@@ -843,6 +843,52 @@ pub(crate) fn tolerance(s: &mut Streams) -> Result<Tolerance> {
     })
 }
 
+/// IMAGE and WIPEOUT (AcDbRasterImage, §20.4.80, checked against the
+/// specification text; WIPEOUT, which the text doesn't describe, has the
+/// same record). The handles (definition, reactor) come after.
+pub(crate) fn raster_image(s: &mut Streams) -> Result<RasterImage> {
+    let class_version = s.dat.bl()?;
+    let insertion = v3(s.dat.bd3()?);
+    let u = v3(s.dat.bd3()?);
+    let v = v3(s.dat.bd3()?);
+    let size = v2(s.dat.rd2()?);
+    let display = s.dat.bs()?;
+    let clipping = s.dat.b()?;
+    let brightness = s.dat.rc()?;
+    let contrast = s.dat.rc()?;
+    let fade = s.dat.rc()?;
+    let clip_inside = if s.ver >= V::R2010 { s.dat.b()? } else { false };
+    let clip_type = s.dat.bs()?;
+    let clip = if clip_type == 1 {
+        vec![v2(s.dat.rd2()?), v2(s.dat.rd2()?)]
+    } else {
+        let n = s.dat.bl()?;
+        let n = s.check_count(n, 16, "clip vertex")?;
+        let mut pts = Vec::with_capacity(n);
+        for _ in 0..n {
+            pts.push(v2(s.dat.rd2()?));
+        }
+        pts
+    };
+    Ok(RasterImage {
+        class_version,
+        insertion,
+        u,
+        v,
+        size,
+        display,
+        clipping,
+        brightness,
+        contrast,
+        fade,
+        clip_inside,
+        clip_type,
+        clip,
+        definition: Handle::NULL,
+        reactor: Handle::NULL,
+    })
+}
+
 pub(crate) fn leader(s: &mut Streams) -> Result<Leader> {
     let unknown_bit = s.dat.b()?;
     let annotation_type = s.dat.bs()?;

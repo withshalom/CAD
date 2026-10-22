@@ -757,6 +757,38 @@ fn specific(w: &mut ObjW, o: &Object, ctx: &Ctx) -> Result<()> {
             w.h(Ref::HardPtr, l.annotation);
             w.h(Ref::HardPtr, l.dimstyle);
         }
+        ObjectKind::Image(r) | ObjectKind::Wipeout(r) => {
+            // §20.4.80, the mirror of `entities::raster_image`.
+            w.dat.bl(r.class_version);
+            w.dat.bd3(v3(r.insertion));
+            w.dat.bd3(v3(r.u));
+            w.dat.bd3(v3(r.v));
+            w.dat.rd2(v2(r.size));
+            w.dat.bs(r.display);
+            w.dat.b(r.clipping);
+            w.dat.rc(r.brightness);
+            w.dat.rc(r.contrast);
+            w.dat.rc(r.fade);
+            if ver >= V::R2010 {
+                w.dat.b(r.clip_inside);
+            }
+            // A rectangle is two corners; anything else is a polygon. No
+            // boundary at all is the whole image, pixel centres at whole
+            // numbers (DXF reference, IMAGE group 14).
+            let whole = [Vec2::new(-0.5, -0.5), Vec2::new(r.size.x - 0.5, r.size.y - 0.5)];
+            let clip: &[Vec2] = if r.clip.is_empty() { &whole } else { &r.clip };
+            let rect = clip.len() == 2 && (r.clip_type == 1 || r.clip.is_empty());
+            w.dat.bs(if rect { 1 } else { 2 });
+            if !rect {
+                w.dat.bl(clip.len() as u32);
+            }
+            for p in clip {
+                w.dat.rd2(v2(*p));
+            }
+            common_handles(w, o);
+            w.h(Ref::HardPtr, r.definition);
+            w.h(Ref::HardOwner, r.reactor);
+        }
         ObjectKind::Tolerance(t) => {
             // §20.4.49, the mirror of `entities::tolerance`.
             if ver <= V::R14 {

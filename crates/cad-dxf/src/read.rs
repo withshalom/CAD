@@ -740,7 +740,7 @@ impl Reader {
         }
     }
 
-    fn type_of(&self, name: &str) -> Option<(u16, String)> {
+    fn type_of(&mut self, name: &str) -> Option<(u16, String)> {
         let fixed = |code: u16| Some((code, crate::dwg::fixed_type_name(code)?.to_string()));
         match name {
             "DICTIONARY" => fixed(0x2A),
@@ -769,7 +769,16 @@ impl Reader {
                 Some(n) => Some((*n, other.to_string())),
                 // Some types are classes in one release and fixed in
                 // another (ACDBPLACEHOLDER).
-                None => (0..500u16).find_map(|c| (crate::dwg::fixed_type_name(c)? == other).then(|| (c, other.to_string()))),
+                None => match (0..500u16).find_map(|c| (crate::dwg::fixed_type_name(c)? == other).then(|| (c, other.to_string()))) {
+                    Some(t) => Some(t),
+                    // A class the file doesn't define (no CLASSES section)
+                    // but the model knows: register it.
+                    None => {
+                        let n = self.d.class_number(other)?;
+                        self.class_numbers.insert(other.to_ascii_uppercase(), n);
+                        Some((n, other.to_string()))
+                    }
+                },
             },
         }
     }
@@ -1767,6 +1776,43 @@ impl Reader {
                     dimstyle: self.lookup(0x45, &b.s_or(3, "Standard")),
                     unknown: (false, 0, false, false),
                 })
+            }
+            "IMAGE" | "WIPEOUT" => {
+                // IMAGE's groups follow AcDbRasterImage; WIPEOUT's, as
+                // AutoCAD writes them, follow AcDbWipeout.
+                let marker = if kind_name == "IMAGE" { "AcDbRasterImage" } else { "AcDbWipeout" };
+                let b = if body.has_marker(marker) { body.sub(marker) } else { body.sub("AcDbRasterImage") };
+                let xs: Vec<f64> = b.0.iter().filter(|g| g.code == 14).map(|g| vf(&g.value)).collect();
+                let ys: Vec<f64> = b.0.iter().filter(|g| g.code == 24).map(|g| vf(&g.value)).collect();
+                let declared = usize::try_from(b.i(91, 0)).unwrap_or(0);
+                let clip: Vec<Vec2> = xs
+                    .iter()
+                    .take(declared.max(xs.len()).min(1_000_000))
+                    .enumerate()
+                    .map(|(i, x)| Vec2::new(*x, ys.get(i).copied().unwrap_or(0.0)))
+                    .collect();
+                let r = RasterImage {
+                    class_version: b.i(90, 0) as u32,
+                    insertion: b.p3(10, Vec3::ZERO),
+                    u: b.p3(11, Vec3::X),
+                    v: b.p3(12, Vec3::Y),
+                    size: b.p2(13, Vec2::new(1.0, 1.0)),
+                    display: b.i(70, 7) as u16,
+                    clipping: b.i(280, 0) != 0,
+                    brightness: b.i(281, 50).clamp(0, 255) as u8,
+                    contrast: b.i(282, 50).clamp(0, 255) as u8,
+                    fade: b.i(283, 0).clamp(0, 255) as u8,
+                    clip_inside: b.i(290, 0) != 0,
+                    clip_type: b.i(71, 1) as u16,
+                    clip,
+                    definition: b.h(340),
+                    reactor: b.h(360),
+                };
+                if kind_name == "IMAGE" {
+                    ObjectKind::Image(Box::new(r))
+                } else {
+                    ObjectKind::Wipeout(Box::new(r))
+                }
             }
             "TOLERANCE" => {
                 let b = body.sub("AcDbFcf");

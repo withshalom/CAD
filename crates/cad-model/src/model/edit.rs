@@ -121,6 +121,9 @@ pub fn entity_type(kind: &ObjectKind) -> Option<(&'static str, u16)> {
         K::Ray(_) => ("RAY", 0x28),
         K::Leader(_) => ("LEADER", 0x2D),
         K::Tolerance(_) => ("TOLERANCE", 0x2E),
+        // Class-based: the number is the drawing's (`Drawing::class_number`).
+        K::Image(_) => ("IMAGE", 0),
+        K::Wipeout(_) => ("WIPEOUT", 0),
         K::PaperViewport(_) => ("VIEWPORT", 0x22),
         K::Attribute(a) if a.is_definition => ("ATTDEF", 0x03),
         K::Attribute(_) => ("ATTRIB", 0x02),
@@ -137,7 +140,44 @@ pub fn entity_type(kind: &ObjectKind) -> Option<(&'static str, u16)> {
     })
 }
 
+/// Classes the model can register in a drawing that lacks them (a DXF
+/// without its CLASSES section, a new drawing): DXF name, C++ class name,
+/// application, proxy flags, and whether it is an entity class. The names
+/// are the ones the DXF reference and DXF files show for these classes.
+pub const KNOWN_CLASSES: &[(&str, &str, &str, u16, bool)] = &[
+    ("IMAGE", "AcDbRasterImage", "ISM", 127, true),
+    ("WIPEOUT", "AcDbWipeout", "WipeOut", 127, true),
+    ("IMAGEDEF", "AcDbRasterImageDef", "ISM", 0, false),
+    ("IMAGEDEF_REACTOR", "AcDbRasterImageDefReactor", "ISM", 1, false),
+    ("RASTERVARIABLES", "AcDbRasterVariables", "ISM", 0, false),
+];
+
 impl Drawing {
+    /// The DWG type number of the class with this DXF name (any case),
+    /// registering it first when the drawing lacks it and it is one of
+    /// [`KNOWN_CLASSES`]. `None` for other unknown classes.
+    pub fn class_number(&mut self, dxf_name: &str) -> Option<u16> {
+        if let Some(c) = self.classes.iter().find(|c| c.dxf_name.eq_ignore_ascii_case(dxf_name)) {
+            return Some(c.number);
+        }
+        let &(name, cpp, app, flags, entity) =
+            KNOWN_CLASSES.iter().find(|k| k.0.eq_ignore_ascii_case(dxf_name))?;
+        let number = self.classes.iter().map(|c| c.number).max().map_or(500, |n| n.saturating_add(1)).max(500);
+        self.classes.push(ClassDef {
+            number,
+            proxy_flags: flags,
+            app_name: app.into(),
+            cpp_name: cpp.into(),
+            dxf_name: name.into(),
+            was_zombie: false,
+            item_class_id: if entity { 0x1F2 } else { 0x1F3 },
+            instance_count: 0,
+            dwg_version: 0,
+            maintenance_version: 0,
+        });
+        Some(number)
+    }
+
     /// A handle no object uses yet, taken from `$HANDSEED`, which moves on.
     /// It is also kept above every handle in the drawing, so a seed that
     /// fell behind (a damaged or hand-made file) cannot hand out a used one.
@@ -635,9 +675,14 @@ impl Drawing {
         layer: Handle,
         kind: ObjectKind,
     ) -> Result<Handle, EditError> {
-        let (type_name, type_code) = entity_type(&kind).ok_or_else(|| {
+        let (type_name, mut type_code) = entity_type(&kind).ok_or_else(|| {
             EditError::Unsupported(format!("creating {:?} objects", variant_name(&kind)))
         })?;
+        if type_code == 0 {
+            type_code = self.class_number(type_name).ok_or_else(|| {
+                EditError::Unsupported(format!("creating {type_name} objects"))
+            })?;
+        }
         if self.block_header(block).is_none() {
             return Err(EditError::NotFound(block));
         }

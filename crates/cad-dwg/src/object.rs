@@ -521,10 +521,11 @@ pub(crate) fn decode(ctx: &DecodeCtx, data: &[u8], offset: usize) -> Result<Obje
     }
 
     // Types decoded from version 0.6 on (construction lines, leaders,
-    // viewports, and from 0.13 tolerances) are kept as their bytes whenever
-    // the layout read here does not fit the record exactly, as they were
-    // before.
-    let newer = matches!(type_code, 0x22 | 0x28 | 0x29 | 0x2D | 0x2E);
+    // viewports; tolerances from 0.13, images and wipeouts from 0.14) are
+    // kept as their bytes whenever the layout read here does not fit the
+    // record exactly, as they were before.
+    let newer = matches!(type_code, 0x22 | 0x28 | 0x29 | 0x2D | 0x2E)
+        || matches!(o.type_name.as_str(), "IMAGE" | "WIPEOUT");
     let misfit = newer
         && (specific.is_err() || (ver.has_string_stream() && o.s.dat.remaining() != 0));
     let kind = match specific {
@@ -698,6 +699,8 @@ fn decode_specific(code: u16, name: &str, s: &mut Streams) -> Result<(ObjectKind
         }
         c if c >= 500 => match name {
             "LWPOLYLINE" => (K::LwPolyline(entities::lwpolyline(s)?), Pending::None),
+            "IMAGE" => (K::Image(Box::new(entities::raster_image(s)?)), Pending::None),
+            "WIPEOUT" => (K::Wipeout(Box::new(entities::raster_image(s)?)), Pending::None),
             "HATCH" => {
                 let (h, n) = entities::hatch(s)?;
                 (
@@ -761,6 +764,10 @@ fn read_specific_handles(
             l.dimstyle = Handle(s.h_abs(own)?);
         }
         ObjectKind::Tolerance(t) => t.dimstyle = Handle(s.h_abs(own)?),
+        ObjectKind::Image(r) | ObjectKind::Wipeout(r) => {
+            r.definition = Handle(s.h_abs(own)?);
+            r.reactor = Handle(s.h_abs(own)?);
+        }
         ObjectKind::PaperViewport(v) => {
             if ver <= V::R14 {
                 let _header = s.h()?;
@@ -955,6 +962,95 @@ mod tests {
         assert_eq!(o.note, None, "handles read cleanly");
     }
 
+    /// The raster examples printed in the ODA specification, R14 objects
+    /// whose classes are numbered as in the file they came from: IMAGE
+    /// (§20.4.80.1, class 1F9), IMAGEDEF (§20.4.81.1, 1F7), IMAGEDEF_REACTOR
+    /// (§20.4.82.1, 1F8) and RASTERVARIABLES (§20.4.91.1, 1F5).
+    fn raster_example(name: &str) -> (Vec<u8>, Vec<ClassDef>) {
+        let (hex_bytes, number, entity) = match name {
+            "IMAGE" => ("09013e40405b6c600000046000000008000004200000003000000028000006b56e620baae102000372c563f8d8aa000000000000000006b56e620baae102000372c563f8d8ca000000000000000006b56e620baae112000372c563f8d8ca000000000000000006b56e620baae112000372c563f8d8aa000000000000000006b56e620baae102000372c563f8d8aa000000000000000006d038000280db46b56e620baae1020000dcb158fe362a810000000000001007f4000000000053109e0000000000001007f0000000000003020000000000000302020e32320040400000000000382fc00000000000382fc0000000003817d000000000003817d0105ecc1443f0416843545acc5b3f0d2a", 0x1F9, true),
+            "IMAGEDEF" => ("4e003dc0405ae3b02000040a0000000000006040000000000000604046d0ce9715d2539395171199585d1a195c95195e1d1d5c994b989b5c205e25d4eb0752bac7fe25d4eb0752bac7f0082d482d8611e823", 0x1F7, false),
+            "IMAGEDEF_REACTOR" => ("0c003e00405b2500000009026030a113", 0x1F8, false),
+            _ => ("11003d404056a66000000406405019010430c0dcd2", 0x1F5, false),
+        };
+        let classes = vec![ClassDef {
+            number,
+            dxf_name: name.into(),
+            item_class_id: if entity { 0x1F2 } else { 0x1F3 },
+            ..Default::default()
+        }];
+        (hex(hex_bytes), classes)
+    }
+
+    #[test]
+    fn the_specifications_image_example_decodes() {
+        let (bytes, classes) = raster_example("IMAGE");
+        let ctx = DecodeCtx { ver: V::R14, codepage: 30, classes: &classes };
+        let o = decode(&ctx, &bytes, 0).unwrap();
+        assert_eq!((o.type_name.as_str(), o.handle), ("IMAGE", Handle(0x6D)));
+        assert_eq!(o.note, None, "handles read cleanly");
+        let ObjectKind::Image(r) = &o.kind else { panic!("{:?}", o.kind) };
+        // A 128 × 128 pixel image, 1/128 unit a pixel, unclipped: its clip
+        // rectangle is the whole image, pixel centres at whole numbers.
+        assert_eq!(r.size, crate::geom::Vec2::new(128.0, 128.0));
+        assert_eq!(r.u, Vec3::new(0.0078125, 0.0, 0.0));
+        assert!((r.v.y - 0.0078125).abs() < 1e-15 && r.v.x.abs() < 1e-15);
+        assert!((r.insertion.x - 8.180_582_100_138_889).abs() < 1e-12);
+        assert!((r.insertion.y - 5.276_854_222_199_745).abs() < 1e-12);
+        assert_eq!((r.clip_type, r.clipping), (1, false));
+        assert_eq!(r.clip, vec![crate::geom::Vec2::new(-0.5, -0.5), crate::geom::Vec2::new(127.5, 127.5)]);
+        assert_eq!((r.display, r.brightness, r.contrast, r.fade), (7, 50, 50, 0));
+        assert_eq!(r.definition, Handle(0x6B), "its IMAGEDEF, the next example");
+        assert_eq!(r.reactor, Handle(0x6C), "its IMAGEDEF_REACTOR");
+    }
+
+    /// Decodes a spec example of an object kept as DXF groups.
+    fn groups_example(name: &str) -> Groups {
+        let (bytes, classes) = raster_example(name);
+        let ver = V::R14;
+        let mut o = decode(&DecodeCtx { ver, codepage: 30, classes: &classes }, &bytes, 0).unwrap();
+        assert_eq!(o.type_name, name);
+        o.raw = Some(raw(ver, &bytes, 0).unwrap());
+        let lookup = crate::styles::Lookup::empty();
+        match crate::nongraphic::decode_groups(&o, &classes, 30, &lookup) {
+            Some(Ok(g)) => g,
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[test]
+    fn the_specifications_image_object_examples_decode() {
+        use crate::geom::Vec3 as P;
+        let def = groups_example("IMAGEDEF");
+        assert_eq!(
+            def.items,
+            vec![
+                (100, XrValue::Str("AcDbRasterImageDef".into())),
+                (90, XrValue::Int32(0)),
+                (1, XrValue::Str("C:\\WINNT\\FeatherTexture.bmp".into())),
+                (10, XrValue::Point(P::new(128.0, 128.0, 0.0))),
+                (11, XrValue::Point(P::new(0.352858149123434, 0.352858149123434, 0.0))),
+                (280, XrValue::Int8(1)),
+                (281, XrValue::Int8(2)),
+            ],
+            "128 × 128 pixels, loaded, centimetres"
+        );
+        let reactor = groups_example("IMAGEDEF_REACTOR");
+        assert_eq!(reactor.items, vec![(100, XrValue::Str("AcDbRasterImageDefReactor".into())), (90, XrValue::Int32(2))]);
+        let vars = groups_example("RASTERVARIABLES");
+        assert_eq!(
+            vars.items,
+            vec![
+                (100, XrValue::Str("AcDbRasterVariables".into())),
+                (90, XrValue::Int32(0)),
+                (70, XrValue::Int16(1)),
+                (71, XrValue::Int16(1)),
+                (72, XrValue::Int16(0)),
+            ],
+            "frame shown, high quality, no units"
+        );
+    }
+
     /// An R2010+ object as it sits in the objects section: its size (MS),
     /// its handle-stream size in bits (MC), then the object.
     fn frame(handle_bits: u16, body: &[u8]) -> Vec<u8> {
@@ -1040,12 +1136,16 @@ mod tests {
     /// exercises every decoder path reachable from random type codes.
     #[test]
     fn random_objects_do_not_panic() {
-        let classes = vec![ClassDef {
-            number: 500,
-            dxf_name: "LWPOLYLINE".into(),
-            item_class_id: 0x1F2,
-            ..Default::default()
-        }];
+        let classes = vec![
+            ClassDef {
+                number: 500,
+                dxf_name: "LWPOLYLINE".into(),
+                item_class_id: 0x1F2,
+                ..Default::default()
+            },
+            ClassDef { number: 501, dxf_name: "IMAGE".into(), item_class_id: 0x1F2, ..Default::default() },
+            ClassDef { number: 502, dxf_name: "WIPEOUT".into(), item_class_id: 0x1F2, ..Default::default() },
+        ];
         let mut rng = Rng(0x9E37_79B9_7F4A_7C15);
         for ver in [
             V::R14,

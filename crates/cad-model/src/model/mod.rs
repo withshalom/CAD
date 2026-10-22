@@ -14,7 +14,7 @@ mod store;
 pub mod lineweight;
 
 pub use color::Color;
-pub use edit::{check_name, entity_type, Change, ChangeStart, EditError, LayerState};
+pub use edit::{check_name, entity_type, Change, ChangeStart, EditError, LayerState, KNOWN_CLASSES};
 pub use lineweight::Lineweight;
 pub use objects::*;
 pub use store::{Journal, ListOp, ObjectMap, Touch};
@@ -900,6 +900,64 @@ impl Default for Tolerance {
     }
 }
 
+/// IMAGE and WIPEOUT (AcDbRasterImage; ODA spec §20.4.80, DXF IMAGE and
+/// WIPEOUT): a raster image placed by its pixel vectors, or a wipeout, an
+/// image-less raster entity whose clip polygon masks what lies under it.
+/// An image's file is its IMAGEDEF object's ([`Self::definition`]).
+#[derive(Debug, Clone, PartialEq)]
+pub struct RasterImage {
+    /// DXF 90.
+    pub class_version: u32,
+    /// DXF 10: the lower-left corner of the image (WCS).
+    pub insertion: Vec3,
+    /// DXF 11, 12: one pixel's width (U) and height (V) vectors.
+    pub u: Vec3,
+    pub v: Vec3,
+    /// DXF 13: the image size in pixels.
+    pub size: Vec2,
+    /// DXF 70: 1 show the image, 2 show it when not aligned with the
+    /// screen, 4 use the clip boundary, 8 transparency on.
+    pub display: u16,
+    /// DXF 280.
+    pub clipping: bool,
+    /// DXF 281, 282, 283: brightness, contrast and fade, 0 to 100.
+    pub brightness: u8,
+    pub contrast: u8,
+    pub fade: u8,
+    /// DXF 290 (R2010+): the inside of the clip boundary is clipped away.
+    pub clip_inside: bool,
+    /// DXF 71: 1 rectangle (two opposite corners), 2 polygon.
+    pub clip_type: u16,
+    /// DXF 14: the clip boundary in pixel coordinates.
+    pub clip: Vec<Vec2>,
+    /// DXF 340: the IMAGEDEF (null for a wipeout).
+    pub definition: Handle,
+    /// DXF 360: the IMAGEDEF_REACTOR the image owns (null for a wipeout).
+    pub reactor: Handle,
+}
+
+impl Default for RasterImage {
+    fn default() -> Self {
+        RasterImage {
+            class_version: 0,
+            insertion: Vec3::ZERO,
+            u: Vec3::X,
+            v: Vec3::Y,
+            size: Vec2::new(1.0, 1.0),
+            display: 7,
+            clipping: false,
+            brightness: 50,
+            contrast: 50,
+            fade: 0,
+            clip_inside: false,
+            clip_type: 1,
+            clip: Vec::new(),
+            definition: Handle::NULL,
+            reactor: Handle::NULL,
+        }
+    }
+}
+
 /// A VIEWPORT entity: a window on a layout that shows model space at a
 /// scale (ODA spec §20.4.38, DXF VIEWPORT). The first viewport of each
 /// layout (id 1) is the layout's own view of the paper, not a window.
@@ -1389,6 +1447,10 @@ pub enum ObjectKind {
     Ray(ConstructionLine),
     Leader(Leader),
     Tolerance(Tolerance),
+    /// IMAGE.
+    Image(Box<RasterImage>),
+    /// WIPEOUT.
+    Wipeout(Box<RasterImage>),
     /// A VIEWPORT entity on a layout.
     PaperViewport(Box<PaperViewport>),
     /// BLOCK entity that opens a block definition.
@@ -1585,6 +1647,7 @@ impl Object {
             ObjectKind::Hatch(h) => h.paths.len() * 256 + h.pattern_lines.len() * 64,
             ObjectKind::Leader(l) => l.vertices.len() * size_of::<Vec3>(),
             ObjectKind::Tolerance(t) => t.text.len(),
+            ObjectKind::Image(r) | ObjectKind::Wipeout(r) => size_of::<RasterImage>() + r.clip.len() * size_of::<Vec2>(),
             ObjectKind::PaperViewport(v) => size_of::<PaperViewport>() + v.frozen_layers.len() * 8,
             ObjectKind::BlockHeader(b) => b.entities.len() * size_of::<Handle>(),
             ObjectKind::Failed(m) | ObjectKind::Damaged(m) => m.len(),
