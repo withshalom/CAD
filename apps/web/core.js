@@ -15,7 +15,7 @@ export class Core {
 
   static async load(url = "core.wasm") {
     let bytes;
-    const inline = globalThis.CAD_CORE_WASM; // the single-file test page carries the module as base64
+    const inline = globalThis.CAD_CORE_WASM; // a single-file page carries the module inline, as base64
     if (typeof inline === "string") {
       const s = atob(inline);
       bytes = new Uint8Array(s.length);
@@ -236,6 +236,7 @@ export function opLength(ops, i) {
       return j - i;
     }
     case 6: return 3;
+    case 7: return 7 + ops[i + 6];
     default: throw new Error(`display list: unknown operation ${ops[i]} at ${i}`);
   }
 }
