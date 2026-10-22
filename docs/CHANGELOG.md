@@ -15,8 +15,9 @@ after read the same.
   `cad_core::codec`.
 - What a file needs from the program that writes it is an option:
   `WriteOptions::writer` (the name recorded as `$CAD_WRITER`; without one,
-  `cad-native` and its version) and `WriteOptions::preview_svg` (a
-  function that draws the preview; without one, files have no preview).
+  `cad-native` and its version) and `WriteOptions::preview_svg` (the
+  preview, as an SVG the program drew already or a function that draws
+  one; without it, files have no preview).
   `lock::acquire_with` names the program in lock files.
 - `set_time` and `now_unix`: the clock for save times and change sets,
   set by the page in a browser, as the core's was.

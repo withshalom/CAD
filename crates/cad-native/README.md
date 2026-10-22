@@ -30,7 +30,8 @@ let again = cad_native::read_file("part.cad")?;
 
 The format leaves two things to the program that writes it, through
 `WriteOptions`: its name and version (`writer`), and a preview of the
-drawing (`preview_svg`). The DEFLATE, zlib and SHA-256 code is public as
+drawing (`preview_svg`: an SVG it drew already, or a function that draws
+one). The DEFLATE, zlib and SHA-256 code is public as
 `cad_native::codec`.
 
 The byte-level specification is [`docs/FORMAT.md`](../../docs/FORMAT.md).

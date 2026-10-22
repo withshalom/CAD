@@ -105,6 +105,16 @@ const SEC_RECOVERY: &str = recovery::SECTION;
 const OBJECTS_PREFIX: &str = "Objects.";
 const JOURNAL_PREFIX: &str = "Journal.";
 
+/// Where the preview stored in a file comes from.
+#[derive(Debug, Clone)]
+pub enum PreviewSvg {
+    /// An SVG the program has drawn already.
+    Drawn(String),
+    /// A function that draws one from the drawing being written, or gives
+    /// `None` when there is nothing to show.
+    Draw(fn(&Drawing) -> Option<String>),
+}
+
 #[derive(Debug, Clone)]
 pub struct WriteOptions {
     /// Compress sections. Off is only useful for looking at the format
@@ -113,12 +123,11 @@ pub struct WriteOptions {
     /// DEFLATE effort: `Fast`, `Default` or `Best`.
     pub level: Level,
     /// Store a preview of the drawing, when [`WriteOptions::preview_svg`]
-    /// can draw one.
+    /// gives one.
     pub preview: bool,
-    /// Draws the preview: an SVG image of model space, or `None` when there
-    /// is nothing to show. The format leaves drawing to the program; without
-    /// this, files have no preview.
-    pub preview_svg: Option<fn(&Drawing) -> Option<String>>,
+    /// The preview, an SVG image of the drawing. The format leaves drawing
+    /// to the program; without this, files have no preview.
+    pub preview_svg: Option<PreviewSvg>,
     /// The program recorded as the file's writer (`$CAD_WRITER`), as
     /// "name version". `None` records this crate, `cad-native` and its
     /// [`VERSION`].
@@ -400,12 +409,13 @@ fn build(d: &Drawing, opts: &WriteOptions, generation: u64) -> Vec<u8> {
     if !opaque.is_empty() {
         b.records(SEC_OPAQUE, opaque);
     }
-    if let (true, Some(draw)) = (opts.preview, opts.preview_svg) {
-        if let Some(svg) = draw(d) {
-            if svg.len() <= PREVIEW_LIMIT {
-                b.section(SEC_PREVIEW, svg.into_bytes());
-            }
-        }
+    let svg = match (&opts.preview_svg, opts.preview) {
+        (Some(PreviewSvg::Drawn(svg)), true) => Some(svg.clone()),
+        (Some(PreviewSvg::Draw(draw)), true) => draw(d),
+        _ => None,
+    };
+    if let Some(svg) = svg.filter(|s| !s.is_empty() && s.len() <= PREVIEW_LIMIT) {
+        b.section(SEC_PREVIEW, svg.into_bytes());
     }
     let snapshot = snapshot_hash(b.raw_sections());
     b.section(SEC_DIGEST, digest_section(&snapshot));

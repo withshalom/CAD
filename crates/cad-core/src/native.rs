@@ -35,7 +35,7 @@ fn writer() -> String {
 fn with_core(opts: &WriteOptions) -> WriteOptions {
     let mut o = opts.clone();
     if o.preview_svg.is_none() {
-        o.preview_svg = Some(preview_svg_of);
+        o.preview_svg = Some(PreviewSvg::Draw(preview_svg_of));
     }
     if o.writer.is_none() {
         o.writer = Some(writer());
