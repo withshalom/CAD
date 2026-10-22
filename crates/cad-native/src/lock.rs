@@ -275,21 +275,31 @@ fn restore_no_clobber(from: &Path, to: &Path) {
 
 /// Lock a drawing for editing. A stale lock is taken over.
 pub fn acquire(drawing: impl AsRef<Path>) -> Result<Acquire> {
-    acquire_as(
-        drawing,
-        env_any(&["USER", "USERNAME"]).unwrap_or_else(|| "unknown".into()),
-    )
+    acquire_as(drawing, user_name())
+}
+
+/// The signed-in user's name as [`acquire`] records it: `USER` or
+/// `USERNAME` from the environment, or "unknown".
+pub fn user_name() -> String {
+    env_any(&["USER", "USERNAME"]).unwrap_or_else(|| "unknown".into())
 }
 
 /// [`acquire`] with an explicit user name (for apps with their own sign-in).
+/// The lock names this crate as the program; [`acquire_with`] names another.
 pub fn acquire_as(drawing: impl AsRef<Path>, user: String) -> Result<Acquire> {
+    acquire_with(drawing, user, &format!("cad-native {}", crate::VERSION))
+}
+
+/// [`acquire_as`] naming the program that holds the lock ("name version"),
+/// which other programs show to people who find the drawing locked.
+pub fn acquire_with(drawing: impl AsRef<Path>, user: String, app: &str) -> Result<Acquire> {
     let path = lock_path(drawing.as_ref());
     let now = now_unix();
     let info = LockInfo {
         user,
         host: hostname(),
         pid: std::process::id(),
-        app: format!("cad-core {}", crate::VERSION),
+        app: app.to_string(),
         session: new_session_id(),
         opened: now,
         heartbeat: now,

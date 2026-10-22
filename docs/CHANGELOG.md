@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.10.0 (2026-10-22)
+The native `.cad` format is open source: it moves out of the core into a
+crate of its own, `cad-native`, licensed MIT OR Apache-2.0 like
+`cad-model`, `cad-dwg` and `cad-dxf`, so other programs can read and write
+`.cad` without the rest of BlackCAD. The first is the owner's fork of
+CADCraft. The format itself (2.4) is unchanged: files written before and
+after read the same.
+
+`cad-native`:
+- The `.cad` reader and writer, the change journal, `.cdl` locks, `audit`
+  and `schema`, and the DEFLATE, zlib and SHA-256 code they use
+  (`cad_native::codec`), moved unchanged from `cad_core::native` and
+  `cad_core::codec`.
+- What a file needs from the program that writes it is an option:
+  `WriteOptions::writer` (the name recorded as `$CAD_WRITER`; without one,
+  `cad-native` and its version) and `WriteOptions::preview_svg` (a
+  function that draws the preview; without one, files have no preview).
+  `lock::acquire_with` names the program in lock files.
+- `set_time` and `now_unix`: the clock for save times and change sets,
+  set by the page in a browser, as the core's was.
+- The panic-free lint the other open crates carry. Four places that could
+  only panic on a broken invariant now return an error or cannot fail: an
+  unknown section codec, the directory placement loop, the object page in
+  use, and the fixed DEFLATE tables; SHA-256 blocks are taken without a
+  conversion that could panic.
+
+`cad-core`:
+- `cad_core::native` re-exports `cad_native` under the same names and
+  fills in the core's preview of model space and its name
+  (`cad-core <version>`) when the caller leaves them out, so files the core
+  writes are the same as before. `cad_core::codec`, `now_unix` and
+  `set_time` are `cad_native`'s.
+
+Tests: the format's 64 tests move with it; two that started from the core's
+templates now start from the format's own sample drawing. New tests check
+that the core still stores its preview and name, that the crate alone
+stores neither, and that both templates round-trip.
+
 ## 0.9.0 (2026-10-21)
 The repository builds and publishes BlackCAD in the browser: on every push
 CI compiles the core to WebAssembly, puts the workbench together and checks

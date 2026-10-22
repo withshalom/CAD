@@ -480,7 +480,10 @@ pub fn read_entry(bytes: &[u8], e: &DirEntry) -> Result<(Vec<u8>, bool)> {
             }
             Cow::Owned(out)
         }
-        Codec::Other(_) => unreachable!("refused above"),
+        // Refused above; an error rather than a panic if that ever changes.
+        Codec::Other(c) => {
+            return Err(Error::format(format!("section {}: unknown compression {c}", e.name)));
+        }
     };
     let raw = if split {
         split::join(&body, raw_len).map_err(ctx)?
@@ -784,9 +787,12 @@ impl Builder {
 /// moves the offset, which changes what it compresses to), so after a few
 /// tries the directory is stored instead, whose length only grows.
 fn place_before(at: u64, entries: &mut [DirEntry]) -> Vec<u8> {
-    let last = entries.len() - 1;
+    let Some(last) = entries.len().checked_sub(1) else {
+        return encode_directory_for(FORMAT_MAJOR, entries);
+    };
     let mut offset = at;
-    for tries in 0.. {
+    let mut tries = 0u32;
+    loop {
         entries[last].offset = offset;
         let dir = if tries < 8 {
             encode_directory_for(FORMAT_MAJOR, entries)
@@ -800,8 +806,10 @@ fn place_before(at: u64, entries: &mut [DirEntry]) -> Vec<u8> {
             return dir;
         }
         offset = end;
+        // The stored directory's length only grows with its offset, and is
+        // bounded, so this settles.
+        tries = tries.saturating_add(1);
     }
-    unreachable!("the stored directory's length settles")
 }
 
 /// Append the directory twice and the trailer to `buf` (which starts with

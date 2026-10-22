@@ -54,11 +54,11 @@
 // crates of their own, licensed MIT OR Apache-2.0 (see LICENSE): their
 // modules appear here under the names they always had.
 pub use cad_model::{error, geom, model, text};
+pub use cad_native::codec;
 
 pub mod blocks;
 pub mod boundary;
 pub mod check;
-pub mod codec;
 pub mod construct;
 pub mod dwg;
 pub mod dxf;
@@ -107,27 +107,9 @@ pub fn save(drawing: &Drawing, path: impl AsRef<std::path::Path>) -> Result<u64>
     native::write_file(drawing, path, &native::WriteOptions::default())
 }
 
-/// Time the app gave [`set_time`], for platforms without a clock.
-static APP_TIME: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
-
-/// Tell the core the time, in seconds since 1970 (UTC). Only needed where
-/// the platform has no clock the standard library can read: WebAssembly
-/// in a browser, where the page passes `Date.now()` before each save.
-pub fn set_time(unix_seconds: i64) {
-    APP_TIME.store(unix_seconds, std::sync::atomic::Ordering::Relaxed);
-}
-
-/// Seconds since 1970 (UTC): the system clock, or where there is none,
-/// the time last given to [`set_time`] (0 if none was).
-pub fn now_unix() -> i64 {
-    if cfg!(all(target_family = "wasm", target_os = "unknown")) {
-        return APP_TIME.load(std::sync::atomic::Ordering::Relaxed);
-    }
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .unwrap_or(0)
-}
+// The clock the core and its file format share: the system clock, or in
+// a browser the time the page passes before each save.
+pub use cad_native::{now_unix, set_time};
 
 /// The software's product name. The one place it is defined in code, so a
 /// rename is a one-line change (plus the README title). It names the

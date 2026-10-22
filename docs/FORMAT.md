@@ -1,7 +1,8 @@
 # Native file format (`.cad`) — version 2.4
 
 This is the byte-level specification of the native drawing format written
-and read by `cad_core::native`. It is original to this project: a
+and read by the `cad-native` crate (MIT OR Apache-2.0 since 0.10.0;
+`cad_core::native` re-exports it). It is original to this project: a
 DWG-style container whose records use DXF group codes (not a binary DXF
 file; see `FORMAT-ROADMAP.md` §1). It borrows from published designs:
 
