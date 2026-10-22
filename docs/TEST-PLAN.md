@@ -217,7 +217,12 @@ AutoCAD.
 Automated: `cargo test` covers the session (`crates/cad-ffi/src/session.rs`:
 drawing, undo groups, property edits, copy/rotate/mirror, dimensions, snaps
 and picking, saving every format and reading it back), the display list
-and snaps in the core, and the server and module checks in `xtask`.
+and snaps in the core, and the server and module checks in `xtask`,
+including that the single file still assembles from `apps/web`. After the
+WebAssembly build, the workflow's `web` job runs
+`apps/web/tests/core.test.mjs`: the built core through the page's own glue
+(`core.js`) in Node, from its version to the corpus and damaged input
+(`apps/web/README.md`, Tests).
 
 In a browser (`cargo xtask serve`, then Chrome or Edge, desktop and phone
 sizes):
@@ -475,3 +480,33 @@ VIEW, UCS, VPORT or APPID table (the new-drawing template has none), so
 their header handles for those tables are null and our own reader marks
 the header "not verified". AutoCAD may well refuse or repair such a file;
 it should be checked against AutoCAD and the template completed.
+
+### 2026-10-21: 0.9.0, the web app built and published by CI
+
+The workbench in `apps/web` is now the one that was published at
+cad.mosaiciron.com, restored from that page; `xtask` assembles it back into
+that page byte for byte apart from this release's changes. Checked on the
+build CI made from `main` (`6189f29`) and published to `gh-pages`:
+
+- `apps/web/tests/core.test.mjs` on CI's `core.wasm`, in CI and again
+  locally: all checks pass. The core reports BlackCAD 0.9.0; new metric
+  and imperial drawings; the sample; LINE, CIRCLE, ARC, PLINE, RECT, TEXT,
+  linear, aligned, radius and diameter dimensions, COPY, MOVE, ROTATE,
+  MIRROR and ERASE, a `begin`…`end` group undone as one step, everything
+  undone and redone; every query the page makes; saved as `.cad`, DWG,
+  DXF, binary DXF, SVG and PDF, and the first four read back with the
+  same model space; the corpus: 15 files at 34 entities each, the 2007
+  DWG refused with a message; 52 damaged or random inputs refused without
+  a crash.
+- `BlackCAD.html` from `gh-pages` is byte for byte what `cargo xtask web
+  --core` assembles from `main` around CI's core. Opened from disk in
+  headless Chromium at 1600 × 1000 and 390 × 844: the core loads in about
+  0.3 s and the start screen says "0.9.0 · single-file test build"; the
+  sample opens; CIRCLE and LINE typed at the command line draw; Ctrl+Z and
+  Ctrl+Y work; Save as .dwg downloads an AC1032 file; `mi201-r2018.dwg`
+  opens and draws; the Blackboard opens the Bend allowance lesson and
+  steps through it; no page errors.
+- The published folder served over HTTP (`cargo xtask serve --no-build`):
+  the service worker installs and caches the whole app shell, which it
+  could not do before because the PNG icons it lists were missing; the
+  manifest names the app BlackCAD and all four icons load.
