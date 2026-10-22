@@ -526,7 +526,7 @@ pub fn read_entry(bytes: &[u8], e: &DirEntry) -> Result<(Vec<u8>, bool)> {
 impl<'a> Container<'a> {
     pub fn parse(bytes: &'a [u8]) -> Result<Container<'a>> {
         if !looks_native(bytes) {
-            return Err(Error::new(ErrorKind::Format, "not a native .blk file"));
+            return Err(Error::new(ErrorKind::Format, "not a native file (.blk or .cad)"));
         }
         let front = FileHeader::decode(bytes);
         let back = if bytes.len() >= 2 * HEADER_LEN {
@@ -703,15 +703,24 @@ pub struct Builder {
     pending: Vec<Pending>,
     enc: Encoding,
     recovery: bool,
+    records: u16,
 }
 
 impl Builder {
+    /// A file of BlackCAD's records.
     pub fn new(enc: Encoding, recovery: bool) -> Builder {
         Builder {
             pending: Vec::new(),
             enc,
             recovery,
+            records: RECORDS_BLACKCAD,
         }
+    }
+
+    /// The same builder for a file of someone else's records: the header
+    /// says whose ([`RECORDS_CADCRAFT`]).
+    pub fn for_records(self, records: u16) -> Builder {
+        Builder { records, ..self }
     }
 
     /// A section of opaque bytes.
@@ -763,7 +772,7 @@ impl Builder {
             None
         };
         let Some(data) = recovery else {
-            return finish_file(buf, &entries, generation, flags, RECORDS_BLACKCAD);
+            return finish_file(buf, &entries, generation, flags, self.records);
         };
         // The recovery data goes between the two copies of the directory,
         // so damage at the end of the file (a copy cut short) leaves the
@@ -788,7 +797,7 @@ impl Builder {
             dir_offset: buf.len() as u64,
             dir_len: dir.len() as u32,
             dir_crc: crc32(0, &dir),
-            records: RECORDS_BLACKCAD,
+            records: self.records,
         };
         buf.extend_from_slice(&dir);
         buf.extend_from_slice(&data);

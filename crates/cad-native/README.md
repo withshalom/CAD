@@ -34,6 +34,33 @@ drawing (`preview_svg`: an SVG it drew already, or a function that draws
 one). The DEFLATE, zlib and SHA-256 code is public as
 `cad_native::codec`.
 
+The container and its tagged records are public too, for a program that
+keeps its own records in it, as CADCraft's `.cad` does: `container`
+(`Builder::for_records` marks the file as holding someone else's records;
+`Container::parse`, `records_of`) and `tags` (`TagWriter`, `TagReader`,
+`put_record`, `records`). Compression, recovery data and the two header
+copies come with them; the journal, schema and object map are BlackCAD's.
+
+```rust
+use cad_native::codec::Level;
+use cad_native::container::{Builder, Container, Encoding};
+use cad_native::tags::{put_record, records, TagReader, TagWriter};
+
+let mut entities = Vec::new();
+let mut w = TagWriter::new();
+w.str(0, "line");
+put_record(&mut entities, w);
+let mut b = Builder::new(Encoding::current(true, Level::Default), true)
+    .for_records(cad_native::RECORDS_CADCRAFT);
+b.records("Entities", entities);
+let bytes = b.finish(1, 0);
+
+let c = Container::parse(&bytes)?;
+let (raw, _crc_ok) = c.read(c.entry("Entities").ok_or("no Entities")?)?;
+assert_eq!(TagReader::new(records(&raw)?[0]).str(0)?, "line");
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
 The byte-level specification is [`docs/FORMAT.md`](../../docs/FORMAT.md).
 
 Rust standard library only, no `unsafe` code; depends on `cad-model` and
