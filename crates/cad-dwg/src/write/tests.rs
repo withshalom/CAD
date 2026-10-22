@@ -1114,3 +1114,50 @@ fn measurement_reads_from_the_template_section() {
         assert_eq!(value, m.to_string());
     }
 }
+
+/// An associative hatch keeps the objects its paths were made from
+/// through DWG and DXF, path by path, and a path without any keeps none.
+#[test]
+fn hatch_boundary_objects_survive_dwg_and_dxf() {
+    let Some(file) = corpus() else { return };
+    let mut d = super::super::read_bytes(&file).unwrap();
+    let layer = d.layer_by_name("0").unwrap().0;
+    let square = |x: f64| {
+        vec![
+            (crate::geom::Vec2::new(x, 0.0), 0.0),
+            (crate::geom::Vec2::new(x + 10.0, 0.0), 0.0),
+            (crate::geom::Vec2::new(x + 10.0, 10.0), 0.0),
+            (crate::geom::Vec2::new(x, 10.0), 0.0),
+        ]
+    };
+    let outline = d
+        .add_entity(layer, ObjectKind::LwPolyline(LwPolyline::new(square(0.0).iter().map(|(p, _)| *p).collect(), true)))
+        .unwrap();
+    let hatch = Hatch {
+        pattern_name: "SOLID".into(),
+        solid_fill: true,
+        associative: true,
+        extrusion: crate::geom::Vec3::new(0.0, 0.0, 1.0),
+        paths: vec![
+            HatchPath::Polyline { flags: 1, closed: true, vertices: square(0.0) },
+            HatchPath::Polyline { flags: 0, closed: true, vertices: square(20.0) },
+        ],
+        sources: vec![vec![outline], vec![]],
+        pattern_scale: 1.0,
+        ..Default::default()
+    };
+    let h = d.add_entity(layer, ObjectKind::Hatch(hatch)).unwrap();
+    d.objects.get_mut(&outline).unwrap().reactors.push(h);
+    let sources = |d: &Drawing| match &d.objects[&h].kind {
+        ObjectKind::Hatch(x) => x.sources.clone(),
+        other => panic!("{other:?}"),
+    };
+    let out = super::to_bytes(&d).unwrap();
+    assert!(out.left_out.is_empty(), "{:?}", out.notes);
+    let back = super::super::read_bytes(&out.bytes).unwrap();
+    assert_eq!(sources(&back), vec![vec![outline], vec![]], "DWG");
+    assert_eq!(back.objects[&outline].reactors, vec![h], "DWG reactor");
+    let dxf = cad_dxf::to_bytes(&back, cad_dxf::DxfFormat::Ascii);
+    let again = cad_dxf::read_bytes(&dxf.bytes).unwrap();
+    assert_eq!(sources(&again), vec![vec![outline], vec![]], "DXF");
+}

@@ -1,4 +1,4 @@
-# Native file format (`.cad`) — version 2.5
+# Native file format (`.cad`) — version 2.6
 
 This is the byte-level specification of the native drawing format written
 and read by the `cad-native` crate (MIT OR Apache-2.0 since 0.10.0;
@@ -90,6 +90,10 @@ separate decision. It is a draft until the DWG test corpus passes
   only when set), which AutoCAD 2007 and later keep with each attribute.
   A 2.4 reader keeps it as a field from a newer writer (§6); records
   without it are as 2.4 wrote them.
+- **2.6**: HATCH records end with the boundary objects of each path
+  (2189, then 97 and the handles 2190), written only when a path has
+  some: the objects an associative hatch was made from. A 2.5 reader
+  keeps them as fields from a newer writer.
 
 ## 1. Conventions
 
@@ -150,7 +154,7 @@ Both copies have the same layout.
 |---|---|---|
 | 0 | 8 | Magic `89 43 41 44 0D 0A 1A 0A` (`\x89CAD\r\n\x1a\n`) |
 | 8 | 2 | Format major version (2) |
-| 10 | 2 | Format minor version (5) |
+| 10 | 2 | Format minor version (6) |
 | 12 | 4 | Flags (below) |
 | 16 | 8 | Generation: 1 for a new file, +1 per save of any kind |
 | 24 | 8 | Directory offset from start of file |
@@ -610,7 +614,7 @@ still change before the format is published.
 | 16 | 3DFACE | 10 P3 corner 1; 11 P3 corner 2; 12 P3 corner 3; 13 P3 corner 4; 70 I16 invisible-edge flags *[default 0]* |
 | 17 | SPLINE | 70 I16 flags: 1 closed, 2 periodic, 4 rational *[default 0]*; 71 I32 degree; 2127 I32 knot count *[default 0]*; each: 40 F64 knot; 2128 I32 control point count *[default 0]*; each: 10 P3 control point; 2116 I32 weight count *[default 0]*; each: 41 F64 weight; 2129 I32 fit point count *[default 0]*; each: 11 P3 fit point; 44 F64 fit tolerance *[default 0]*; 12 P3 start tangent *[default (0, 0, 0)]*; 13 P3 end tangent *[default (0, 0, 0)]* |
 | 18 | DIMENSION | 2100 I16 subkind: 0 linear, 1 aligned, 2 ordinate, 3 angular 3-point, 4 angular 2-line, 5 radius, 6 diameter; 210 P3 extrusion *[default (0, 0, 1)]*; 11 P2 text midpoint; 38 F64 elevation *[default 0]*; 2132 I16 flags as DWG stores them *[default 0]*; 1 STR user text (<> is the measurement) *[default empty]*; 53 F64 text rotation *[default 0]*; 51 F64 horizontal direction *[default 0]*; 2118 P3 insert scale *[default (1, 1, 1)]*; 2126 F64 insert rotation *[default 0]*; 71 I16 text attachment *[default 0]*; 42 F64 measurement; 2119 P2 clone insertion point *[default (0, 0)]*; 10 P3 definition point; 13 P3 definition point 13 *[default (0, 0, 0)]*; 14 P3 definition point 14 *[default (0, 0, 0)]*; 15 P3 definition point 15 *[default (0, 0, 0)]*; 16 P2 definition point 16 *[default (0, 0)]*; 52 F64 extension-line rotation *[default 0]*; 50 F64 dimension rotation *[default 0]*; 40 F64 leader length *[default 0]*; 2105 HANDLE dimension style *[absent when null]*; 2104 HANDLE graphics block (*D) *[absent when null]* |
-| 19 | HATCH | 38 F64 elevation *[default 0]*; 210 P3 extrusion *[default (0, 0, 1)]*; 2 STR pattern name; 70 BOOL solid fill *[default false]*; 71 BOOL associative *[default false]*; 450 BOOL gradient *[default false]*; 75 I16 style *[default 0]*; 76 I16 pattern type *[default 1]*; 52 F64 pattern angle *[default 0]*; 41 F64 pattern scale *[default 1]*; 2130 I32 boundary path count; each: 2100 I16 path kind: 0 edges, 1 polyline; each: 92 I32 path flags *[default 0]*; each: 2131 I32 edge count (edge paths); each: 72 I16 edge type: 1 line, 2 arc, 3 ellipse, 4 spline; each: 10 P2 edge start, center or control point; polyline vertex; each: 11 P2 edge end or major axis; each: 40 F64 radius, axis ratio or knot; each: 50 F64 start angle; each: 51 F64 end angle; each: 73 BOOL counterclockwise (arcs, ellipses); closed (polyline paths); each: 94 I32 spline degree; each: 2127 I32 spline knot count; each: 2128 I32 spline control point count; each: 2116 I32 spline weight count; each: 93 I32 polyline vertex count; each: 42 F64 bulge or spline weight *[default 0]*; 77 BOOL double hatch (2.4) *[default false]*; 78 I32 pattern line count (2.4) *[default 0]*; each: 53 F64 pattern line angle, radians; each: 43 P2 pattern line base point; each: 45 P2 pattern line offset to the next line; each: 79 I32 pattern line dash count; each: 49 F64 dash length: positive dash, negative gap, 0 dot; 98 I32 seed point count (2.4) *[default 0]*; each: 2188 P2 seed point |
+| 19 | HATCH | 38 F64 elevation *[default 0]*; 210 P3 extrusion *[default (0, 0, 1)]*; 2 STR pattern name; 70 BOOL solid fill *[default false]*; 71 BOOL associative *[default false]*; 450 BOOL gradient *[default false]*; 75 I16 style *[default 0]*; 76 I16 pattern type *[default 1]*; 52 F64 pattern angle *[default 0]*; 41 F64 pattern scale *[default 1]*; 2130 I32 boundary path count; each: 2100 I16 path kind: 0 edges, 1 polyline; each: 92 I32 path flags *[default 0]*; each: 2131 I32 edge count (edge paths); each: 72 I16 edge type: 1 line, 2 arc, 3 ellipse, 4 spline; each: 10 P2 edge start, center or control point; polyline vertex; each: 11 P2 edge end or major axis; each: 40 F64 radius, axis ratio or knot; each: 50 F64 start angle; each: 51 F64 end angle; each: 73 BOOL counterclockwise (arcs, ellipses); closed (polyline paths); each: 94 I32 spline degree; each: 2127 I32 spline knot count; each: 2128 I32 spline control point count; each: 2116 I32 spline weight count; each: 93 I32 polyline vertex count; each: 42 F64 bulge or spline weight *[default 0]*; 77 BOOL double hatch (2.4) *[default false]*; 78 I32 pattern line count (2.4) *[default 0]*; each: 53 F64 pattern line angle, radians; each: 43 P2 pattern line base point; each: 45 P2 pattern line offset to the next line; each: 79 I32 pattern line dash count; each: 49 F64 dash length: positive dash, negative gap, 0 dot; 98 I32 seed point count (2.4) *[default 0]*; each: 2188 P2 seed point; 2189 I32 boundary object lists, one per path (2.6) *[default 0]*; each: 97 I32 boundary object count; each: 2190 HANDLE boundary object |
 | 20 | BLOCK | 2 STR block name |
 | 21 | ENDBLK | — |
 | 22 | BLOCK_HEADER | 2 STR name; 70 I16 flags: 1 anonymous, 2 has attributes, 4 xref, 8 overlay *[default 0]*; 10 P3 base point *[default (0, 0, 0)]*; 1 STR xref path *[default empty]*; 4 STR description *[default empty]*; 2120 I16 insert units *[default 0]*; 2110 HANDLE BLOCK entity *[absent when null]*; 2111 I32 entity count *[default 0]*; each: 2112 HANDLE entity, in drawing order; 2106 HANDLE first entity *[absent when null]*; 2107 HANDLE last entity *[absent when null]*; 2109 HANDLE ENDBLK *[absent when null]*; 340 HANDLE layout *[absent when null]*; 2140 STR part material (Proposed) *[default empty]*; 2141 STR part grade (Proposed) *[default empty]*; 2142 F64 part thickness in drawing units (Proposed) *[default 0]*; 2143 I32 part quantity (Proposed) *[default 0]* |

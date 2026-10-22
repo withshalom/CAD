@@ -842,6 +842,16 @@ fn write_kind(w: &mut TagWriter, k: &ObjectKind) {
                     w.p2(super::objects::code::HATCH_SEED, *p);
                 }
             }
+            // 2.6: the boundary objects of each path, when any has some.
+            if h.sources.iter().any(|s| !s.is_empty()) {
+                w.count(super::objects::code::HATCH_SOURCES, h.sources.len());
+                for s in &h.sources {
+                    w.count(97, s.len());
+                    for x in s {
+                        w.handle(super::objects::code::HATCH_SOURCE, *x);
+                    }
+                }
+            }
         }
         K::Xline(x) | K::Ray(x) => {
             w.i16(c::KIND, kind::XLINE);
@@ -1564,6 +1574,16 @@ fn read_kind(r: &mut TagReader) -> Result<ObjectKind> {
             let n = r.count_or(98, P2_BYTES)?;
             for _ in 0..n {
                 h.seed_points.push(r.p2(super::objects::code::HATCH_SEED)?);
+            }
+            // Format 2.6. Each list and handle takes at least three bytes.
+            let n = r.count_or(super::objects::code::HATCH_SOURCES, 3)?;
+            for _ in 0..n {
+                let k = r.count(97, 3)?;
+                let mut list = Vec::with_capacity(k);
+                for _ in 0..k {
+                    list.push(r.handle(super::objects::code::HATCH_SOURCE)?);
+                }
+                h.sources.push(list);
             }
             K::Hatch(h)
         }

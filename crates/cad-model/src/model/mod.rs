@@ -777,6 +777,11 @@ pub struct Hatch {
     pub pattern_lines: Vec<HatchPatternLine>,
     /// Points picked inside the boundary when the hatch was made.
     pub seed_points: Vec<Vec2>,
+    /// The objects each path was made from, in path order: the boundary of
+    /// an associative hatch, which carries the hatch as a persistent
+    /// reactor (DWG's boundary object handles, DXF 97 and 330). A path past
+    /// the end of the list has none.
+    pub sources: Vec<Vec<Handle>>,
 }
 
 /// XLINE and RAY: a construction line through `base` along `direction`

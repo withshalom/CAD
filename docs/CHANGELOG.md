@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.12.0 (2026-10-22)
+Hatches keep the objects their boundaries were made from. An associative
+hatch in DWG lists, path by path, the objects it follows, and those carry
+the hatch as a persistent reactor, so a stretched boundary drags the fill
+along in AutoCAD. BlackCAD skipped the list when it read DWG, wrote none,
+and ignored DXF's 97 and 330 groups, so every associative hatch it passed
+on came out detached. Found by the CADCraft fork's hatch associativity
+test once its saves went through BlackCAD. The `.cad` format is 2.6.
+
+- `cad-model`: `Hatch::sources`, the boundary objects of each path.
+- `cad-dwg`: read and written, path by path (soft pointers after the
+  common handles).
+- `cad-dxf`: read from and written to each path's 97 and 330 groups.
+- `cad-native`: format 2.6 ends HATCH records with the lists (2189, 97,
+  2190), written only when a path has boundary objects.
+- `cad-core`: hatches the core makes are not associative and list none.
+- Tests: an associative hatch with a boundary on one path and none on the
+  other survives DWG and DXF, with the boundary's reactor; the format's
+  sample hatch is associative.
+
 ## 0.11.1 (2026-10-22)
 The DWG reader takes MEASUREMENT (imperial or metric) from AcDb:Template,
 the section DWG keeps it in. It never did, although the DXF reader's

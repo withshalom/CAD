@@ -539,6 +539,8 @@ pub(super) fn sample() -> Drawing {
                 pattern_double: false,
                 pattern_lines: Vec::new(),
                 seed_points: Vec::new(),
+                // Associative: the first path made from the polyline.
+                sources: vec![vec![Handle(0x105)]],
                 paths: vec![
                     HatchPath::Polyline {
                         flags: 3,
@@ -2178,10 +2180,12 @@ fn files_written_by_format_1_1_still_read() {
     if let ObjectKind::BlockHeader(b) = &mut want.objects.get_mut(&Handle(0x40)).unwrap().kind {
         b.part = Part::default();
     }
-    // Nor attributes' lock position (2.5).
+    // Nor attributes' lock position (2.5) or hatches' boundary objects (2.6).
     for o in want.objects.values_mut() {
-        if let ObjectKind::Attribute(a) = &mut o.kind {
-            a.lock_position = false;
+        match &mut o.kind {
+            ObjectKind::Attribute(a) => a.lock_position = false,
+            ObjectKind::Hatch(h) => h.sources.clear(),
+            _ => {}
         }
     }
     let mut line = want.objects[&Handle(0x100)].clone();

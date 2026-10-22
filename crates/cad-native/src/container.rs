@@ -20,7 +20,7 @@ use std::borrow::Cow;
 /// LF catch newline conversion, and 0x1A stops text-mode readers.
 pub const MAGIC: [u8; 8] = [0x89, b'C', b'A', b'D', b'\r', b'\n', 0x1A, b'\n'];
 pub const FORMAT_MAJOR: u16 = 2;
-pub const FORMAT_MINOR: u16 = 5;
+pub const FORMAT_MINOR: u16 = 6;
 /// The oldest major version this build reads.
 pub const OLDEST_MAJOR: u16 = 1;
 pub const HEADER_LEN: usize = 48;

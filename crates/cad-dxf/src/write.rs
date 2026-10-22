@@ -1773,7 +1773,7 @@ impl<'a> Writer<'a> {
         self.i(70, h.solid_fill as i64);
         self.i(71, h.associative as i64);
         self.i(91, h.paths.len() as i64);
-        for p in &h.paths {
+        for (i, p) in h.paths.iter().enumerate() {
             match p {
                 HatchPath::Polyline { flags, closed, vertices } => {
                     self.i(92, (*flags | 2) as i64);
@@ -1836,7 +1836,11 @@ impl<'a> Writer<'a> {
                     }
                 }
             }
-            self.i(97, 0);
+            let sources = h.sources.get(i).map(Vec::as_slice).unwrap_or_default();
+            self.i(97, sources.len() as i64);
+            for s in sources {
+                self.h(330, *s);
+            }
         }
         self.i(75, h.style as i64);
         self.i(76, h.pattern_type as i64);

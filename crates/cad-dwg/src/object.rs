@@ -194,7 +194,8 @@ enum Pending {
         is_block_control: bool,
     },
     Hatch {
-        boundary_handles: u32,
+        /// Boundary object handles of each path.
+        boundary_handles: Vec<u32>,
     },
     Viewport {
         frozen: u32,
@@ -781,12 +782,20 @@ fn read_specific_handles(
                 }
             }
         }
-        ObjectKind::Hatch(_) => {
-            // Boundary object handles; not needed yet.
+        ObjectKind::Hatch(h) => {
+            // Boundary object handles, path by path.
             if let Pending::Hatch { boundary_handles } = pending {
-                let n = s.check_handle_count(boundary_handles, "hatch boundary")?;
-                for _ in 0..n {
-                    let _ = s.h()?;
+                h.sources.clear();
+                for count in boundary_handles {
+                    let n = s.check_handle_count(count, "hatch boundary")?;
+                    let mut path = Vec::with_capacity(n);
+                    for _ in 0..n {
+                        path.push(Handle(s.h_abs(own)?));
+                    }
+                    h.sources.push(path);
+                }
+                if h.sources.iter().all(Vec::is_empty) {
+                    h.sources.clear();
                 }
             }
         }
