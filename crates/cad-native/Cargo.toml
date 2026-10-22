@@ -1,0 +1,12 @@
+[package]
+name = "cad-native"
+description = "BlackCAD's native .cad drawing format: DWG-style container, DXF-coded records, change journal, hash chain, recovery data"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+publish.workspace = true
+
+[dependencies]
+cad-model = { path = "../cad-model" }
+cad-dwg = { path = "../cad-dwg" }

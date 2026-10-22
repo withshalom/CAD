@@ -176,14 +176,12 @@ impl Huffman {
     }
 }
 
-fn fixed_tables() -> (Huffman, Huffman) {
+fn fixed_tables() -> Result<(Huffman, Huffman), InflateError> {
     let mut lit = [8u8; 288];
     lit[144..256].fill(9);
     lit[256..280].fill(7);
-    // Building these fixed tables cannot fail.
-    let lit = Huffman::new(&lit).unwrap_or_else(|_| unreachable!());
-    let dist = Huffman::new(&[5u8; 30]).unwrap_or_else(|_| unreachable!());
-    (lit, dist)
+    // Building these fixed tables cannot fail; `?` rather than a panic.
+    Ok((Huffman::new(&lit)?, Huffman::new(&[5u8; 30])?))
 }
 
 fn dynamic_tables(inp: &mut Input) -> Result<(Huffman, Huffman), InflateError> {
@@ -266,7 +264,7 @@ pub fn inflate(data: &[u8], max_out: usize) -> Result<(Vec<u8>, usize), InflateE
             }
             t @ (1 | 2) => {
                 let (lit, dist) = if t == 1 {
-                    fixed_tables()
+                    fixed_tables()?
                 } else {
                     dynamic_tables(&mut inp)?
                 };

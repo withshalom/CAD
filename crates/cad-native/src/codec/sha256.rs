@@ -98,8 +98,9 @@ impl Sha256 {
         }
         let mut chunks = data.chunks_exact(64);
         for c in &mut chunks {
-            let block: &[u8; 64] = c.try_into().expect("64 bytes");
-            Self::compress(&mut self.h, block);
+            if let Some(block) = c.first_chunk::<64>() {
+                Self::compress(&mut self.h, block);
+            }
         }
         let rest = chunks.remainder();
         self.block[..rest.len()].copy_from_slice(rest);

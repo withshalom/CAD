@@ -1,4 +1,4 @@
-//! The native file format (`.cad`).
+//! BlackCAD's native file format (`.cad`).
 //!
 //! A drawing is stored as tagged records in the style of binary DXF (group
 //! codes from the published DXF reference, typed values), inside a
@@ -6,22 +6,53 @@
 //! checked by CRC-32, a section directory, an object map for random
 //! access, and two copies of the file header. On top of that it adds what
 //! neither DWG nor DXF has: an append-only change journal (incremental
-//! saves that survive a crash), preserved bytes for DWG objects the core
+//! saves that survive a crash), preserved bytes for DWG objects the model
 //! does not decode yet, a preview, and from format 2.0 a schema that
 //! describes every record, a SHA-256 hash chain over the snapshot and the
 //! change sets, and recovery data that rebuilds damaged bytes.
 //!
-//! The byte-level specification is `docs/FORMAT.md`.
+//! The drawing is `cad-model`'s database (re-exported as [`cad_model`]),
+//! the same one `cad-dwg` and `cad-dxf` read and write, so a DWG opens and
+//! saves as `.cad` with nothing in between. The byte-level specification
+//! is `docs/FORMAT.md` in the BlackCAD repository.
 //!
 //! ```no_run
-//! let d = cad_core::open("part.dwg")?;
-//! cad_core::native::write_file(&d, "part.cad", &Default::default())?;
-//! let again = cad_core::native::read_file("part.cad")?;
+//! let d = cad_dwg::read_bytes(&std::fs::read("part.dwg")?)?;
+//! cad_native::write_file(&d, "part.cad", &Default::default())?;
+//! let again = cad_native::read_file("part.cad")?;
 //! // Or open once and look things up without loading everything:
-//! let f = cad_core::native::NativeFile::open("part.cad")?;
+//! let f = cad_native::NativeFile::open("part.cad")?;
 //! let props = f.properties()?;
-//! # Ok::<(), cad_core::Error>(())
+//! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
+//!
+//! What a file needs from the program that writes it, the format takes as
+//! [`WriteOptions`]: the program's name and version
+//! ([`WriteOptions::writer`]) and a preview of the drawing
+//! ([`WriteOptions::preview_svg`]). The DEFLATE, zlib and SHA-256 code the
+//! format uses is public as [`codec`].
+
+#![forbid(unsafe_code)]
+// A file is only a claim: no input reaches a panic. Tests may unwrap.
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::unimplemented,
+        clippy::todo,
+        clippy::unreachable
+    )
+)]
+
+pub use cad_model;
+// The DWG crate and the model's modules, under the names this code has
+// always used for them.
+use cad_dwg as dwg;
+use cad_model::{error, geom, model};
+
+pub mod codec;
 
 mod container;
 mod objects;
@@ -34,7 +65,7 @@ mod tags;
 pub mod audit;
 pub mod lock;
 
-pub use crate::codec::Level;
+pub use codec::Level;
 pub use container::{
     is_native, looks_native, FLAG_ENCRYPTED, FLAG_HAS_JOURNAL, FLAG_SIGNED, FORMAT_MAJOR,
     FORMAT_MINOR, MAGIC, OLDEST_MAJOR,
@@ -44,7 +75,7 @@ use container::{Builder, Codec, Container, DirEntry, Encoding, FileHeader};
 use records as rec;
 use tags::{get_len, get_varint, put_varint, TagReader, TagWriter};
 
-use crate::codec::sha256::{hex, Sha256};
+use codec::sha256::{hex, Sha256};
 use crate::dwg::DwgVersion;
 use crate::error::{Error, ErrorKind, Result, ResultExt};
 use crate::model::*;
@@ -81,8 +112,17 @@ pub struct WriteOptions {
     pub compress: bool,
     /// DEFLATE effort: `Fast`, `Default` or `Best`.
     pub level: Level,
-    /// Store an SVG preview of model space.
+    /// Store a preview of the drawing, when [`WriteOptions::preview_svg`]
+    /// can draw one.
     pub preview: bool,
+    /// Draws the preview: an SVG image of model space, or `None` when there
+    /// is nothing to show. The format leaves drawing to the program; without
+    /// this, files have no preview.
+    pub preview_svg: Option<fn(&Drawing) -> Option<String>>,
+    /// The program recorded as the file's writer (`$CAD_WRITER`), as
+    /// "name version". `None` records this crate, `cad-native` and its
+    /// [`VERSION`].
+    pub writer: Option<String>,
     /// Store the original DWG bytes of objects the core cannot decode.
     pub keep_dwg_bytes: bool,
     /// Store recovery data (about 1/16 of the file) that rebuilds damaged
@@ -96,6 +136,8 @@ impl Default for WriteOptions {
             compress: true,
             level: Level::Default,
             preview: true,
+            preview_svg: None,
+            writer: None,
             keep_dwg_bytes: true,
             recovery: true,
         }
@@ -123,8 +165,36 @@ fn records(data: &[u8]) -> Result<Vec<&[u8]>> {
     Ok(out)
 }
 
-fn now_unix() -> u64 {
-    crate::now_unix().max(0) as u64
+/// This crate's version: what [`WriteOptions::default`] records as the
+/// program that wrote a file, when the program names none of its own.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// Time the program gave [`set_time`], for platforms without a clock.
+static APP_TIME: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+
+/// Tell the format the time, in seconds since 1970 (UTC), for the save
+/// time and change sets it records. Only needed where the platform has no
+/// clock the standard library can read: WebAssembly in a browser, where
+/// the page passes `Date.now()` before each save.
+pub fn set_time(unix_seconds: i64) {
+    APP_TIME.store(unix_seconds, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// Seconds since 1970 (UTC): the system clock, or where there is none,
+/// the time last given to [`set_time`] (0 if none was).
+pub fn now_unix() -> i64 {
+    if cfg!(all(target_family = "wasm", target_os = "unknown")) {
+        return APP_TIME.load(std::sync::atomic::Ordering::Relaxed);
+    }
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
+/// [`now_unix`] as the unsigned count the records store.
+fn now_secs() -> u64 {
+    now_unix().max(0) as u64
 }
 
 fn io_err(path: &Path, e: std::io::Error) -> Error {
@@ -197,13 +267,13 @@ fn read_digest(data: &[u8]) -> Result<[u8; 32]> {
 // Writing
 // ---------------------------------------------------------------------------
 
-fn meta_section(d: &Drawing, objects: usize, pages: usize) -> Vec<u8> {
+fn meta_section(d: &Drawing, writer: &str, objects: usize, pages: usize) -> Vec<u8> {
     let mut w = TagWriter::new();
     let var = |w: &mut TagWriter, n: &str| w.str(9, n);
     var(&mut w, "$CAD_FORMAT");
     w.str(1, &format!("{FORMAT_MAJOR}.{FORMAT_MINOR}"));
     var(&mut w, "$CAD_WRITER");
-    w.str(1, &format!("cad-core {}", crate::VERSION));
+    w.str(1, writer);
     var(&mut w, "$CAD_SOURCE_VERSION");
     w.str(1, d.version.magic());
     var(&mut w, "$CAD_MAINTVER");
@@ -211,7 +281,7 @@ fn meta_section(d: &Drawing, objects: usize, pages: usize) -> Vec<u8> {
     var(&mut w, "$CAD_CODEPAGE");
     w.u16(70, d.codepage);
     var(&mut w, "$CAD_SAVED");
-    w.i64(160, now_unix() as i64);
+    w.i64(160, now_unix());
     var(&mut w, "$CAD_OBJECTS");
     w.u64(160, objects as u64);
     var(&mut w, "$CAD_PAGES");
@@ -264,15 +334,16 @@ fn build(d: &Drawing, opts: &WriteOptions, generation: u64) -> Vec<u8> {
     for (key, o) in &d.objects {
         let mut w = TagWriter::new();
         rec::write_object(&mut w, *key, o);
-        if pages
-            .last()
-            .map(|p| !p.is_empty() && p.len() + w.buf.len() > PAGE_TARGET)
-            == Some(true)
-        {
-            pages.push(Vec::new());
-        }
-        let page_no = pages.len() - 1;
-        let page = pages.last_mut().expect("page");
+        let page_no = match pages.last() {
+            Some(p) if p.is_empty() || p.len() + w.buf.len() <= PAGE_TARGET => pages.len() - 1,
+            _ => {
+                pages.push(Vec::new());
+                pages.len() - 1
+            }
+        };
+        let Some(page) = pages.get_mut(page_no) else {
+            continue;
+        };
         map.push((key.0, page_no, page.len()));
         put_record(page, w);
         if opts.keep_dwg_bytes {
@@ -312,7 +383,11 @@ fn build(d: &Drawing, opts: &WriteOptions, generation: u64) -> Vec<u8> {
 
     let enc = Encoding::current(opts.compress, opts.level);
     let mut b = Builder::new(enc, opts.recovery);
-    b.section(SEC_META, meta_section(d, d.objects.len(), pages.len()));
+    let writer = match &opts.writer {
+        Some(w) => w.clone(),
+        None => format!("cad-native {VERSION}"),
+    };
+    b.section(SEC_META, meta_section(d, &writer, d.objects.len(), pages.len()));
     b.section(SEC_HEADER, header.buf);
     b.records(SEC_CLASSES, classes);
     b.records(SEC_SCHEMA, schema);
@@ -325,17 +400,8 @@ fn build(d: &Drawing, opts: &WriteOptions, generation: u64) -> Vec<u8> {
     if !opaque.is_empty() {
         b.records(SEC_OPAQUE, opaque);
     }
-    if opts.preview {
-        let scene = crate::render::model_space(d);
-        if !scene.items.is_empty() {
-            let svg = crate::export::svg::to_svg(
-                &scene,
-                &crate::export::svg::SvgOptions {
-                    dark_background: false,
-                    width_px: 512.0,
-                    ..Default::default()
-                },
-            );
+    if let (true, Some(draw)) = (opts.preview, opts.preview_svg) {
+        if let Some(svg) = draw(d) {
             if svg.len() <= PREVIEW_LIMIT {
                 b.section(SEC_PREVIEW, svg.into_bytes());
             }
@@ -466,7 +532,7 @@ fn encode_journal(
     w.str(9, "$CAD_TIME");
     w.i64(
         160,
-        if set.time == 0 { now_unix() } else { set.time } as i64,
+        if set.time == 0 { now_secs() } else { set.time } as i64,
     );
     w.str(9, "$CAD_GENERATION");
     w.u64(160, generation);

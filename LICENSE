@@ -3,13 +3,14 @@ Copyright (c) 2026 the project owner. All rights reserved.
 This software is proprietary and confidential. No license is granted to
 use, copy, modify or distribute it without the owner's written permission.
 
-Exception: three crates in this repository are open source, licensed under
+Exception: four crates in this repository are open source, licensed under
 either of the MIT License or the Apache License, Version 2.0, at your
 option. Each holds both license texts (LICENSE-MIT, LICENSE-APACHE):
 
   crates/cad-model   the drawing database the file formats read and write
   crates/cad-dwg     the DWG reader and writer
   crates/cad-dxf     the DXF reader and writer
+  crates/cad-native  the native .cad format reader and writer
 
 Everything else in this repository is under the terms above.
 

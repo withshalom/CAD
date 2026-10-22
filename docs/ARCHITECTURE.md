@@ -34,13 +34,14 @@ name the format and its code, not the product.
   (desktop, Android, iOS) is a thin shell around it. The one piece that
   needs `unsafe`, the bridge to the apps (`crates/cad-ffi`), is small and
   separate.
-- **Open formats, open to others.** The drawing database and the DWG and
-  DXF readers and writers are crates of their own (`cad-model`,
-  `cad-dwg`, `cad-dxf`), licensed MIT OR Apache-2.0 so that other programs
-  can read and write DWG with them; `cad-core` builds on them and keeps
-  everything else. They take nothing from the core: where a file needs
-  something only the program has (its name, a preview, its font's text
-  widths, its hatch pattern library), the writer takes it as an option.
+- **Open formats, open to others.** The drawing database and the DWG,
+  DXF and `.cad` readers and writers are crates of their own
+  (`cad-model`, `cad-dwg`, `cad-dxf`, `cad-native`), licensed MIT OR
+  Apache-2.0 so that other programs can read and write DWG and `.cad`
+  with them; `cad-core` builds on them and keeps everything else. They
+  take nothing from the core: where a file needs something only the
+  program has (its name, a preview, its font's text widths, its hatch
+  pattern library), the writer takes it as an option.
 - **Never crash on a file.** Malformed input produces an error, or a single
   object marked as failed. The rest of the drawing still loads.
 
@@ -61,11 +62,12 @@ name the format and its code, not the product.
  │ font      own single-stroke font, text layout                      │
  │ standards default layers, linetypes, styles, colours, templates    │
  │ units     unit conversion, typed lengths and angles, display       │
- │ native    .cad read/write, journal (incremental save), .cdl locks  │
- │ codec     DEFLATE and zlib (RFC 1950/1951), SHA-256 (FIPS 180-4)    │
+ │ native    cad-native with the core's preview and name              │
  └─────────────────────────────────┬──────────────────────────────────┘
           cad-core, above; the crates below are MIT OR Apache-2.0
  ┌─────────────────────────────────▼──────────────────────────────────┐
+ │ cad-native .cad read/write, journal (incremental save), .cdl locks │
+ │           codec: DEFLATE and zlib (RFC 1950/1951), SHA-256          │
  │ cad-dxf   DXF read and write, ASCII and binary                     │
  │ cad-dwg   bits → container → object map → objects → header; writer │
  │ cad-model model: Drawing, objects by handle, layers, blocks,       │
@@ -157,9 +159,13 @@ DXF by its content. `WriteOptions` carries a hatch pattern library, as
 for DWG; `cad_core::dxf::to_bytes` passes BlackCAD's and adds dimension
 blocks. `export/dxf.rs` is the older R12 export of a rendered scene.
 
-## Native format (`crates/cad-core/src/native`)
+## Native format (`crates/cad-native`)
 
-The byte-level spec is `FORMAT.md`. Modules:
+The byte-level spec is `FORMAT.md`. The crate is MIT OR Apache-2.0 and
+needs nothing from the core: the program that writes a file passes its
+name and version and, if it wants one, a function that draws the preview
+(`WriteOptions::writer`, `WriteOptions::preview_svg`). `cad_core::native`
+re-exports the crate and fills both in with the core's own. Modules:
 
 - `tags.rs`: tags (DXF group code + explicit type + value) and varints;
   writers that leave out a field equal to its default, and readers that
@@ -316,8 +322,8 @@ apps/web/app.js      layout, input, commands (generators that ask for points, le
 apps/web/core.js     loads core.wasm, copies bytes in and out (the only glue)
 cad-ffi/src/web.rs   wasm entry points: numbers in, bytes out (the only unsafe)
 cad-ffi/src/session.rs   open drawings, undo, the command language: safe Rust
-cad-core             everything else: render, display list, snaps, editing, .cad
-cad-model, cad-dwg, cad-dxf   the drawing database, DWG and DXF
+cad-core             everything else: render, display list, snaps, editing
+cad-model, cad-dwg, cad-dxf, cad-native   the drawing database, DWG, DXF and .cad
 ```
 
 **No dependencies, as everywhere else.** No npm packages, no frameworks,

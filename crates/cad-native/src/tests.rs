@@ -923,18 +923,24 @@ fn roundtrip_every_kind() {
 }
 
 #[test]
-fn open_detects_format_and_preview_exists() {
+fn detects_format_and_stores_the_programs_preview_and_name() {
     let d = sample();
-    let bytes = to_bytes(&d, &WriteOptions::default());
+    let opts = WriteOptions {
+        preview_svg: Some(|_| Some("<svg xmlns=\"http://www.w3.org/2000/svg\"/>".into())),
+        writer: Some("Test 1.0".into()),
+        ..Default::default()
+    };
+    let bytes = to_bytes(&d, &opts);
     assert!(is_native(&bytes));
-    assert_same(&d, &crate::open_bytes(&bytes).unwrap());
+    assert_same(&d, &read_bytes(&bytes).unwrap());
     let svg = preview_svg(&bytes).unwrap().expect("preview");
-    assert!(
-        svg.starts_with("<svg") || svg.starts_with("<?xml"),
-        "{}",
-        &svg[..40]
-    );
+    assert!(svg.starts_with("<svg"), "{svg}");
+    // Without a preview drawer there is no preview, and the crate names itself.
+    let plain = to_bytes(&d, &WriteOptions::default());
+    assert_eq!(preview_svg(&plain).unwrap(), None);
+    assert_eq!(inspect(&plain).unwrap().writer, format!("cad-native {VERSION}"));
     let info = inspect(&bytes).unwrap();
+    assert_eq!(info.writer, "Test 1.0");
     assert_eq!(info.format, (FORMAT_MAJOR, FORMAT_MINOR));
     assert_eq!(info.source_version, Some(DwgVersion::R2018));
     assert!(info.sections.iter().all(|s| s.crc_ok));
@@ -1648,8 +1654,13 @@ fn empty_drawing_roundtrips() {
 #[test]
 fn a_dimension_style_coloured_index_0_reopens_as_by_block() {
     // ACI 0 is "by block": saved as that, not as a word the reader refuses.
-    let mut d = crate::standards::new_drawing(crate::standards::Template::Metric);
-    let h = d.header.dimstyle;
+    let mut d = sample();
+    let h = d
+        .objects
+        .iter()
+        .find(|(_, o)| matches!(o.kind, ObjectKind::DimStyle(_)))
+        .map(|(h, _)| *h)
+        .unwrap();
     match &mut d.objects.get_mut(&h).unwrap().kind {
         ObjectKind::DimStyle(s) => s.line_color = Color::Index(0),
         other => panic!("{other:?}"),
@@ -1670,7 +1681,7 @@ fn a_dimension_style_coloured_index_0_reopens_as_by_block() {
 
 #[test]
 fn a_1_0_file_of_an_r14_drawing_reads_lineweight_0_as_unset() {
-    let mut d = crate::standards::new_drawing(crate::standards::Template::Metric);
+    let mut d = sample();
     d.version = DwgVersion::R14;
     let zero = d.layer_by_name("0").unwrap().0;
     let line = d
@@ -1731,7 +1742,7 @@ fn torn_magic_still_opens_from_trailer() {
     let mut b = to_bytes(&d, &WriteOptions::default());
     b[..8].copy_from_slice(b"garbage!");
     assert!(looks_native(&b));
-    let r = crate::open_bytes(&b).unwrap();
+    let r = read_bytes(&b).unwrap();
     assert_same(&d, &r);
 }
 
@@ -1794,7 +1805,7 @@ fn later_duplicate_section_wins() {
     let mut header = TagWriter::new();
     rec::write_header(&mut header, &d.header);
     let mut b = Builder::new(Encoding::current(true, Level::Default), false);
-    b.section(SEC_META, meta_section(&d, 1, 1));
+    b.section(SEC_META, meta_section(&d, "test", 1, 1));
     b.section(SEC_HEADER, header.buf.clone());
     b.section("Objects.0", p1.clone());
     b.section("Objects.0", p2.clone());
@@ -1833,7 +1844,7 @@ fn exhausted_generation_is_an_error_not_a_panic() {
     let mut b = Builder::new(Encoding::current(true, Level::Default), false);
     let mut header = TagWriter::new();
     rec::write_header(&mut header, &d.header);
-    b.section(SEC_META, meta_section(&d, 0, 1));
+    b.section(SEC_META, meta_section(&d, "test", 0, 1));
     b.section(SEC_HEADER, header.buf.clone());
     b.section("Objects.0", Vec::new());
     std::fs::write(&path, b.finish(u64::MAX, 0)).unwrap();
@@ -1960,7 +1971,7 @@ fn unknown_sections_and_kinds_are_tolerated() {
     let mut map = Vec::new();
     put_varint(&mut map, 0);
     let mut b = Builder::new(Encoding::current(true, Level::Default), false);
-    b.section(SEC_META, meta_section(&d, 2, 1));
+    b.section(SEC_META, meta_section(&d, "test", 2, 1));
     b.section(SEC_HEADER, header.buf.clone());
     b.section(SEC_CLASSES, Vec::new());
     b.section("Objects.0", page.clone());
@@ -2141,7 +2152,7 @@ fn files_written_by_format_1_1_still_read() {
     // it was then (no drawing properties), followed by one change set: line
     // 0x100 moved, circle 0x101 deleted, $INSUNITS set to 4. If `sample()`
     // changes, compare against what it held then.
-    let bytes: &[u8] = include_bytes!("../../tests/fixtures/sample-1.1.cad");
+    let bytes: &[u8] = include_bytes!("../tests/fixtures/sample-1.1.cad");
     let f = NativeFile::from_bytes(bytes).unwrap();
     assert_eq!((f.format(), f.generation()), ((1, 1), 2));
     let d = f.drawing().unwrap();
@@ -2606,7 +2617,7 @@ fn drawing_properties_round_trip_and_travel_in_change_sets() {
 
 #[test]
 fn the_format_document_lists_the_schema() {
-    const DOC: &str = include_str!("../../../../docs/FORMAT.md");
+    const DOC: &str = include_str!("../../../docs/FORMAT.md");
     let table = schema::markdown_table();
     assert!(
         DOC.contains(&table),
@@ -2622,7 +2633,7 @@ fn records_for_1x_files_are_written_exactly_as_1_1_wrote_them() {
     // Every object record in the 1.1 fixture, decoded and written again in
     // the 1.x form, must come out byte for byte as the 1.1 code wrote it:
     // change sets appended to 1.x files stay readable by 1.x readers.
-    let bytes: &[u8] = include_bytes!("../../tests/fixtures/sample-1.1.cad");
+    let bytes: &[u8] = include_bytes!("../tests/fixtures/sample-1.1.cad");
     let c = Container::parse(bytes).unwrap();
     let page = c.read(c.entry("Objects.0").unwrap()).unwrap().0;
     let mut kinds = std::collections::HashSet::new();
