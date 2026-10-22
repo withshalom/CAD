@@ -107,7 +107,7 @@ separate decision. It is a draft until the DWG test corpus passes
   codes: per vertex its point, direction and miter, then for each
   element of the style its segment parameters (74, 41) and area fill
   parameters (75, 42). A 2.8 reader keeps the new kind as unknown data.
-- **2.10**: the format is BlackCAD's `.blc` (its lock `.bdl`): `.cad`
+- **2.10**: the format is BlackCAD's `.blc` (its lock `.bcl`): `.cad`
   and `.cdl` go to CADCraft's native format, which shares this container
   with its own records. Header bytes 40–41, reserved before, say whose
   records a file holds (0 BlackCAD's, 1 CADCraft's); earlier files have
@@ -852,16 +852,16 @@ sections and generation + 1 (`cad compact`).
 Journal sections are also the unit a live-collaboration layer can send
 between copies of the app.
 
-## 11. Lock file (`.bdl`)
+## 11. Lock file (`.bcl`)
 
 The equivalent of AutoCAD's `.dwl`. While a drawing is open for editing,
-a UTF-8 text file sits beside it: `part.blc` → `part.bdl`, and any other
-file gets the extension appended (`part.dwg` → `part.dwg.bdl`). CADCraft's
+a UTF-8 text file sits beside it: `part.blc` → `part.bcl`, and any other
+file gets the extension appended (`part.dwg` → `part.dwg.bcl`). CADCraft's
 lock is the same file named `.cdl`, beside its `.cad` drawings (`cdl 1`
 on the first line); the `lock` module writes either.
 
 ```
-bdl 1
+bcl 1
 user=<name>
 host=<machine>
 pid=<process id>
@@ -871,7 +871,7 @@ opened=<Unix seconds>
 heartbeat=<Unix seconds>
 ```
 
-The first line must be `bdl 1` (or CADCraft's `cdl 1`, read the same
+The first line must be `bcl 1` (or CADCraft's `cdl 1`, read the same
 way). Unknown keys are ignored.
 
 - **Acquire**: create the file exclusively (fails if it exists). If it

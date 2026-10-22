@@ -24,7 +24,7 @@ name the format and its code, not the product.
 
 - **Own native format, fluent in DWG.** Drawings are saved in the native
   `.blc` format (see `FORMAT.md`): binary-DXF-style tagged records in a
-  DWG-style sectioned container, plus a change journal and `.bdl` locks.
+  DWG-style sectioned container, plus a change journal and `.bcl` locks.
   DWG is read on open and, later, written on export. The in-memory
   database mirrors DWG's own object graph (handles, owners, reactors,
   extension dictionaries), so DWG maps onto it without loss, and objects
@@ -66,7 +66,7 @@ name the format and its code, not the product.
  └─────────────────────────────────┬──────────────────────────────────┘
           cad-core, above; the crates below are MIT OR Apache-2.0
  ┌─────────────────────────────────▼──────────────────────────────────┐
- │ cad-native .blc read/write, journal (incremental save), .bdl locks │
+ │ cad-native .blc read/write, journal (incremental save), .bcl locks │
  │           codec: DEFLATE and zlib (RFC 1950/1951), SHA-256          │
  │ cad-dxf   DXF read and write, ASCII and binary                     │
  │ cad-dwg   bits → container → object map → objects → header; writer │
@@ -188,7 +188,7 @@ re-exports the crate and fills both in with the core's own. Modules:
   (open once; one object via the object map, one page decompressed;
   header, properties, preview, schema, hash chain), change sets
   (`append_changes`, `apply`), the SHA-256 chain, `inspect`.
-- `lock.rs`: `.bdl` locks with heartbeat and stale takeover (the `.dwl`
+- `lock.rs`: `.bcl` locks with heartbeat and stale takeover (the `.dwl`
   equivalent), and `presence()` for "who has this open".
 - `audit.rs`: the structural audit behind `cad inspect`: byte map of the
   whole file and a PASS/FAIL check for every validity rule in FORMAT.md
@@ -371,7 +371,7 @@ of the build.
 **What the browser limits.** One thread, so the core renders previews on
 one (raster bands are drawn in place when only one thread is available).
 No clock the standard library can read, so the page passes the time to the
-core before each save (`cad_core::set_time`). No file paths, so no `.bdl`
+core before each save (`cad_core::set_time`). No file paths, so no `.bcl`
 lock file: presence shows "this browser" until the desktop shell exists.
 A panic stops the module (WebAssembly builds use `panic=abort`); the page
 keeps the panic message, starts a fresh module and reopens the drawings
@@ -415,7 +415,7 @@ folder. Two parts of the native format assume a folder:
 
 - a full save writes a temporary file next to the drawing and renames it
   over the original, so a failed save never damages the file;
-- the `.bdl` lock is a separate file next to the drawing.
+- the `.bcl` lock is a separate file next to the drawing.
 
 Incremental saves (append a change set, then rewrite the header) need only
 a seekable read-write descriptor. Local storage gives one; some cloud
@@ -425,7 +425,7 @@ Options:
 
 1. **Work on a copy** in the app's own storage, where paths, renames and
    locks all work, and write the result back through the URI on save.
-   Simple, but other people see no `.bdl` presence.
+   Simple, but other people see no `.bcl` presence.
 2. **Ask for the folder** (`ACTION_OPEN_DOCUMENT_TREE`) and create the
    temporary file and the lock through the document provider. This keeps
    presence, but document providers offer no atomic replace, and the save
@@ -463,7 +463,7 @@ the editor.
    commands, undo and redo. Offset, trim and fillet are next (the
    2026-10-08 advisory, P3-2, asked that they stay on this list).
 7. DWG export (writer), then round-trip tests DWG → `.blc` → DWG.
-8. Desktop app shell with `.bdl` presence. The GUI is built first as the
+8. Desktop app shell with `.bcl` presence. The GUI is built first as the
    browser workbench (`apps/web`, above). Android has a test viewer
    (`apps/android`); its editor waits on the storage decision above. Then
    iOS.

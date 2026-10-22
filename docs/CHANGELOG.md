@@ -22,7 +22,7 @@ format (2.10) or to what BlackCAD writes.
   a damaged front header still says whose records a file holds.
 
 ## 0.16.0 (2026-10-22)
-BlackCAD's native format is `.blc`, and its lock file `.bdl`. The names
+BlackCAD's native format is `.blc`, and its lock file `.bcl`. The names
 `.cad` and `.cdl` go to CADCraft's native format (developed in the
 owner's CADCraft fork), which shares this format's container, encoding
 and structure but holds CADCraft's own records. The format is 2.10.
@@ -32,7 +32,7 @@ and structure but holds CADCraft's own records. The format is 2.10.
   (`RECORDS_BLACKCAD`, `RECORDS_CADCRAFT`, `records_of`). Earlier files
   have 0 there and read as before; a CADCraft file is refused with a
   message saying what it is. The `lock` module writes either kind
-  (`LockKind::BLACKCAD`: `.bdl` beside `.blc`; `LockKind::CADCRAFT`:
+  (`LockKind::BLACKCAD`: `.bcl` beside `.blc`; `LockKind::CADCRAFT`:
   `.cdl` beside `.cad`) and reads both; the functions without a kind are
   BlackCAD's.
 - Programs: the web app, the Android viewer and `cad` save and open

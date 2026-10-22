@@ -427,7 +427,7 @@ the drawing is CAD, not CAM (DESIGN.md §1). Those belong to the export.
 
 | Command | Alias | Keys | Does | Phase | Today |
 |---|---|---|---|---|---|
-| WHO | `WH` | | Who has this drawing open, where, and since when (the `.bdl` lock). Take over a stale lock. | 1 | `cad presence` |
+| WHO | `WH` | | Who has this drawing open, where, and since when (the `.bcl` lock). Take over a stale lock. | 1 | `cad presence` |
 | SHARE | — | | Invite others into a live session. | L | |
 | SYNC | — | | Exchange change sets with the others in the session. | L | change sets |
 

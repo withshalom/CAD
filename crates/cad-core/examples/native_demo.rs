@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("outline extended data after reload: {:?}", x.items);
     }
     if std::env::args().any(|a| a == "--keep-lock") {
-        std::mem::forget(held); // leave the .bdl behind for `cad presence`
+        std::mem::forget(held); // leave the .bcl behind for `cad presence`
     }
     Ok(())
 }

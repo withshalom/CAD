@@ -6,7 +6,7 @@
 //!
 //! Files:
 //! - [`native`]: the native `.blc` format (read, write, incremental save,
-//!   `.bdl` locks)
+//!   `.bcl` locks)
 //! - [`dwg`]: DWG reader (R13–R2000 and R2004–R2018; R2007 pending) and
 //!   writer (AutoCAD 2018 format)
 //! - [`dxf`]: DXF reader and writer, ASCII and binary

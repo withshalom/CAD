@@ -70,7 +70,7 @@ USAGE:
     cad preview <file.blc> <out.svg>        Extract the stored preview
     cad schema  [file.blc]                  The record schema as a Markdown table:
                                             this build's, or the one a file carries
-    cad presence <file>                     Who has the drawing open (.bdl lock)
+    cad presence <file>                     Who has the drawing open (.bcl lock)
 
     cad version                             Print version
     cad help                                This text
