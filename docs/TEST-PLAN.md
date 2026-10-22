@@ -84,7 +84,7 @@ variables, value types and object kinds from a newer writer (must be kept
 and written back byte for byte); extended data of every value type, in
 snapshots and change sets, and malformed extended data (kept whole and
 reported); DWG extended data built byte by byte from the spec (both string
-forms, several applications, bytes that do not decode kept); `.bdl` lock
+forms, several applications, bytes that do not decode kept); `.bcl` lock
 acquire, hold, heartbeat, stale takeover and release. Format 2.0 adds: the
 schema checked against the record code field by field, for every kind
 (required fields only, and every default written out, must decode to the
@@ -112,7 +112,7 @@ and speed on 200,000 entities; results are recorded in
 `FORMAT-ROADMAP.md`.
 
 Still to do by hand: two copies of a future app on two machines sharing a
-network folder, to confirm `.bdl` behaviour on SMB and cloud-sync folders
+network folder, to confirm `.bcl` behaviour on SMB and cloud-sync folders
 (Dropbox, OneDrive), which may delay or reorder file operations.
 
 ## 5a. Drafting standards and drawing (Stage 1), automated

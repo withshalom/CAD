@@ -296,7 +296,7 @@ Proposed, as in the mockup.
   - `+` for a new drawing;
   - undo and redo;
   - save state;
-  - who has the drawing open (the `.bdl` lock), for example "Editing on
+  - who has the drawing open (the `.bcl` lock), for example "Editing on
     SHOP-PC". Clicking it shows the lock's holder and time.
 - **Tool rail (left):**
   - Select;
@@ -386,7 +386,7 @@ mockups.
 | Snaps (§9): endpoint, midpoint, center, quadrant, intersection, nearest, node, insertion; markers and tags; aperture 10 px mouse, 22 px touch; Tab cycles; typed snap keywords | `cad_core::snap`, `apps/web` | Built (straight pass; spatial index later). Perpendicular, tangent, extension, parallel and tracking still to do |
 | Ortho, polar (15° steps), grid stepping, grid display spacing by fives | `apps/web` | Built. UCS rotation still to do |
 | Selection (§5): blue selection, hover glow, square grips that edit by dragging, window and crossing boxes | `cad_core::snap`, `apps/web` | Built |
-| Workspace, panels, command line, status bar (§10) | `apps/web` (browser workbench, PWA) | Built to the mockup. Presence shows "this browser" until a desktop shell can hold a `.bdl` lock |
+| Workspace, panels, command line, status bar (§10) | `apps/web` (browser workbench, PWA) | Built to the mockup. Presence shows "this browser" until a desktop shell can hold a `.bcl` lock |
 | Phone layout (§11): title bar, aid chips, tool sheet, value fields with a number pad, magnifier while placing a point | `apps/web` | Built. Long-press menu still to do |
 
 ### Stage 3 (2026-10-15): the drafting tools live in the core

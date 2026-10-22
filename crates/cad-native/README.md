@@ -16,7 +16,7 @@ adds:
   skip what they don't know.
 - **Preserved DWG bytes** for objects the model doesn't decode yet, so a
   DWG opened and saved as `.blc` loses nothing.
-- **`.bdl` lock files** for drawings shared on a network folder.
+- **`.bcl` lock files** for drawings shared on a network folder.
 
 The drawing is [`cad-model`](../cad-model)'s database, the same one
 [`cad-dwg`](../cad-dwg) and [`cad-dxf`](../cad-dxf) read and write.

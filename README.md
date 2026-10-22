@@ -9,7 +9,7 @@ Elsewhere in these docs **CAD** means the program and **`.blc`** its file format
 A clean-room CAD engine written from scratch in Rust. Drawings are saved
 in the project's own **native `.blc` format** (binary-DXF-style records in
 a DWG-style compressed, sectioned container, with incremental saves and
-`.bdl` edit locks). It opens **.dwg** files and AutoCAD 2018 **DXF**
+`.bcl` edit locks). It opens **.dwg** files and AutoCAD 2018 **DXF**
 (ASCII and binary) directly, and writes DXF (ASCII and binary) and
 AutoCAD 2018 (AC1032) .dwg files. The core has **no
 third-party dependencies** (only the Rust standard library) and no `unsafe`
@@ -228,7 +228,7 @@ cad info    part.blc                 # every command above also takes .blc files
 cad compact part.blc                 # fold incremental change sets into a new snapshot
 cad inspect part.blc --tags 2        # byte map, structure checks (audit), tag dump
 cad preview part.blc thumb.svg       # the preview stored in the file
-cad presence part.blc                # who has it open (.bdl lock), and whether it is stale
+cad presence part.blc                # who has it open (.bcl lock), and whether it is stale
 cad props   part.blc --set title="Bracket" --set author=Shalom
                                      # drawing properties, saved as a change set
 cad part    part.blc --set material=Steel --set thickness=6mm --set quantity=10
@@ -333,7 +333,7 @@ that rebuilds damaged bytes; drawing properties; objects the core cannot
 decode yet keep their original DWG bytes; extended data (XDATA) with
 DXF's group codes, decoded from DWG; fields and object kinds from newer
 versions of the format kept and written back unchanged; SVG preview;
-`.bdl` lock files with heartbeat and stale-lock takeover (the `.dwl`
+`.bcl` lock files with heartbeat and stale-lock takeover (the `.dwl`
 equivalent); a structural audit (`cad inspect`). Files of format 1.x
 still open. See `cargo run -p cad-core --example native_demo`,
 and `--example native_bench` for size and speed on 200,000 entities

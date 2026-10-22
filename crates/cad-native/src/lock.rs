@@ -1,5 +1,5 @@
 //! Drawing locks and presence: the sidecar file beside an open drawing.
-//! BlackCAD's is `.bdl` (beside `.blc` drawings); CADCraft's `.cdl` (beside
+//! BlackCAD's is `.bcl` (beside `.blc` drawings); CADCraft's `.cdl` (beside
 //! its `.cad` drawings) is the same file under its own name ([`LockKind`]).
 //!
 //! This plays the role AutoCAD's `.dwl` file plays for DWG: while someone
@@ -26,7 +26,7 @@
 //! Format (UTF-8 text, one `key=value` per line, unknown keys ignored):
 //!
 //! ```text
-//! bdl 1
+//! bcl 1
 //! user=shalom
 //! host=shop-pc
 //! pid=4121
@@ -36,7 +36,7 @@
 //! heartbeat=1790000030
 //! ```
 //!
-//! The first line names the kind of lock and its revision (`bdl 1`, or
+//! The first line names the kind of lock and its revision (`bcl 1`, or
 //! `cdl 1` for CADCraft's). Readers take either: the two differ only in name.
 
 use crate::error::{Error, ErrorKind, Result};
@@ -46,8 +46,8 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 /// Whose lock: the lock file's extension, and the drawings that take it in
-/// place of their own extension (`part.blc` → `part.bdl`; any other file
-/// gets it appended, `part.dwg` → `part.dwg.bdl`).
+/// place of their own extension (`part.blc` → `part.bcl`; any other file
+/// gets it appended, `part.dwg` → `part.dwg.bcl`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LockKind {
     pub lock: &'static str,
@@ -55,8 +55,8 @@ pub struct LockKind {
 }
 
 impl LockKind {
-    /// BlackCAD's: `.bdl` beside `.blc` drawings.
-    pub const BLACKCAD: LockKind = LockKind { lock: "bdl", native: "blc" };
+    /// BlackCAD's: `.bcl` beside `.blc` drawings.
+    pub const BLACKCAD: LockKind = LockKind { lock: "bcl", native: "blc" };
     /// CADCraft's: `.cdl` beside `.cad` drawings.
     pub const CADCRAFT: LockKind = LockKind { lock: "cdl", native: "cad" };
 }
@@ -103,7 +103,7 @@ impl LockInfo {
 
     fn decode(text: &str) -> Option<LockInfo> {
         let mut lines = text.lines();
-        if !matches!(lines.next()?.trim(), "bdl 1" | "cdl 1") {
+        if !matches!(lines.next()?.trim(), "bcl 1" | "cdl 1") {
             return None;
         }
         let mut i = LockInfo::default();
@@ -181,9 +181,9 @@ pub fn lock_path(drawing: &Path) -> PathBuf {
     lock_path_for(drawing, LockKind::BLACKCAD)
 }
 
-/// The lock file for a drawing: `part.blc` → `part.bdl` for BlackCAD's
+/// The lock file for a drawing: `part.blc` → `part.bcl` for BlackCAD's
 /// kind; any other file gets the extension appended (`part.dwg` →
-/// `part.dwg.bdl`) so a DWG and a native file of the same name never share
+/// `part.dwg.bcl`) so a DWG and a native file of the same name never share
 /// a lock.
 pub fn lock_path_for(drawing: &Path, kind: LockKind) -> PathBuf {
     let is_native = drawing
@@ -464,11 +464,11 @@ mod tests {
 
     #[test]
     fn paths() {
-        assert_eq!(lock_path(Path::new("/x/part.blc")), Path::new("/x/part.bdl"));
-        assert_eq!(lock_path(Path::new("/x/part.BLC")), Path::new("/x/part.bdl"));
-        assert_eq!(lock_path(Path::new("/x/part.dwg")), Path::new("/x/part.dwg.bdl"));
+        assert_eq!(lock_path(Path::new("/x/part.blc")), Path::new("/x/part.bcl"));
+        assert_eq!(lock_path(Path::new("/x/part.BLC")), Path::new("/x/part.bcl"));
+        assert_eq!(lock_path(Path::new("/x/part.dwg")), Path::new("/x/part.dwg.bcl"));
         // A CADCraft drawing is not BlackCAD's own: its name is kept whole.
-        assert_eq!(lock_path(Path::new("/x/part.cad")), Path::new("/x/part.cad.bdl"));
+        assert_eq!(lock_path(Path::new("/x/part.cad")), Path::new("/x/part.cad.bcl"));
         // CADCraft's kind pairs .cdl with .cad.
         let c = LockKind::CADCRAFT;
         assert_eq!(lock_path_for(Path::new("/x/part.cad"), c), Path::new("/x/part.cdl"));
@@ -488,9 +488,9 @@ mod tests {
         drop(lock);
         let b = dir.join("b.blc");
         let Acquire::Acquired(_lock) = acquire_as(&b, "bob".into()).unwrap() else { panic!("not acquired") };
-        assert!(std::fs::read_to_string(dir.join("b.bdl")).unwrap().starts_with("bdl 1\n"));
+        assert!(std::fs::read_to_string(dir.join("b.bcl")).unwrap().starts_with("bcl 1\n"));
         // A lock written under the other name still reads.
-        std::fs::write(dir.join("c.bdl"), "cdl 1\nuser=carol\nsession=s\nheartbeat=1\n").unwrap();
+        std::fs::write(dir.join("c.bcl"), "cdl 1\nuser=carol\nsession=s\nheartbeat=1\n").unwrap();
         assert_eq!(presence(dir.join("c.blc")).unwrap().unwrap().user, "carol");
     }
 
@@ -556,7 +556,7 @@ mod tests {
         let dir = tmpdir("d");
         let dwg = dir.join("d.blc");
         // Written up to the session line, then interrupted.
-        std::fs::write(lock_path(&dwg), "bdl 1\nuser=a\nsession=abc\n").unwrap();
+        std::fs::write(lock_path(&dwg), "bcl 1\nuser=a\nsession=abc\n").unwrap();
         assert!(matches!(
             acquire_as(&dwg, "b".into()).unwrap(),
             Acquire::HeldBy(_)

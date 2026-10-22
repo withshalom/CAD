@@ -115,7 +115,7 @@ to what `.blc` is. Both sides, steel-manned:
    That work is the same in a zip, STEP or SQLite.
 3. The DWG capabilities the review worried about are built and measured
    (§2, §3): compression, CRCs, random access in ~9 ms, crash-safe
-   incremental saves in ~6 ms, unknown data kept, `.bdl` locks, a 19-check
+   incremental saves in ~6 ms, unknown data kept, `.bcl` locks, a 19-check
    audit; several go beyond DWG.
 4. STEP is the wrong domain: 3D product exchange, with no counterpart to
    layers, blocks, dimension styles, linetypes or paper-space layouts; its
@@ -158,7 +158,7 @@ package as possible export formats, not as the native base.
 | Find one object without reading all | No: sequential | Yes: handle map | Yes: object map + 64 KiB pages; an open file keeps the map (0.4 ms per lookup) |
 | Save changes without rewriting the file | No | Yes (ISAVEPERCENT incremental save) | Yes: change sets with author and time, crash-safe |
 | Survive a crash mid-save | No | Backup (.bak) and autosave files | Yes: full saves write beside and rename; incremental saves are ordered so old or new state always loads |
-| Edit lock / who has it open | No | `.dwl`/`.dwl2` sidecars (AutoCAD) | `.bdl` sidecar with heartbeat and stale-lock takeover |
+| Edit lock / who has it open | No | `.dwl`/`.dwl2` sidecars (AutoCAD) | `.bcl` sidecar with heartbeat and stale-lock takeover |
 | Handles | Hex strings | Bit-packed | Binary varints; stored as differences in split sections |
 | Text encoding | Code page (older) / UTF-8, strings chunked | Code page / UTF-16 | UTF-8, any length |
 | Preview | BMP thumbnail section | Thumbnail image | SVG (vector) |
@@ -296,7 +296,7 @@ rest can also come later. **Status (2.0):** done: 1, 2, 3, 5, 6 (writing),
      cores with `std::thread`. Keep a single-thread path for WebAssembly.
    - **Done for writing (2.0)**, with `std::thread::scope`; one thread
      when only one core or one large section. Reading is still one thread.
-7. **Back `.bdl` with an operating-system lock.** Rust's standard library
+7. **Back `.bcl` with an operating-system lock.** Rust's standard library
    has `File::try_lock` since 1.89, so this stays dependency-free.
    - Effect: a crashed holder's lock clears instantly on local disks.
    - Caveat: on Windows the OS lock blocks other readers, so the "who"
@@ -579,7 +579,7 @@ its readable parts (§5.3).
 - **Collaboration.**
   - Change sets are the natural unit to send between devices.
   - Per-object revision counters let offline edits merge.
-  - The `.bdl` heartbeat grows into live presence.
+  - The `.bcl` heartbeat grows into live presence.
 - **Fabrication data as first-class fields.** Store directly in the part,
   not as layer-name conventions or XDATA:
   - cut, etch or mark roles;

@@ -73,7 +73,7 @@ pub fn write_file(d: &Drawing, path: impl AsRef<Path>, opts: &WriteOptions) -> R
 }
 
 pub mod lock {
-    //! `.bdl` lock files ([`cad_native::lock`]), naming the core as the
+    //! `.bcl` lock files ([`cad_native::lock`]), naming the core as the
     //! program that holds the lock.
 
     pub use cad_native::lock::*;
