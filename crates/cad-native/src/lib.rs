@@ -1,4 +1,4 @@
-//! BlackCAD's native file format (`.cad`).
+//! BlackCAD's native file format (`.blk`).
 //!
 //! A drawing is stored as tagged records in the style of binary DXF (group
 //! codes from the published DXF reference, typed values), inside a
@@ -13,15 +13,15 @@
 //!
 //! The drawing is `cad-model`'s database (re-exported as [`cad_model`]),
 //! the same one `cad-dwg` and `cad-dxf` read and write, so a DWG opens and
-//! saves as `.cad` with nothing in between. The byte-level specification
+//! saves as `.blk` with nothing in between. The byte-level specification
 //! is `docs/FORMAT.md` in the BlackCAD repository.
 //!
 //! ```no_run
 //! let d = cad_dwg::read_bytes(&std::fs::read("part.dwg")?)?;
-//! cad_native::write_file(&d, "part.cad", &Default::default())?;
-//! let again = cad_native::read_file("part.cad")?;
+//! cad_native::write_file(&d, "part.blk", &Default::default())?;
+//! let again = cad_native::read_file("part.blk")?;
 //! // Or open once and look things up without loading everything:
-//! let f = cad_native::NativeFile::open("part.cad")?;
+//! let f = cad_native::NativeFile::open("part.blk")?;
 //! let props = f.properties()?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
@@ -67,8 +67,8 @@ pub mod lock;
 
 pub use codec::Level;
 pub use container::{
-    is_native, looks_native, FLAG_ENCRYPTED, FLAG_HAS_JOURNAL, FLAG_SIGNED, FORMAT_MAJOR,
-    FORMAT_MINOR, MAGIC, OLDEST_MAJOR,
+    is_native, looks_native, records_of, FLAG_ENCRYPTED, FLAG_HAS_JOURNAL, FLAG_SIGNED, FORMAT_MAJOR,
+    FORMAT_MINOR, MAGIC, OLDEST_MAJOR, RECORDS_BLACKCAD, RECORDS_CADCRAFT,
 };
 
 use container::{Builder, Codec, Container, DirEntry, Encoding, FileHeader};
@@ -84,8 +84,10 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-/// File extension of native drawings.
-pub const EXTENSION: &str = "cad";
+/// File extension of BlackCAD's native drawings. The format's container is
+/// shared with CADCraft's `.blk` files, which hold CADCraft's own records
+/// (the header says whose: [`container::RECORDS_BLACKCAD`]).
+pub const EXTENSION: &str = "blk";
 
 /// Target uncompressed size of one object page. Records are never split,
 /// so a single large record can make a page bigger.
@@ -692,7 +694,7 @@ pub fn append_changes(path: impl AsRef<Path>, set: &ChangeSet) -> Result<u64> {
         .map_err(|e| io_err(path, e))?;
     let mut bytes = Vec::new();
     f.read_to_end(&mut bytes).map_err(|e| io_err(path, e))?;
-    let c = Container::parse(&bytes).ctx(path.display())?;
+    let c = blackcad_records(Container::parse(&bytes).ctx(path.display())?)?;
     // Appending after a damaged change set would hide the new one too:
     // readers stop at the first change set they cannot read. On the way,
     // follow the hash chain to its current end.
@@ -755,6 +757,7 @@ pub fn append_changes(path: impl AsRef<Path>, set: &ChangeSet) -> Result<u64> {
             minor: c.header.minor,
             flags: c.header.flags | container::FLAG_HAS_JOURNAL,
             generation,
+            records: c.header.records,
             ..Default::default()
         },
     );
@@ -1078,7 +1081,7 @@ fn load(c: &Container) -> Result<(Drawing, bool)> {
         Diagnostic {
             severity: Severity::Info,
             message: format!(
-                "native .cad {}.{}, generation {} ({} copy), {} object pages, {} change sets; source {}",
+                "native .blk {}.{}, generation {} ({} copy), {} object pages, {} change sets; source {}",
                 c.header.major,
                 c.header.minor,
                 c.header.generation,
@@ -1181,7 +1184,7 @@ impl NativeFile<'static> {
     pub fn open(path: impl AsRef<Path>) -> Result<NativeFile<'static>> {
         let path = path.as_ref();
         let bytes = std::fs::read(path).map_err(|e| io_err(path, e))?;
-        let c = Container::parse_owned(bytes).ctx(path.display())?;
+        let c = blackcad_records(Container::parse_owned(bytes).ctx(path.display())?)?;
         Ok(NativeFile {
             c,
             map: OnceLock::new(),
@@ -1189,11 +1192,25 @@ impl NativeFile<'static> {
     }
 }
 
+/// The container, when it holds BlackCAD's records. A CADCraft `.blk` file
+/// (or a schema from a later program) shares the container but not the
+/// records, so it is refused with a message saying what it is.
+fn blackcad_records(c: Container<'_>) -> Result<Container<'_>> {
+    match c.header.records {
+        container::RECORDS_BLACKCAD => Ok(c),
+        container::RECORDS_CADCRAFT => Err(Error::new(
+            ErrorKind::UnsupportedVersion,
+            "a CADCraft drawing (.blk): its records are CADCraft's; BlackCAD reads its own .blk files",
+        )),
+        n => Err(Error::new(ErrorKind::UnsupportedVersion, format!("records of an unknown program (schema {n})"))),
+    }
+}
+
 impl<'a> NativeFile<'a> {
     /// Parse the header and directory of a file held in memory.
     pub fn from_bytes(bytes: &'a [u8]) -> Result<NativeFile<'a>> {
         Ok(NativeFile {
-            c: Container::parse(bytes)?,
+            c: blackcad_records(Container::parse(bytes)?)?,
             map: OnceLock::new(),
         })
     }

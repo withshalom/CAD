@@ -1,7 +1,7 @@
 {
   "name": "BlackCAD",
   "short_name": "BlackCAD",
-  "description": "BlackCAD: drafting that opens .dwg, .dxf and .cad, with a blackboard of shop lessons beside it. The core runs in the browser as WebAssembly.",
+  "description": "BlackCAD: drafting that opens .dwg, .dxf and .blk, with a blackboard of shop lessons beside it. The core runs in the browser as WebAssembly.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
@@ -22,7 +22,7 @@
       "accept": {
         "application/acad": [".dwg"],
         "application/dxf": [".dxf"],
-        "application/x-cad-drawing": [".cad"]
+        "application/x-blackcad-drawing": [".blk"]
       }
     }
   ],

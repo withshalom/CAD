@@ -10,7 +10,7 @@ option. Each holds both license texts (LICENSE-MIT, LICENSE-APACHE):
   crates/cad-model   the drawing database the file formats read and write
   crates/cad-dwg     the DWG reader and writer
   crates/cad-dxf     the DXF reader and writer
-  crates/cad-native  the native .cad format reader and writer
+  crates/cad-native  the native .blk format reader and writer
 
 Everything else in this repository is under the terms above.
 

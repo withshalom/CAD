@@ -865,7 +865,7 @@ pub fn promote(d: &mut Drawing) {
             },
             // Entities kept as bytes by readers from before their types
             // were decoded (tolerances, multilines, images, wipeouts in
-            // older .cad files): decoded now, when the record fits.
+            // older .blk files): decoded now, when the record fits.
             (_, ObjectKind::Unsupported)
                 if matches!(o.type_code, 0x2E | 0x2F) || matches!(o.type_name.as_str(), "IMAGE" | "WIPEOUT") =>
             {

@@ -898,7 +898,7 @@ fn temp(tag: &str) -> PathBuf {
         now_unix()
     ));
     std::fs::create_dir_all(&dir).unwrap();
-    dir.join("t.cad")
+    dir.join("t.blk")
 }
 
 #[test]
@@ -1068,6 +1068,31 @@ fn multilines_roundtrip() {
     d.rebuild_index();
     let back = read_bytes(&to_bytes(&d, &WriteOptions::default())).unwrap();
     assert_same(&d, &back);
+}
+
+/// The header says whose records a file holds (2.10): BlackCAD's own, or
+/// CADCraft's, which share the container. BlackCAD refuses CADCraft's
+/// with a message saying what the file is.
+#[test]
+fn the_header_says_whose_records_the_file_holds() {
+    let bytes = to_bytes(&sample(), &WriteOptions::default());
+    assert_eq!(records_of(&bytes), Some(RECORDS_BLACKCAD));
+    // The same file marked as CADCraft's, in both copies of the header.
+    let mut other = bytes.clone();
+    let n = other.len();
+    for at in [0, n - container::HEADER_LEN] {
+        let mut h = FileHeader::decode(&other[at..at + container::HEADER_LEN]).unwrap();
+        h.records = RECORDS_CADCRAFT;
+        other[at..at + container::HEADER_LEN].copy_from_slice(&h.encode());
+    }
+    assert_eq!(records_of(&other), Some(RECORDS_CADCRAFT));
+    let e = read_bytes(&other).unwrap_err();
+    assert!(e.to_string().contains("CADCraft drawing"), "{e}");
+    // The CRC covers the field: a front copy changed by damage is not
+    // believed, and the trailer's answer is used.
+    let mut damaged = bytes;
+    damaged[40] = 1;
+    assert_eq!(records_of(&damaged), Some(RECORDS_BLACKCAD));
 }
 
 #[test]
@@ -2306,7 +2331,7 @@ fn files_written_by_format_1_1_still_read() {
     // it was then (no drawing properties), followed by one change set: line
     // 0x100 moved, circle 0x101 deleted, $INSUNITS set to 4. If `sample()`
     // changes, compare against what it held then.
-    let bytes: &[u8] = include_bytes!("../tests/fixtures/sample-1.1.cad");
+    let bytes: &[u8] = include_bytes!("../tests/fixtures/sample-1.1.blk");
     let f = NativeFile::from_bytes(bytes).unwrap();
     assert_eq!((f.format(), f.generation()), ((1, 1), 2));
     let d = f.drawing().unwrap();
@@ -2786,7 +2811,7 @@ fn the_format_document_lists_the_schema() {
         "docs/FORMAT.md §8.2 differs from the schema; replace it with the output of `cad schema`:\n{table}"
     );
     assert!(DOC.starts_with(&format!(
-        "# Native file format (`.cad`) — version {FORMAT_MAJOR}.{FORMAT_MINOR}"
+        "# Native file format (`.blk`) — version {FORMAT_MAJOR}.{FORMAT_MINOR}"
     )));
 }
 
@@ -2795,7 +2820,7 @@ fn records_for_1x_files_are_written_exactly_as_1_1_wrote_them() {
     // Every object record in the 1.1 fixture, decoded and written again in
     // the 1.x form, must come out byte for byte as the 1.1 code wrote it:
     // change sets appended to 1.x files stay readable by 1.x readers.
-    let bytes: &[u8] = include_bytes!("../tests/fixtures/sample-1.1.cad");
+    let bytes: &[u8] = include_bytes!("../tests/fixtures/sample-1.1.blk");
     let c = Container::parse(bytes).unwrap();
     let page = c.read(c.entry("Objects.0").unwrap()).unwrap().0;
     let mut kinds = std::collections::HashSet::new();

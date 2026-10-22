@@ -96,4 +96,4 @@ Inside corners need a radius; pockets and depth; drill points and blind-hole dep
 - **Lesson packs as data.** With 28 lessons, lesson text, steps and exercise instructions should move to plain data files; figures and checks stay as code, referenced by name.
 - **More drafting checks.** The exercise checks already read sizes, layers and exact points. The same reader can power a general "check my drawing" for drafting: objects on layer 0, text off NOTES, dimensions off DIMENSION, centre lines missing on holes.
 - **Shop settings export and import**, so a teacher can hand a class one set of numbers.
-- **Web vs native.** The hosted build is the same app. The only differences should be the browser's limits: one thread, the core's 1 GiB memory ceiling, file access through the browser's pickers, and no `.cdl` lock file.
+- **Web vs native.** The hosted build is the same app. The only differences should be the browser's limits: one thread, the core's 1 GiB memory ceiling, file access through the browser's pickers, and no `.bdl` lock file.

@@ -4,7 +4,7 @@
 //! The model mirrors DWG's own object graph (handles, owners, reactors,
 //! extension dictionaries, extended data) rather than a simplified geometry
 //! list, so that
-//! DWG maps onto it, and onto the native `.cad` format, without losing
+//! DWG maps onto it, and onto the native `.blk` format, without losing
 //! structure.
 
 pub mod color;
@@ -1531,7 +1531,7 @@ pub enum ObjectKind {
     Unsupported,
     /// Decoding failed; the message says where.
     Failed(String),
-    /// A kind of native record from a newer revision of the `.cad` format.
+    /// A kind of native record from a newer revision of the `.blk` format.
     /// The number is its kind code; its fields are kept, undecoded, in
     /// [`Object::unknown_tags`] so a save writes them back unchanged. Only
     /// readers create this, and never with a code this version knows.
@@ -1668,7 +1668,7 @@ pub struct Object {
     /// Extended data (XDATA), one block per application, in stored order.
     pub xdata: Vec<XData>,
     /// Fields written by a newer revision of the native format, which this
-    /// version does not read: encoded `.cad` tags, kept exactly as found so
+    /// version does not read: encoded `.blk` tags, kept exactly as found so
     /// that saving the object writes them back after the kind's fields.
     /// Empty for objects that did not come from a newer writer.
     ///
@@ -1833,7 +1833,7 @@ pub struct HeaderVars {
     /// Drawing properties: title, author and the like.
     pub properties: Properties,
     /// Variables written by a newer revision of the native format, which
-    /// this version does not read: encoded `.cad` tags, kept exactly as
+    /// this version does not read: encoded `.blk` tags, kept exactly as
     /// found so that saving writes them back.
     pub unknown_tags: Vec<u8>,
 }

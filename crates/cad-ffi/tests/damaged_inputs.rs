@@ -38,7 +38,7 @@ fn seeds() -> Vec<(&'static str, Vec<u8>)> {
     let id = s.sample().unwrap();
     s.exec(id, "line 0 0 30 40").unwrap();
     s.exec(id, "text 5 5 2.5 0 DAMAGE").unwrap();
-    let mut out: Vec<(&'static str, Vec<u8>)> = ["cad", "dwg", "dxf", "dxfb"]
+    let mut out: Vec<(&'static str, Vec<u8>)> = ["blk", "dwg", "dxf", "dxfb"]
         .into_iter()
         .map(|f| (f, s.save(id, f, 0, "fuzz").unwrap().0))
         .collect();
@@ -92,7 +92,7 @@ fn exercise(bytes: &[u8]) -> Result<(), String> {
     s.display(id)?;
     let _ = s.exec(id, "line 0 0 1 1");
     let _ = s.exec(id, "undo");
-    for f in ["cad", "dxf", "dwg"] {
+    for f in ["blk", "dxf", "dwg"] {
         let _ = s.save(id, f, 0, "fuzz");
     }
     Ok(())

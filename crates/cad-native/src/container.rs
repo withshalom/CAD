@@ -20,10 +20,17 @@ use std::borrow::Cow;
 /// LF catch newline conversion, and 0x1A stops text-mode readers.
 pub const MAGIC: [u8; 8] = [0x89, b'C', b'A', b'D', b'\r', b'\n', 0x1A, b'\n'];
 pub const FORMAT_MAJOR: u16 = 2;
-pub const FORMAT_MINOR: u16 = 9;
+pub const FORMAT_MINOR: u16 = 10;
 /// The oldest major version this build reads.
 pub const OLDEST_MAJOR: u16 = 1;
 pub const HEADER_LEN: usize = 48;
+
+/// Whose records the file holds (header bytes 40-41, format 2.10). The
+/// container is shared; the records are each program's own.
+/// BlackCAD's (`cad-model`), in `.blk` files; every file before 2.10.
+pub const RECORDS_BLACKCAD: u16 = 0;
+/// CADCraft's, in `.blk` files.
+pub const RECORDS_CADCRAFT: u16 = 1;
 
 /// File header flags.
 pub const FLAG_HAS_JOURNAL: u32 = 1;
@@ -101,6 +108,9 @@ pub struct FileHeader {
     pub dir_offset: u64,
     pub dir_len: u32,
     pub dir_crc: u32,
+    /// Whose records the file holds: [`RECORDS_BLACKCAD`] or
+    /// [`RECORDS_CADCRAFT`].
+    pub records: u16,
 }
 
 impl FileHeader {
@@ -114,7 +124,8 @@ impl FileHeader {
         b[24..32].copy_from_slice(&self.dir_offset.to_le_bytes());
         b[32..36].copy_from_slice(&self.dir_len.to_le_bytes());
         b[36..40].copy_from_slice(&self.dir_crc.to_le_bytes());
-        // 40..44 reserved, zero.
+        b[40..42].copy_from_slice(&self.records.to_le_bytes());
+        // 42..44 reserved, zero.
         let crc = crc32(0, &b[..44]);
         b[44..48].copy_from_slice(&crc.to_le_bytes());
         b
@@ -140,6 +151,7 @@ impl FileHeader {
             dir_offset: u64_at(24),
             dir_len: u32_at(32),
             dir_crc: u32_at(36),
+            records: u16_at(40),
         })
     }
 
@@ -167,6 +179,15 @@ pub fn looks_native(bytes: &[u8]) -> bool {
     is_native(bytes)
         || (bytes.len() >= 2 * HEADER_LEN
             && FileHeader::decode(&bytes[bytes.len() - HEADER_LEN..]).is_some())
+}
+
+/// Whose records a native file holds ([`RECORDS_BLACKCAD`],
+/// [`RECORDS_CADCRAFT`]), from either copy of its header; `None` when
+/// neither copy is intact.
+pub fn records_of(bytes: &[u8]) -> Option<u16> {
+    let front = bytes.get(..HEADER_LEN).and_then(FileHeader::decode);
+    let back = || bytes.len().checked_sub(HEADER_LEN).and_then(|at| FileHeader::decode(&bytes[at..]));
+    front.or_else(back).map(|h| h.records)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -505,7 +526,7 @@ pub fn read_entry(bytes: &[u8], e: &DirEntry) -> Result<(Vec<u8>, bool)> {
 impl<'a> Container<'a> {
     pub fn parse(bytes: &'a [u8]) -> Result<Container<'a>> {
         if !looks_native(bytes) {
-            return Err(Error::new(ErrorKind::Format, "not a native .cad file"));
+            return Err(Error::new(ErrorKind::Format, "not a native .blk file"));
         }
         let front = FileHeader::decode(bytes);
         let back = if bytes.len() >= 2 * HEADER_LEN {
@@ -742,7 +763,7 @@ impl Builder {
             None
         };
         let Some(data) = recovery else {
-            return finish_file(buf, &entries, generation, flags);
+            return finish_file(buf, &entries, generation, flags, RECORDS_BLACKCAD);
         };
         // The recovery data goes between the two copies of the directory,
         // so damage at the end of the file (a copy cut short) leaves the
@@ -767,6 +788,7 @@ impl Builder {
             dir_offset: buf.len() as u64,
             dir_len: dir.len() as u32,
             dir_crc: crc32(0, &dir),
+            records: RECORDS_BLACKCAD,
         };
         buf.extend_from_slice(&dir);
         buf.extend_from_slice(&data);
@@ -816,12 +838,13 @@ fn place_before(at: u64, entries: &mut [DirEntry]) -> Vec<u8> {
 /// room for the front header), and fill in the front header. The front
 /// header points at the first copy of the directory, the trailer at the
 /// second.
-pub fn finish_file(mut buf: Vec<u8>, entries: &[DirEntry], generation: u64, flags: u32) -> Vec<u8> {
+pub fn finish_file(mut buf: Vec<u8>, entries: &[DirEntry], generation: u64, flags: u32, records: u16) -> Vec<u8> {
     let h = FileHeader {
         major: FORMAT_MAJOR,
         minor: FORMAT_MINOR,
         flags,
         generation,
+        records,
         ..Default::default()
     };
     let tail = directory_and_trailer(buf.len() as u64, entries, h);
