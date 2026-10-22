@@ -3469,7 +3469,7 @@ async function openDialog() {
   if (!core) return;
   if (window.showOpenFilePicker) {
     try {
-      const hs = await window.showOpenFilePicker({ multiple: true, types: [{ description: "Drawings", accept: { "application/octet-stream": [".dwg", ".dxf", ".blk"] } }] });
+      const hs = await window.showOpenFilePicker({ multiple: true, types: [{ description: "Drawings", accept: { "application/octet-stream": [".dwg", ".dxf", ".blk", ".cad"] } }] });
       for (const h of hs) await openFile(await h.getFile(), h);
     } catch (e) {
       if (e.name !== "AbortError") toast(e.message, true);
