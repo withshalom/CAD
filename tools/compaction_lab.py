@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compaction experiments on the object pages of an uncompressed .cad file.
+"""Compaction experiments on the object pages of an uncompressed .blk file.
 
 Each variant rewrites the same object records a different way, pages the
 result like the writer does (about 64 KiB per page), and compresses every
@@ -13,10 +13,10 @@ Usage (from the repository root):
 
     cargo build --release -p cad-core --example lz77_segments
     cargo run --release -p cad-core --example native_bench -- 200000 \\
-        --rounded --save-uncompressed /tmp/bench.cad
-    python3 tools/compaction_lab.py /tmp/bench.cad 200000 [--page-kib 64]
+        --rounded --save-uncompressed /tmp/bench.blk
+    python3 tools/compaction_lab.py /tmp/bench.blk 200000 [--page-kib 64]
 
-Any uncompressed .cad works as input (`cad save IN OUT.cad --no-compress`),
+Any uncompressed .blk works as input (`cad save IN OUT.blk --no-compress`),
 so the same experiments can run on real drawings. The variants simulate
 layouts; they do not produce readable files. Defaults are the most common
 value of each single-occurrence field per kind, as a schema would choose.
@@ -84,7 +84,7 @@ def tags(rec):
 
 
 def object_records(path):
-    """Records of every Objects.N section of an uncompressed .cad file."""
+    """Records of every Objects.N section of an uncompressed .blk file."""
     b = open(path, "rb").read()
     (dir_off,) = struct.unpack_from("<Q", b, 24)
     p = dir_off

@@ -5,8 +5,8 @@
 //! objects and values and hand them to the core.
 //!
 //! Files:
-//! - [`native`]: the native `.cad` format (read, write, incremental save,
-//!   `.cdl` locks)
+//! - [`native`]: the native `.blk` format (read, write, incremental save,
+//!   `.bdl` locks)
 //! - [`dwg`]: DWG reader (R13–R2000 and R2004–R2018; R2007 pending) and
 //!   writer (AutoCAD 2018 format)
 //! - [`dxf`]: DXF reader and writer, ASCII and binary
@@ -82,7 +82,7 @@ pub use error::{Error, ErrorKind, Result};
 pub use model::Drawing;
 pub use standards::{new_drawing, Template};
 
-/// Open a drawing: native `.cad` or DWG, detected from the file's first
+/// Open a drawing: native `.blk` or DWG, detected from the file's first
 /// bytes rather than its name.
 pub fn open(path: impl AsRef<std::path::Path>) -> Result<Drawing> {
     let path = path.as_ref();
@@ -113,11 +113,11 @@ pub use cad_native::{now_unix, set_time};
 
 /// The software's product name. The one place it is defined in code, so a
 /// rename is a one-line change (plus the README title). It names the
-/// software only: the file format stays `.cad` and the crates keep their
+/// software only: the file format stays `.blk` and the crates keep their
 /// `cad-` names. BlackCAD is the working name for development; it is the
 /// name a DWG it writes gives as the program that saved it.
 pub const PRODUCT_NAME: &str = "BlackCAD";
 
 /// Core library version: the software's own number, `0.MINOR.PATCH` until
-/// release. Not the `.cad` format's version (see `native::FORMAT_MAJOR`).
+/// release. Not the `.blk` format's version (see `native::FORMAT_MAJOR`).
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -70,7 +70,7 @@ pub struct View {
     pub svg: String,
 }
 
-/// Open a drawing (native `.cad` or DWG, told apart by content) and
+/// Open a drawing (native `.blk` or DWG, told apart by content) and
 /// prepare what the viewer shows. The error is a message for the user.
 pub fn view(bytes: &[u8]) -> Result<View, String> {
     let d = cad_core::open_bytes(bytes).map_err(|e| e.to_string())?;
@@ -92,7 +92,7 @@ fn summary(bytes: &[u8], d: &Drawing, scene: &Scene) -> String {
             Ok(n) => {
                 let _ = writeln!(
                     s,
-                    "Native .cad {}.{}, generation {}, {}",
+                    "Native .blk {}.{}, generation {}, {}",
                     n.format.0,
                     n.format.1,
                     n.generation,
@@ -101,7 +101,7 @@ fn summary(bytes: &[u8], d: &Drawing, scene: &Scene) -> String {
                 let _ = writeln!(s, "Written by {}", n.writer);
             }
             Err(_) => {
-                let _ = writeln!(s, "Native .cad");
+                let _ = writeln!(s, "Native .blk");
             }
         }
         let _ = writeln!(s, "Source: {}", d.version);
@@ -113,15 +113,15 @@ fn summary(bytes: &[u8], d: &Drawing, scene: &Scene) -> String {
 }
 
 /// [`summary`] for a drawing already open, given what it was opened from
-/// ("cad", "dwg", "dxf" or "new").
+/// ("blk", "dwg", "dxf" or "new").
 pub(crate) fn summary_of(d: &Drawing, scene: &Scene, source: &str, c: &Census) -> String {
     let mut s = String::new();
     match source {
         "new" => {
             let _ = writeln!(s, "New drawing");
         }
-        "cad" => {
-            let _ = writeln!(s, "Native .cad, source {}", d.version);
+        "blk" => {
+            let _ = writeln!(s, "Native .blk, source {}", d.version);
         }
         "dxf" => {
             let _ = writeln!(s, "DXF {}", d.version);
@@ -536,7 +536,7 @@ mod tests {
         d
     }
 
-    /// A native `.cad` file with a line and a circle in model space.
+    /// A native `.blk` file with a line and a circle in model space.
     fn drawing_bytes() -> Vec<u8> {
         native::to_bytes(&drawing(), &native::WriteOptions::default())
     }
@@ -545,7 +545,7 @@ mod tests {
     fn a_drawing_is_summarised_and_rendered() {
         let v = view(&drawing_bytes()).expect("opens");
         let expected = [
-            "Native .cad ",
+            "Native .blk ",
             "Source: AC1032",
             "Objects: 2 (2 decoded, 0 not decoded yet, 0 failed)",
             "Units: millimeters",
@@ -665,7 +665,7 @@ mod tests {
         }
 
         fn scratch_file(tag: &str, bytes: &[u8]) -> std::path::PathBuf {
-            let p = std::env::temp_dir().join(format!("cad-ffi-{tag}-{}.cad", std::process::id()));
+            let p = std::env::temp_dir().join(format!("cad-ffi-{tag}-{}.blk", std::process::id()));
             std::fs::write(&p, bytes).expect("write scratch file");
             p
         }

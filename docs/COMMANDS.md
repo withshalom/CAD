@@ -404,7 +404,7 @@ the drawing is CAD, not CAM (DESIGN.md §1). Those belong to the export.
 | Command | Alias | Keys | Does | Phase | Today |
 |---|---|---|---|---|---|
 | NEW | — | Ctrl+N | New drawing from the Metric or Imperial template. | 1 | `cad new` |
-| OPEN | — | Ctrl+O | Open a `.cad` or DWG file. | 1 | every command |
+| OPEN | — | Ctrl+O | Open a `.blk` or DWG file. | 1 | every command |
 | SAVE | — | Ctrl+S | Save. Small changes append a change set; a full save writes a fresh snapshot. | 1 | `cad save`, core API |
 | SAVEAS | — | Ctrl+Shift+S | Save under a new name or folder. | 1 | `cad save` |
 | CLOSE | — | Ctrl+W | Close the drawing. | 1 | |
@@ -427,7 +427,7 @@ the drawing is CAD, not CAM (DESIGN.md §1). Those belong to the export.
 
 | Command | Alias | Keys | Does | Phase | Today |
 |---|---|---|---|---|---|
-| WHO | `WH` | | Who has this drawing open, where, and since when (the `.cdl` lock). Take over a stale lock. | 1 | `cad presence` |
+| WHO | `WH` | | Who has this drawing open, where, and since when (the `.bdl` lock). Take over a stale lock. | 1 | `cad presence` |
 | SHARE | — | | Invite others into a live session. | L | |
 | SYNC | — | | Exchange change sets with the others in the session. | L | change sets |
 

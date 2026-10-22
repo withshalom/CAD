@@ -1,4 +1,6 @@
-//! Drawing locks and presence: the `.cdl` sidecar file.
+//! Drawing locks and presence: the sidecar file beside an open drawing.
+//! BlackCAD's is `.bdl` (beside `.blk` drawings); CADCraft's `.cdl` (beside
+//! its `.cad` drawings) is the same file under its own name ([`LockKind`]).
 //!
 //! This plays the role AutoCAD's `.dwl` file plays for DWG: while someone
 //! has a drawing open for editing, a small text file next to it says who,
@@ -24,7 +26,7 @@
 //! Format (UTF-8 text, one `key=value` per line, unknown keys ignored):
 //!
 //! ```text
-//! cdl 1
+//! bdl 1
 //! user=shalom
 //! host=shop-pc
 //! pid=4121
@@ -33,6 +35,9 @@
 //! opened=1790000000
 //! heartbeat=1790000030
 //! ```
+//!
+//! The first line names the kind of lock and its revision (`bdl 1`, or
+//! `cdl 1` for CADCraft's). Readers take either: the two differ only in name.
 
 use crate::error::{Error, ErrorKind, Result};
 use std::collections::hash_map::RandomState;
@@ -40,7 +45,24 @@ use std::hash::{BuildHasher, Hasher};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-pub const LOCK_EXTENSION: &str = "cdl";
+/// Whose lock: the lock file's extension, and the drawings that take it in
+/// place of their own extension (`part.blk` → `part.bdl`; any other file
+/// gets it appended, `part.dwg` → `part.dwg.bdl`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LockKind {
+    pub lock: &'static str,
+    pub native: &'static str,
+}
+
+impl LockKind {
+    /// BlackCAD's: `.bdl` beside `.blk` drawings.
+    pub const BLACKCAD: LockKind = LockKind { lock: "bdl", native: "blk" };
+    /// CADCraft's: `.cdl` beside `.cad` drawings.
+    pub const CADCRAFT: LockKind = LockKind { lock: "cdl", native: "cad" };
+}
+
+/// BlackCAD's lock extension (what the functions without a kind use).
+pub const LOCK_EXTENSION: &str = LockKind::BLACKCAD.lock;
 /// How often a holder should call [`DrawingLock::refresh`].
 pub const HEARTBEAT_SECS: u64 = 30;
 /// A lock not refreshed for this long is considered abandoned.
@@ -64,10 +86,11 @@ impl LockInfo {
         now.saturating_sub(self.heartbeat) > STALE_AFTER_SECS
     }
 
-    fn encode(&self) -> String {
+    fn encode(&self, kind: LockKind) -> String {
         let clean = |s: &str| s.replace(['\r', '\n'], " ");
         format!(
-            "cdl 1\nuser={}\nhost={}\npid={}\napp={}\nsession={}\nopened={}\nheartbeat={}\n",
+            "{} 1\nuser={}\nhost={}\npid={}\napp={}\nsession={}\nopened={}\nheartbeat={}\n",
+            kind.lock,
             clean(&self.user),
             clean(&self.host),
             self.pid,
@@ -80,7 +103,7 @@ impl LockInfo {
 
     fn decode(text: &str) -> Option<LockInfo> {
         let mut lines = text.lines();
-        if lines.next()?.trim() != "cdl 1" {
+        if !matches!(lines.next()?.trim(), "bdl 1" | "cdl 1") {
             return None;
         }
         let mut i = LockInfo::default();
@@ -152,23 +175,30 @@ fn new_session_id() -> String {
     format!("{:016x}", h.finish())
 }
 
-/// Lock file for a drawing: `part.cad` → `part.cdl`; any other file gets
-/// the extension appended (`part.dwg` → `part.dwg.cdl`) so a DWG and a
-/// native file of the same name never share a lock.
+/// BlackCAD's lock file for a drawing ([`lock_path_for`] with
+/// [`LockKind::BLACKCAD`]).
 pub fn lock_path(drawing: &Path) -> PathBuf {
+    lock_path_for(drawing, LockKind::BLACKCAD)
+}
+
+/// The lock file for a drawing: `part.blk` → `part.bdl` for BlackCAD's
+/// kind; any other file gets the extension appended (`part.dwg` →
+/// `part.dwg.bdl`) so a DWG and a native file of the same name never share
+/// a lock.
+pub fn lock_path_for(drawing: &Path, kind: LockKind) -> PathBuf {
     let is_native = drawing
         .extension()
-        .map(|e| e.eq_ignore_ascii_case(super::EXTENSION))
+        .map(|e| e.eq_ignore_ascii_case(kind.native))
         .unwrap_or(false);
     if is_native {
-        drawing.with_extension(LOCK_EXTENSION)
+        drawing.with_extension(kind.lock)
     } else {
         let mut name = drawing
             .file_name()
             .map(|n| n.to_os_string())
             .unwrap_or_default();
         name.push(".");
-        name.push(LOCK_EXTENSION);
+        name.push(kind.lock);
         drawing.with_file_name(name)
     }
 }
@@ -204,7 +234,12 @@ fn read_info(lock: &Path) -> Result<Option<LockInfo>> {
 /// Who has the drawing open, if anyone (stale locks included; check
 /// [`LockInfo::is_stale`]).
 pub fn presence(drawing: impl AsRef<Path>) -> Result<Option<LockInfo>> {
-    read_info(&lock_path(drawing.as_ref()))
+    presence_for(drawing, LockKind::BLACKCAD)
+}
+
+/// [`presence`] for a kind of lock.
+pub fn presence_for(drawing: impl AsRef<Path>, kind: LockKind) -> Result<Option<LockInfo>> {
+    read_info(&lock_path_for(drawing.as_ref(), kind))
 }
 
 /// Result of trying to lock a drawing.
@@ -220,6 +255,7 @@ pub enum Acquire {
 pub struct DrawingLock {
     path: PathBuf,
     info: LockInfo,
+    kind: LockKind,
     released: bool,
 }
 
@@ -237,14 +273,14 @@ fn write_atomic(path: &Path, text: &str) -> std::io::Result<()> {
     std::fs::rename(&tmp, path)
 }
 
-fn try_create(path: &Path, info: &LockInfo) -> std::io::Result<bool> {
+fn try_create(path: &Path, info: &LockInfo, kind: LockKind) -> std::io::Result<bool> {
     match std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .open(path)
     {
         Ok(mut f) => {
-            f.write_all(info.encode().as_bytes())?;
+            f.write_all(info.encode(kind).as_bytes())?;
             f.sync_all()?;
             Ok(true)
         }
@@ -293,7 +329,12 @@ pub fn acquire_as(drawing: impl AsRef<Path>, user: String) -> Result<Acquire> {
 /// [`acquire_as`] naming the program that holds the lock ("name version"),
 /// which other programs show to people who find the drawing locked.
 pub fn acquire_with(drawing: impl AsRef<Path>, user: String, app: &str) -> Result<Acquire> {
-    let path = lock_path(drawing.as_ref());
+    acquire_for(drawing, user, app, LockKind::BLACKCAD)
+}
+
+/// [`acquire_with`] for a kind of lock (CADCraft's `.cdl` beside `.cad`).
+pub fn acquire_for(drawing: impl AsRef<Path>, user: String, app: &str, kind: LockKind) -> Result<Acquire> {
+    let path = lock_path_for(drawing.as_ref(), kind);
     let now = now_unix();
     let info = LockInfo {
         user,
@@ -305,10 +346,11 @@ pub fn acquire_with(drawing: impl AsRef<Path>, user: String, app: &str) -> Resul
         heartbeat: now,
     };
     for _ in 0..3 {
-        if try_create(&path, &info).map_err(|e| io(&path, e))? {
+        if try_create(&path, &info, kind).map_err(|e| io(&path, e))? {
             return Ok(Acquire::Acquired(DrawingLock {
                 path,
                 info,
+                kind,
                 released: false,
             }));
         }
@@ -382,7 +424,7 @@ impl DrawingLock {
             }
         }
         self.info.heartbeat = now_unix();
-        write_atomic(&self.path, &self.info.encode()).map_err(|e| io(&self.path, e))
+        write_atomic(&self.path, &self.info.encode(self.kind)).map_err(|e| io(&self.path, e))
     }
 
     /// Remove the lock now.
@@ -422,24 +464,40 @@ mod tests {
 
     #[test]
     fn paths() {
-        assert_eq!(
-            lock_path(Path::new("/x/part.cad")),
-            Path::new("/x/part.cdl")
-        );
-        assert_eq!(
-            lock_path(Path::new("/x/part.CAD")),
-            Path::new("/x/part.cdl")
-        );
-        assert_eq!(
-            lock_path(Path::new("/x/part.dwg")),
-            Path::new("/x/part.dwg.cdl")
-        );
+        assert_eq!(lock_path(Path::new("/x/part.blk")), Path::new("/x/part.bdl"));
+        assert_eq!(lock_path(Path::new("/x/part.BLK")), Path::new("/x/part.bdl"));
+        assert_eq!(lock_path(Path::new("/x/part.dwg")), Path::new("/x/part.dwg.bdl"));
+        // A CADCraft drawing is not BlackCAD's own: its name is kept whole.
+        assert_eq!(lock_path(Path::new("/x/part.cad")), Path::new("/x/part.cad.bdl"));
+        // CADCraft's kind pairs .cdl with .cad.
+        let c = LockKind::CADCRAFT;
+        assert_eq!(lock_path_for(Path::new("/x/part.cad"), c), Path::new("/x/part.cdl"));
+        assert_eq!(lock_path_for(Path::new("/x/part.dwg"), c), Path::new("/x/part.dwg.cdl"));
+    }
+
+    #[test]
+    fn each_kind_writes_its_own_name_and_reads_both() {
+        let dir = tmpdir("kinds");
+        let d = dir.join("d.cad");
+        let Acquire::Acquired(lock) = acquire_for(&d, "alice".into(), "cadcraft 0.10.0", LockKind::CADCRAFT).unwrap() else {
+            panic!("not acquired");
+        };
+        let text = std::fs::read_to_string(dir.join("d.cdl")).unwrap();
+        assert!(text.starts_with("cdl 1\n"), "{text}");
+        assert_eq!(presence_for(&d, LockKind::CADCRAFT).unwrap().unwrap().user, "alice");
+        drop(lock);
+        let b = dir.join("b.blk");
+        let Acquire::Acquired(_lock) = acquire_as(&b, "bob".into()).unwrap() else { panic!("not acquired") };
+        assert!(std::fs::read_to_string(dir.join("b.bdl")).unwrap().starts_with("bdl 1\n"));
+        // A lock written under the other name still reads.
+        std::fs::write(dir.join("c.bdl"), "cdl 1\nuser=carol\nsession=s\nheartbeat=1\n").unwrap();
+        assert_eq!(presence(dir.join("c.blk")).unwrap().unwrap().user, "carol");
     }
 
     #[test]
     fn acquire_hold_release() {
         let dir = tmpdir("a");
-        let dwg = dir.join("d.cad");
+        let dwg = dir.join("d.blk");
         let Acquire::Acquired(mut lock) = acquire_as(&dwg, "alice".into()).unwrap() else {
             panic!("first acquire should succeed");
         };
@@ -465,7 +523,7 @@ mod tests {
     #[test]
     fn stale_lock_is_taken_over() {
         let dir = tmpdir("b");
-        let dwg = dir.join("d.cad");
+        let dwg = dir.join("d.blk");
         let old = LockInfo {
             user: "crashed".into(),
             host: "h".into(),
@@ -473,7 +531,7 @@ mod tests {
             heartbeat: now_unix() - STALE_AFTER_SECS - 10,
             ..Default::default()
         };
-        std::fs::write(lock_path(&dwg), old.encode()).unwrap();
+        std::fs::write(lock_path(&dwg), old.encode(LockKind::BLACKCAD)).unwrap();
         let Acquire::Acquired(mut lock) = acquire_as(&dwg, "alice".into()).unwrap() else {
             panic!("stale lock should be taken over");
         };
@@ -482,7 +540,7 @@ mod tests {
         let mut other = lock.info().clone();
         other.session = "someone-else".into();
         other.user = "bob".into();
-        std::fs::write(lock_path(&dwg), other.encode()).unwrap();
+        std::fs::write(lock_path(&dwg), other.encode(LockKind::BLACKCAD)).unwrap();
         assert!(lock.refresh().is_err());
         drop(lock);
         assert_eq!(
@@ -496,9 +554,9 @@ mod tests {
     #[test]
     fn lock_cut_short_counts_as_fresh_by_mtime() {
         let dir = tmpdir("d");
-        let dwg = dir.join("d.cad");
+        let dwg = dir.join("d.blk");
         // Written up to the session line, then interrupted.
-        std::fs::write(lock_path(&dwg), "cdl 1\nuser=a\nsession=abc\n").unwrap();
+        std::fs::write(lock_path(&dwg), "bdl 1\nuser=a\nsession=abc\n").unwrap();
         assert!(matches!(
             acquire_as(&dwg, "b".into()).unwrap(),
             Acquire::HeldBy(_)
@@ -509,7 +567,7 @@ mod tests {
     #[test]
     fn garbage_lock_counts_as_fresh_by_mtime() {
         let dir = tmpdir("c");
-        let dwg = dir.join("d.cad");
+        let dwg = dir.join("d.blk");
         std::fs::write(lock_path(&dwg), "half-writ").unwrap();
         assert!(matches!(
             acquire_as(&dwg, "a".into()).unwrap(),

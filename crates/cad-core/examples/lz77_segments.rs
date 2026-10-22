@@ -1,6 +1,6 @@
 //! Compress byte segments with the format's LZ77 codec, each on its own,
 //! and print the totals. Used by `tools/compaction_lab.py` to measure
-//! layout experiments with the codec `.cad` uses today.
+//! layout experiments with the codec `.blk` uses today.
 //!
 //!     cargo run --release -p cad-core --example lz77_segments -- FILE...
 //!

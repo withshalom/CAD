@@ -15,7 +15,7 @@ version it offers, with a DXF of each as the reference.
 | `mi201-r2018.dwg`, `.dxf` | AC1032 | |
 | `mi201-r12.dxf` | AC1009 (R12 / LT2) | DXF only |
 | `mi201-r2018-binary.dxf` | AC1032, binary DXF | AutoCAD 2027's binary save of an ASCII DXF of this drawing that this project wrote; the reference for the binary DXF encoder. **Not in the repository:** it was not among the files restored to the owner's folder (2026-10-21), so the binary-DXF checks in `tests/corpus.rs` find nothing to check until it is saved again |
-| `mi201-r2018-from-ascii-dxf.dwg`, `mi201-r2018-from-binary-dxf.dwg` | AC1032 | AutoCAD 2027's DWG saves of the ASCII and binary DXFs this project wrote from the `.cad` (2026-10-08); checked against `mi201-r2018.dxf`, and references for the DWG container and compressor |
+| `mi201-r2018-from-ascii-dxf.dwg`, `mi201-r2018-from-binary-dxf.dwg` | AC1032 | AutoCAD 2027's DWG saves of the ASCII and binary DXFs this project wrote from the `.blk` (2026-10-08); checked against `mi201-r2018.dxf`, and references for the DWG container and compressor |
 
 What the drawing holds (34 model-space entities):
 

@@ -40,9 +40,9 @@ cad info    corpus/mosaiciron-bracket/bracket-r2018.dwg
 cad objects corpus/mosaiciron-bracket/bracket-r2018.dwg --failed
 cad svg     corpus/mosaiciron-bracket/bracket-r2018.dwg bracket.svg
 cad verify  corpus/mosaiciron-bracket/bracket-r2018.dwg
-cad save    corpus/mosaiciron-bracket/bracket-r2018.dwg bracket.cad
-cad inspect bracket.cad
-cad svg     bracket.cad bracket-from-cad.svg
+cad save    corpus/mosaiciron-bracket/bracket-r2018.dwg bracket.blk
+cad inspect bracket.blk
+cad svg     bracket.blk bracket-from-blk.svg
 ```
 
 ## 3. What to look for
@@ -56,8 +56,8 @@ cad svg     bracket.cad bracket-from-cad.svg
 | Units and extents | match the reference DXF's `$INSUNITS`, `$EXTMIN`, `$EXTMAX` |
 | `verify` | "OK: lossless round trip" for every file |
 | `inspect` | "all checks passed"; the references check shows 0 dangling handles (any are DWG decode gaps) |
-| `bracket-from-cad.svg` | identical to `bracket.svg` |
-| `.cad` size | noticeably smaller than the text DXF; compare with the DWG |
+| `bracket-from-blk.svg` | identical to `bracket.svg` |
+| `.blk` size | noticeably smaller than the text DXF; compare with the DWG |
 | `info` → XDATA | the applications you expect (ACAD for dimension overrides); values match the reference DXF's 1000–1071 groups |
 | `info` → Diagnostics | no warning about extended data: layer references (1003) that miss their layer, or blocks only partly decoded, point at the handle byte order or string reading in `eed.rs` |
 
@@ -84,7 +84,7 @@ variables, value types and object kinds from a newer writer (must be kept
 and written back byte for byte); extended data of every value type, in
 snapshots and change sets, and malformed extended data (kept whole and
 reported); DWG extended data built byte by byte from the spec (both string
-forms, several applications, bytes that do not decode kept); `.cdl` lock
+forms, several applications, bytes that do not decode kept); `.bdl` lock
 acquire, hold, heartbeat, stale takeover and release. Format 2.0 adds: the
 schema checked against the record code field by field, for every kind
 (required fields only, and every default written out, must decode to the
@@ -112,7 +112,7 @@ and speed on 200,000 entities; results are recorded in
 `FORMAT-ROADMAP.md`.
 
 Still to do by hand: two copies of a future app on two machines sharing a
-network folder, to confirm `.cdl` behaviour on SMB and cloud-sync folders
+network folder, to confirm `.bdl` behaviour on SMB and cloud-sync folders
 (Dropbox, OneDrive), which may delay or reorder file operations.
 
 ## 5a. Drafting standards and drawing (Stage 1), automated
@@ -127,7 +127,7 @@ network folder, to confirm `.cdl` behaviour on SMB and cloud-sync folders
   must match its number.
 - **Templates and layers:** new Metric and Imperial drawings have the six
   default layers with their colours, linetypes and lineweights, round-trip
-  through `.cad` exactly; layers can be added, renamed, recoloured,
+  through `.blk` exactly; layers can be added, renamed, recoloured,
   re-weighted, given a linetype, switched, made current and deleted, with
   DWG's naming rules; layer `0` is never renamed or deleted; a layer in
   use is never deleted. New handles never repeat, even from a damaged
@@ -173,10 +173,10 @@ network folder, to confirm `.cdl` behaviour on SMB and cloud-sync folders
 - **DXF:** linetype tables and a `$LTSCALE` that is always a positive
   number.
 - **The sample plate** draws on every default layer with nothing skipped,
-  and draws the same after a `.cad` round trip.
+  and draws the same after a `.blk` round trip.
 
-**By hand:** `cad sample plate.cad`, then `cad png plate.cad plate.png`
-and `cad png plate.cad paper.png --light`: compare with the mockups and
+**By hand:** `cad sample plate.blk`, then `cad png plate.blk plate.png`
+and `cad png plate.blk paper.png --light`: compare with the mockups and
 DESIGN.md. With real drawings: `cad layers`, `cad png` and `cad svg` on
 the corpus files, checking that linetypes read from DWG draw as in
 AutoCAD.
@@ -204,7 +204,7 @@ AutoCAD.
 | Check | Good result |
 |---|---|
 | `adb install -r app-debug.apk` | "CAD Viewer" appears among the apps |
-| Open a corpus `.cad` and `.dwg` with the Open button | The summary shows format, object counts, units and extents; the drawing matches `cad svg` of the same file |
+| Open a corpus `.blk` and `.dwg` with the Open button | The summary shows format, object counts, units and extents; the drawing matches `cad svg` of the same file |
 | "Open with" from a file manager | The same |
 | Pinch zoom, pan, rotate the phone | The drawing stays sharp and stays open |
 | Open a photo or a text file | "This is not a drawing this version can open", with the reason |
@@ -275,10 +275,10 @@ stay out of the repository.
 | Classes | Failed to parse (0 classes) | 17 classes |
 | Objects failing to decode | 14 (every LAYER, APPID and BLOCK_HEADER) | 0 |
 | Model space | Found only through the object owners | Its block record lists the 24 entities |
-| `verify` (DWG → `.cad` → identical model) | OK | OK |
-| `inspect` of the saved `.cad` | All checks pass | All 25 pass |
-| SVG from the DWG and from the `.cad` | Identical | Identical |
-| `.cad` size | 29.6 KB against the DWG's 32.9 KB | Same |
+| `verify` (DWG → `.blk` → identical model) | OK | OK |
+| `inspect` of the saved `.blk` | All checks pass | All 25 pass |
+| SVG from the DWG and from the `.blk` | Identical | Identical |
+| `.blk` size | 29.6 KB against the DWG's 32.9 KB | Same |
 | `takeoff` | 12 contours, no holes, 1.325 in² (wrong) | 1 outline and 8 holes, 43.741 in², cut length 36.175 in; 8 repeated or overlapping curves (6.212 in) set aside |
 
 What was wrong, and is now fixed:
@@ -306,7 +306,7 @@ The owner's own part, saved by AutoCAD 2027 as R14, 2000, 2004, 2007, 2010,
 repository; `cargo test` (`tests/corpus.rs`) checks every DWG against its
 DXF: no failed objects, notes or warnings, a verified header, all 34
 model-space entities (lines, arcs, circles, text, dimensions) by handle,
-layer, geometry and text, and an unchanged `.cad` round trip.
+layer, geometry and text, and an unchanged `.blk` round trip.
 
 | Version | First run | After fixes |
 |---|---|---|
@@ -384,7 +384,7 @@ with nothing of ours in it but the packing, the fault was in the packing.
   which is why it failed too.
 - **In AutoCAD 2027 (owner, 2026-10-08):** with the fixed compressor every
   file opens and shows the drawing correctly: the MI-201 DWG written from
-  the `.cad` and T0–T6. AutoCAD's notice that the file was not saved by
+  the `.blk` and T0–T6. AutoCAD's notice that the file was not saved by
   Autodesk software comes with every file that holds our header (T1, T5,
   the MI-201 DWG) or our small sections, among them the application
   information naming this program (T4); the files with AutoCAD's header
@@ -411,7 +411,7 @@ object by object:
 - **Objects:** visual styles, materials, the table, multileader, section
   and detail view styles and the dimension associations were dropped by
   our DXF reader and kept only as bytes from DWG; they are now in the
-  model (`.cad` 2.3). All 33 of AutoCAD's decode to the groups of its DXF
+  model (`.blk` 2.3). All 33 of AutoCAD's decode to the groups of its DXF
   (`style_objects_decode_to_autocads_dxf_groups`), and every object of
   the 2018 file but the two MTEXT encodes to AutoCAD's bytes, 189 of 191
   (`objects_encode_to_autocads_bytes`). AutoCAD's own DXF, read and
@@ -437,7 +437,7 @@ with Close as one undo step; circle, rectangle, arc and text; DIMLINEAR
 and DIMDIAMETER on the DIMENSION layer; click selection; a radius typed
 as `1/2"` in a millimetre drawing becomes 12.7; MOVE, COPY, ROTATE,
 MIRROR; Delete and Ctrl+Z; a new layer; turning DIMENSION off; dragging a
-line's end grip; saving `.cad`, DWG, DXF and SVG. Found and fixed on the
+line's end grip; saving `.blk`, DWG, DXF and SVG. Found and fixed on the
 way: filled arrowheads reset the batch they were drawn in, so dimension
 lines and texts were missing; COPY left its objects selected, unlike the
 other modify commands. Not yet tried: a real browser on Windows and
@@ -449,7 +449,7 @@ Android, installing, and opening a workbench-written DWG in AutoCAD.
 Chromium, desktop (1600 × 1000) and phone (390 × 844): the core loads from
 the embedded base64 in about 0.2 s; the sample renders as in the app; a
 circle drawn with a typed radius adds one object and Ctrl+Z removes it;
-saves to DWG, DXF, `.cad` and SVG produce bytes; no page errors. The
+saves to DWG, DXF, `.blk` and SVG produce bytes; no page errors. The
 served app (`dist/web`) still passes the 18-check session after the
 loader change.
 
@@ -493,7 +493,7 @@ build CI made from `main` (`6189f29`) and published to `gh-pages`:
   and imperial drawings; the sample; LINE, CIRCLE, ARC, PLINE, RECT, TEXT,
   linear, aligned, radius and diameter dimensions, COPY, MOVE, ROTATE,
   MIRROR and ERASE, a `begin`…`end` group undone as one step, everything
-  undone and redone; every query the page makes; saved as `.cad`, DWG,
+  undone and redone; every query the page makes; saved as `.blk`, DWG,
   DXF, binary DXF, SVG and PDF, and the first four read back with the
   same model space; the corpus: 15 files at 34 entities each, the 2007
   DWG refused with a message; 52 damaged or random inputs refused without

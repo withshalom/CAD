@@ -1,8 +1,8 @@
 //! Build a drawing in code on the default layers (the sample plate), save
-//! it as native `.cad`, lock it, make an incremental save, and read it
+//! it as native `.blk`, lock it, make an incremental save, and read it
 //! back.
 //!
-//!     cargo run -p cad-core --example native_demo -- /tmp/plate.cad
+//!     cargo run -p cad-core --example native_demo -- /tmp/plate.blk
 
 use cad_core::geom::Vec2;
 use cad_core::model::*;
@@ -11,7 +11,7 @@ use cad_core::native::{self, lock, Change, ChangeSet};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| "plate.cad".into());
+        .unwrap_or_else(|| "plate.blk".into());
     let mut d = cad_core::samples::plate();
 
     // Lock, save, then save one change incrementally.
@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("outline extended data after reload: {:?}", x.items);
     }
     if std::env::args().any(|a| a == "--keep-lock") {
-        std::mem::forget(held); // leave the .cdl behind for `cad presence`
+        std::mem::forget(held); // leave the .bdl behind for `cad presence`
     }
     Ok(())
 }

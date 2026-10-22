@@ -1,10 +1,10 @@
-# Native file format (`.cad`) — version 2.9
+# Native file format (`.blk`) — version 2.10
 
-This is the byte-level specification of the native drawing format written
-and read by the `cad-native` crate (MIT OR Apache-2.0 since 0.10.0;
-`cad_core::native` re-exports it). It is original to this project: a
-DWG-style container whose records use DXF group codes (not a binary DXF
-file; see `FORMAT-ROADMAP.md` §1). It borrows from published designs:
+This is the byte-level specification of BlackCAD's native drawing format,
+`.blk` (called `.cad` before 2.10), written and read by the `cad-native`
+crate (MIT OR Apache-2.0 since 0.10.0; `cad_core::native` re-exports it).
+It is original to this project: a DWG-style container whose records use
+DXF group codes (not a binary DXF file; see `FORMAT-ROADMAP.md` §1). It borrows from published designs:
 
 - **Records** follow *binary DXF* (AutoCAD DXF Reference, openly published
   by Autodesk): a record is a list of group codes and values, and a group
@@ -107,6 +107,11 @@ separate decision. It is a draft until the DWG test corpus passes
   codes: per vertex its point, direction and miter, then for each
   element of the style its segment parameters (74, 41) and area fill
   parameters (75, 42). A 2.8 reader keeps the new kind as unknown data.
+- **2.10**: the format is BlackCAD's `.blk` (its lock `.bdl`): `.cad`
+  and `.cdl` go to CADCraft's native format, which shares this container
+  with its own records. Header bytes 40–41, reserved before, say whose
+  records a file holds (0 BlackCAD's, 1 CADCraft's); earlier files have
+  0 there and read as before. A 2.9 reader ignores the field.
 
 ## 1. Conventions
 
@@ -148,7 +153,7 @@ end of file   └─────────────────────
 ```
 
 A full save writes everything from scratch to a temporary file beside the
-target (`name.cad.saving`), flushes it, and renames it over the target, so
+target (`name.blk.saving`), flushes it, and renames it over the target, so
 a failed save never damages the previous file. An incremental save appends
 (§10).
 
@@ -167,13 +172,14 @@ Both copies have the same layout.
 |---|---|---|
 | 0 | 8 | Magic `89 43 41 44 0D 0A 1A 0A` (`\x89CAD\r\n\x1a\n`) |
 | 8 | 2 | Format major version (2) |
-| 10 | 2 | Format minor version (6) |
+| 10 | 2 | Format minor version (10) |
 | 12 | 4 | Flags (below) |
 | 16 | 8 | Generation: 1 for a new file, +1 per save of any kind |
 | 24 | 8 | Directory offset from start of file |
 | 32 | 4 | Directory length in bytes |
 | 36 | 4 | CRC-32 of the directory bytes |
-| 40 | 4 | Reserved, zero |
+| 40 | 2 | Whose records the file holds: 0 BlackCAD's (§8; every file before 2.10), 1 CADCraft's |
+| 42 | 2 | Reserved, zero |
 | 44 | 4 | CRC-32 of bytes 0–43 of this header |
 
 **Flags.** Bit 0: the file has at least one journal section. Bit 1
@@ -181,6 +187,11 @@ Both copies have the same layout.
 (reserved, 2.0): some sections are encrypted, as their directory entries
 say. No writer sets bits 1 and 2 yet; readers ignore bits they do not
 know.
+
+**Whose records.** The container is shared: CADCraft's native `.cad`
+files use it with CADCraft's own records, and say so at offset 40. A
+reader that finds records it doesn't hold refuses the file with a message
+naming whose it is, rather than misreading it. BlackCAD writes 0.
 
 The magic's first byte has the high bit set (detects 7-bit transfers), the
 CR LF and LF detect newline conversion, and 0x1A stops text-mode readers.
@@ -467,7 +478,7 @@ when 0).
 
 One record per object whose type the core does not decode yet, and (2.1)
 per table record it keeps only by name (VIEW, UCS, APPID and the like),
-so that a drawing opened from DWG and saved as `.cad` keeps the object
+so that a drawing opened from DWG and saved as `.blk` keeps the object
 whole for a DWG writer:
 
 `5 HANDLE` object, `1 STR` DWG version tag the bytes belong to,
@@ -836,14 +847,16 @@ sections and generation + 1 (`cad compact`).
 Journal sections are also the unit a live-collaboration layer can send
 between copies of the app.
 
-## 11. Lock file (`.cdl`)
+## 11. Lock file (`.bdl`)
 
 The equivalent of AutoCAD's `.dwl`. While a drawing is open for editing,
-a UTF-8 text file sits beside it: `part.cad` → `part.cdl`, and any other
-file gets the extension appended (`part.dwg` → `part.dwg.cdl`).
+a UTF-8 text file sits beside it: `part.blk` → `part.bdl`, and any other
+file gets the extension appended (`part.dwg` → `part.dwg.bdl`). CADCraft's
+lock is the same file named `.cdl`, beside its `.cad` drawings (`cdl 1`
+on the first line); the `lock` module writes either.
 
 ```
-cdl 1
+bdl 1
 user=<name>
 host=<machine>
 pid=<process id>
@@ -853,7 +866,8 @@ opened=<Unix seconds>
 heartbeat=<Unix seconds>
 ```
 
-The first line must be `cdl 1`. Unknown keys are ignored.
+The first line must be `bdl 1` (or CADCraft's `cdl 1`, read the same
+way). Unknown keys are ignored.
 
 - **Acquire**: create the file exclusively (fails if it exists). If it
   exists and its heartbeat is less than 120 s old, the drawing is held:

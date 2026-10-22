@@ -1,4 +1,4 @@
-//! The native file format (`.cad`), from the `cad-native` crate.
+//! The native file format (`.blk`), from the `cad-native` crate.
 //!
 //! Everything `cad_native` offers is here under the same names. Writing
 //! from here ([`to_bytes`], [`write_file`]) adds what the core draws and
@@ -8,10 +8,10 @@
 //!
 //! ```no_run
 //! let d = cad_core::open("part.dwg")?;
-//! cad_core::native::write_file(&d, "part.cad", &Default::default())?;
-//! let again = cad_core::native::read_file("part.cad")?;
+//! cad_core::native::write_file(&d, "part.blk", &Default::default())?;
+//! let again = cad_core::native::read_file("part.blk")?;
 //! // Or open once and look things up without loading everything:
-//! let f = cad_core::native::NativeFile::open("part.cad")?;
+//! let f = cad_core::native::NativeFile::open("part.blk")?;
 //! let props = f.properties()?;
 //! # Ok::<(), cad_core::Error>(())
 //! ```
@@ -43,7 +43,7 @@ fn with_core(opts: &WriteOptions) -> WriteOptions {
     o
 }
 
-/// The preview the core stores in `.cad` files: model space as SVG on a
+/// The preview the core stores in `.blk` files: model space as SVG on a
 /// light background, or `None` when model space is empty.
 pub fn preview_svg_of(d: &Drawing) -> Option<String> {
     let scene = crate::render::model_space(d);
@@ -73,7 +73,7 @@ pub fn write_file(d: &Drawing, path: impl AsRef<Path>, opts: &WriteOptions) -> R
 }
 
 pub mod lock {
-    //! `.cdl` lock files ([`cad_native::lock`]), naming the core as the
+    //! `.bdl` lock files ([`cad_native::lock`]), naming the core as the
     //! program that holds the lock.
 
     pub use cad_native::lock::*;

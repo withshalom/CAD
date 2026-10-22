@@ -9,11 +9,11 @@ Two things, named and numbered separately.
   title; it is also what a written DWG names as the program that saved it). Its version
   is semver `MAJOR.MINOR.PATCH` and stays below 1.0.0 until release:
   the minor number goes up for any public API change, new feature set or new
-  `.cad` format version; the patch number for fixes only. 1.0.0 waits for the
+  `.blk` format version; the patch number for fixes only. 1.0.0 waits for the
   format freeze, which waits for the real-DWG corpus pass
   (`FORMAT-ROADMAP.md` §4). It is the Cargo workspace version, shown by
   `cad version` and recorded in each file's `$CAD_WRITER`.
-- **The file format** is `.cad` (written "the `.cad` format, version 2.0").
+- **The file format** is `.blk` (written "the `.blk` format, version 2.0").
   Its two-part version says only which readers can open a file (`FORMAT.md`).
   One program build can read and write several format versions.
 
@@ -23,8 +23,8 @@ name the format and its code, not the product.
 ## Goals
 
 - **Own native format, fluent in DWG.** Drawings are saved in the native
-  `.cad` format (see `FORMAT.md`): binary-DXF-style tagged records in a
-  DWG-style sectioned container, plus a change journal and `.cdl` locks.
+  `.blk` format (see `FORMAT.md`): binary-DXF-style tagged records in a
+  DWG-style sectioned container, plus a change journal and `.bdl` locks.
   DWG is read on open and, later, written on export. The in-memory
   database mirrors DWG's own object graph (handles, owners, reactors,
   extension dictionaries), so DWG maps onto it without loss, and objects
@@ -35,9 +35,9 @@ name the format and its code, not the product.
   needs `unsafe`, the bridge to the apps (`crates/cad-ffi`), is small and
   separate.
 - **Open formats, open to others.** The drawing database and the DWG,
-  DXF and `.cad` readers and writers are crates of their own
+  DXF and `.blk` readers and writers are crates of their own
   (`cad-model`, `cad-dwg`, `cad-dxf`, `cad-native`), licensed MIT OR
-  Apache-2.0 so that other programs can read and write DWG and `.cad`
+  Apache-2.0 so that other programs can read and write DWG and `.blk`
   with them; `cad-core` builds on them and keeps everything else. They
   take nothing from the core: where a file needs something only the
   program has (its name, a preview, its font's text widths, its hatch
@@ -66,7 +66,7 @@ name the format and its code, not the product.
  └─────────────────────────────────┬──────────────────────────────────┘
           cad-core, above; the crates below are MIT OR Apache-2.0
  ┌─────────────────────────────────▼──────────────────────────────────┐
- │ cad-native .cad read/write, journal (incremental save), .cdl locks │
+ │ cad-native .blk read/write, journal (incremental save), .bdl locks │
  │           codec: DEFLATE and zlib (RFC 1950/1951), SHA-256          │
  │ cad-dxf   DXF read and write, ASCII and binary                     │
  │ cad-dwg   bits → container → object map → objects → header; writer │
@@ -77,7 +77,7 @@ name the format and its code, not the product.
 
  open(path) sniffs the first bytes: native magic → native reader, DXF
  text or sentinel → DXF reader, else DWG.
- save(drawing, path) always writes native .cad.
+ save(drawing, path) always writes native .blk.
  new_drawing(Metric | Imperial) starts one from a template.
 ```
 
@@ -188,7 +188,7 @@ re-exports the crate and fills both in with the core's own. Modules:
   (open once; one object via the object map, one page decompressed;
   header, properties, preview, schema, hash chain), change sets
   (`append_changes`, `apply`), the SHA-256 chain, `inspect`.
-- `lock.rs`: `.cdl` locks with heartbeat and stale takeover (the `.dwl`
+- `lock.rs`: `.bdl` locks with heartbeat and stale takeover (the `.dwl`
   equivalent), and `presence()` for "who has this open".
 - `audit.rs`: the structural audit behind `cad inspect`: byte map of the
   whole file and a PASS/FAIL check for every validity rule in FORMAT.md
@@ -218,7 +218,7 @@ objects (and ones that failed to decode) also keep their original DWG
 bytes in `Object::raw`, which the native format stores and a DWG writer
 can emit unchanged. Every object also carries its extended data
 (`Object::xdata`: blocks of `XValue`s per application, DXF groups
-1000–1071) and any fields a newer `.cad` writer added
+1000–1071) and any fields a newer `.blk` writer added
 (`Object::unknown_tags`, kept as encoded tags).
 
 Table records the core uses fully have their own kinds: `Layer`,
@@ -323,7 +323,7 @@ apps/web/core.js     loads core.wasm, copies bytes in and out (the only glue)
 cad-ffi/src/web.rs   wasm entry points: numbers in, bytes out (the only unsafe)
 cad-ffi/src/session.rs   open drawings, undo, the command language: safe Rust
 cad-core             everything else: render, display list, snaps, editing
-cad-model, cad-dwg, cad-dxf, cad-native   the drawing database, DWG, DXF and .cad
+cad-model, cad-dwg, cad-dxf, cad-native   the drawing database, DWG, DXF and .blk
 ```
 
 **No dependencies, as everywhere else.** No npm packages, no frameworks,
@@ -360,7 +360,7 @@ object snaps come from `snap.rs` in the core.
 **Files.** Opening reads the file's bytes; saving writes them back to the
 same file where the browser offers file handles (Chromium on desktop),
 or downloads them otherwise. The installed app registers for `.dwg`,
-`.dxf` and `.cad` (manifest `file_handlers`), so a file can be opened
+`.dxf` and `.blk` (manifest `file_handlers`), so a file can be opened
 with it from the operating system.
 
 **Offline.** The service worker caches the app and `core.wasm` and serves
@@ -371,7 +371,7 @@ of the build.
 **What the browser limits.** One thread, so the core renders previews on
 one (raster bands are drawn in place when only one thread is available).
 No clock the standard library can read, so the page passes the time to the
-core before each save (`cad_core::set_time`). No file paths, so no `.cdl`
+core before each save (`cad_core::set_time`). No file paths, so no `.bdl`
 lock file: presence shows "this browser" until the desktop shell exists.
 A panic stops the module (WebAssembly builds use `panic=abort`); the page
 keeps the panic message, starts a fresh module and reopens the drawings
@@ -415,7 +415,7 @@ folder. Two parts of the native format assume a folder:
 
 - a full save writes a temporary file next to the drawing and renames it
   over the original, so a failed save never damages the file;
-- the `.cdl` lock is a separate file next to the drawing.
+- the `.bdl` lock is a separate file next to the drawing.
 
 Incremental saves (append a change set, then rewrite the header) need only
 a seekable read-write descriptor. Local storage gives one; some cloud
@@ -425,7 +425,7 @@ Options:
 
 1. **Work on a copy** in the app's own storage, where paths, renames and
    locks all work, and write the result back through the URI on save.
-   Simple, but other people see no `.cdl` presence.
+   Simple, but other people see no `.bdl` presence.
 2. **Ask for the folder** (`ACTION_OPEN_DOCUMENT_TREE`) and create the
    temporary file and the lock through the document provider. This keeps
    presence, but document providers offer no atomic replace, and the save
@@ -442,9 +442,9 @@ the editor.
    9/10/20/23 against the spec PDF (see TEST-PLAN.md and PROVENANCE.md).
    Started: the first real file reads cleanly after two fixes
    (TEST-PLAN.md §7).
-   Run `cad verify` on every corpus file: DWG → `.cad` → identical model.
+   Run `cad verify` on every corpus file: DWG → `.blk` → identical model.
 2. Keep more of each decoded DWG object in the model (the remaining
-   fields; extended data is done) so `.cad` holds everything a DWG writer
+   fields; extended data is done) so `.blk` holds everything a DWG writer
    needs.
 3. AC1021 (2007) container.
 4. Paper space and layouts; hatch patterns; TrueType fonts. (Linetypes,
@@ -462,8 +462,8 @@ the editor.
    dimensions, move, copy, rotate, mirror, erase, property edits, layer
    commands, undo and redo. Offset, trim and fillet are next (the
    2026-10-08 advisory, P3-2, asked that they stay on this list).
-7. DWG export (writer), then round-trip tests DWG → `.cad` → DWG.
-8. Desktop app shell with `.cdl` presence. The GUI is built first as the
+7. DWG export (writer), then round-trip tests DWG → `.blk` → DWG.
+8. Desktop app shell with `.bdl` presence. The GUI is built first as the
    browser workbench (`apps/web`, above). Android has a test viewer
    (`apps/android`); its editor waits on the storage decision above. Then
    iOS.
