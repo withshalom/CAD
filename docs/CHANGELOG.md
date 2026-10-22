@@ -44,6 +44,9 @@ Build and CI:
   that branch at cad.mosaiciron.com. Each run keeps `blackcad-web` and
   `BlackCAD.html` (not zipped) as artifacts.
 - The workflow runs for tags as before, and not for `gh-pages`.
+- The built page that had been uploaded to the top of the repository
+  (`index.html`), with `CNAME` and `.nojekyll`, is gone from `main`: GitHub
+  Pages serves the `gh-pages` branch instead, and `main` holds sources only.
 
 Documents:
 - `docs/blackboard/`: the Blackboard's curriculum, the shop advisory the
