@@ -342,6 +342,8 @@ fn entity_type(o: &Object) -> Option<&'static str> {
         ObjectKind::Ray(_) => "RAY",
         ObjectKind::Leader(_) => "LEADER",
         ObjectKind::Tolerance(_) => "TOLERANCE",
+        ObjectKind::Image(_) => "IMAGE",
+        ObjectKind::Wipeout(_) => "WIPEOUT",
         ObjectKind::PaperViewport(_) => "VIEWPORT",
         ObjectKind::BlockBegin { .. } => "BLOCK",
         ObjectKind::BlockEnd => "ENDBLK",
@@ -1574,6 +1576,8 @@ impl<'a> Writer<'a> {
             }
             ObjectKind::Leader(l) => self.leader_body(l),
             ObjectKind::Tolerance(t) => self.tolerance_body(t),
+            ObjectKind::Image(r) => self.raster_body(r, "AcDbRasterImage"),
+            ObjectKind::Wipeout(r) => self.raster_body(r, "AcDbWipeout"),
             ObjectKind::PaperViewport(v) => self.viewport_body(v),
             ObjectKind::BlockBegin { name } => {
                 let b = d.block_header(o.owner).or_else(|| {
@@ -1899,6 +1903,36 @@ impl<'a> Writer<'a> {
         self.p3(211, l.x_direction);
         self.p3(212, l.block_offset);
         self.p3(213, l.annotation_offset);
+    }
+
+    /// IMAGE and WIPEOUT in the DXF reference's group order.
+    fn raster_body(&mut self, r: &RasterImage, marker: &str) {
+        self.s(100, marker);
+        self.i(90, r.class_version as i64);
+        self.p3(10, r.insertion);
+        self.p3(11, r.u);
+        self.p3(12, r.v);
+        self.p2(13, r.size);
+        if self.ok(r.definition) {
+            self.h(340, r.definition);
+        }
+        self.i(70, r.display as i64);
+        self.i(280, r.clipping as i64);
+        self.i(281, r.brightness as i64);
+        self.i(282, r.contrast as i64);
+        self.i(283, r.fade as i64);
+        if self.ok(r.reactor) {
+            self.h(360, r.reactor);
+        }
+        let whole = [Vec2::new(-0.5, -0.5), Vec2::new(r.size.x - 0.5, r.size.y - 0.5)];
+        let clip: &[Vec2] = if r.clip.is_empty() { &whole } else { &r.clip };
+        let rect = clip.len() == 2 && (r.clip_type == 1 || r.clip.is_empty());
+        self.i(71, if rect { 1 } else { 2 });
+        self.i(91, clip.len() as i64);
+        for p in clip {
+            self.p2(14, *p);
+        }
+        self.i(290, r.clip_inside as i64);
     }
 
     /// TOLERANCE in the DXF reference's group order.

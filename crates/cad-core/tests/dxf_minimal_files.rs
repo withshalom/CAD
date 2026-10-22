@@ -106,7 +106,7 @@ mod minimal_files {
         // Entity types the model does not hold: found, none placed.
         let d = read_bytes(&dxf(&[
             "0", "SECTION", "2", "ENTITIES",
-            "0", "WIPEOUT", "8", "0",
+            "0", "OLE2FRAME", "8", "0",
             "0", "ENDSEC", "0", "EOF",
         ]))
         .unwrap();

@@ -35,6 +35,8 @@ enum D {
     Cmc,
     /// CmColor whose DXF group holds the method word itself.
     Word,
+    /// 2RD: a 2D point, one DXF point group.
+    Rd2,
 }
 
 /// One DXF group of a record, in DXF order.
@@ -74,6 +76,19 @@ fn layout(kind: &str) -> Option<Layout> {
     use D::*;
     use G::*;
     Some(match kind {
+        // The objects raster images use (§20.4.81, §20.4.82, §20.4.91,
+        // checked against the specification text). They keep the DXF
+        // groups' order, except that IMAGEDEF's record puts the path after
+        // the image size and the pixel size last.
+        "IMAGEDEF" => Layout {
+            dxf: vec![M("AcDbRasterImageDef"), V(90, Bl), V(1, Tv), V(10, Rd2), V(11, Rd2), V(280, B), V(281, Rc)],
+            dwg: vec![W::I(1), W::I(3), W::I(2), W::I(5), W::I(6), W::I(4)],
+        },
+        "IMAGEDEF_REACTOR" => Layout { dxf: vec![M("AcDbRasterImageDefReactor"), V(90, Bl)], dwg: vec![W::I(1)] },
+        "RASTERVARIABLES" => Layout {
+            dxf: vec![M("AcDbRasterVariables"), V(90, Bl), V(70, Bs), V(71, Bs), V(72, Bs)],
+            dwg: vec![W::I(1), W::I(2), W::I(3), W::I(4)],
+        },
         "VISUALSTYLE" => {
             let mut dxf = vec![M("AcDbVisualStyle"), V(2, Tv), V(70, Bs), X(177, 3), V(291, B), X(70, 58)];
             for code in VISUALSTYLE_PROPERTIES {
@@ -380,6 +395,10 @@ fn read(s: &mut Streams, own: u64, d: D) -> Result<Val> {
         D::Bd => Val::Real(s.dat.bd()?),
         D::Rc => Val::Int(s.dat.rc()? as i64),
         D::Tv => Val::Str(s.tv()?),
+        D::Rd2 => {
+            let [x, y] = s.dat.rd2()?;
+            Val::Point(Vec3::new(x, y, 0.0))
+        }
         D::H(_) => Val::Handle(Handle(s.h_abs(own)?)),
         D::Cmc | D::Word => {
             let _index = s.dat.bs()?;
@@ -463,7 +482,7 @@ fn decode_layout(s: &mut Streams, own: u64, l: &Layout) -> Result<Vec<(u16, XrVa
 /// common handles already read. `None` for types this module does not
 /// know; an error for a record that does not fit its layout.
 pub(crate) fn decode(kind: &str, s: &mut Streams, own: u64, d: &Lookup) -> Option<Result<Groups>> {
-    if !Groups::KINDS.contains(&kind) || s.ver < V::R2013 {
+    if !Groups::KINDS.contains(&kind) || s.ver < since(kind) {
         return None;
     }
     let items = match kind {
@@ -522,6 +541,13 @@ impl<'a> Cur<'a> {
             v => Err(Error::format(format!("{}: group {code}: number expected, {v:?}", self.kind))),
         }
     }
+    fn point(&mut self, code: u16) -> Result<Vec3> {
+        match self.take(code)? {
+            XrValue::Point(p) => Ok(*p),
+            other => Err(Error::format(format!("{}: group {code} is {other:?}, a point expected", self.kind))),
+        }
+    }
+
     fn real(&mut self, code: u16) -> Result<f64> {
         match from_xr(self.take(code)?) {
             Val::Real(f) => Ok(f),
@@ -572,6 +598,10 @@ fn write(w: &mut ObjW, d: D, v: &Val) -> Result<()> {
             _ => return Err(Error::format("number expected")),
         }),
         D::Rc => w.dat.rc(int()? as u8),
+        D::Rd2 => match v {
+            Val::Point(p) => w.dat.rd2([p.x, p.y]),
+            _ => return Err(Error::format("point expected")),
+        },
         D::Tv => w.tv(match v {
             Val::Str(s) => s,
             _ => "",
@@ -617,6 +647,7 @@ fn encode_layout(w: &mut ObjW, g: &Groups, l: &Layout) -> Result<()> {
             G::V(code, D::Tv) => Val::Str(c.str(*code)?),
             G::V(code, D::H(_)) => Val::Handle(c.handle(*code)?),
             G::V(code, D::Bd) => Val::Real(c.real(*code)?),
+            G::V(code, D::Rd2) => Val::Point(c.point(*code)?),
             G::V(code, _) => Val::Int(c.int(*code)?),
             G::Tail(code, _, missing) => Val::Int(if c.peek() == Some(*code) { c.int(*code)? } else { *missing }),
             G::OptH(code) => {
@@ -665,8 +696,8 @@ fn encode_layout(w: &mut ObjW, g: &Groups, l: &Layout) -> Result<()> {
 /// Write a style object's type data and handles (after the common part
 /// and common handles).
 pub(crate) fn encode(w: &mut ObjW, g: &Groups, d: &Drawing) -> Result<()> {
-    if w.ver < V::R2013 {
-        return Err(Error::unsupported(format!("{} before R2013", g.kind)));
+    if w.ver < since(&g.kind) {
+        return Err(Error::unsupported(format!("{} before {:?}", g.kind, since(&g.kind))));
     }
     match g.kind.as_str() {
         "DIMASSOC" => encode_dimassoc(w, g),
@@ -679,6 +710,16 @@ pub(crate) fn encode(w: &mut ObjW, g: &Groups, d: &Drawing) -> Result<()> {
     }
 }
 
+/// The first version whose records of `kind` this module reads and writes:
+/// the raster objects' layouts are the specification's, for every
+/// version; the others come from AutoCAD 2027's R2013 and later files.
+fn since(kind: &str) -> V {
+    match kind {
+        "IMAGEDEF" | "IMAGEDEF_REACTOR" | "RASTERVARIABLES" => V::R13,
+        _ => V::R2013,
+    }
+}
+
 /// Names and handles the codecs look up in the drawing: text styles by
 /// name for the table style (DXF names its text style, DWG points at it).
 pub(crate) struct Lookup {
@@ -686,6 +727,11 @@ pub(crate) struct Lookup {
 }
 
 impl Lookup {
+    #[cfg(test)]
+    pub(crate) fn empty() -> Lookup {
+        Lookup { text_styles: Vec::new() }
+    }
+
     pub fn new(d: &Drawing) -> Lookup {
         let text_styles = d
             .objects

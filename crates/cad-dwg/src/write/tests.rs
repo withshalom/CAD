@@ -1199,3 +1199,98 @@ fn tolerances_survive_dwg_and_dxf() {
     let again = cad_dxf::read_bytes(&dxf.bytes).unwrap();
     assert_eq!(get(&again), t, "DXF");
 }
+
+/// Images and wipeouts (0.14.0) are held by the model, with the objects an
+/// image needs (its IMAGEDEF and the IMAGEDEF_REACTOR it owns): all of them
+/// go through DWG and DXF as they were, none kept as bytes.
+#[test]
+fn images_and_wipeouts_survive_dwg_and_dxf() {
+    use crate::geom::{Vec2, Vec3};
+    let Some(file) = corpus() else { return };
+    let mut d = super::super::read_bytes(&file).unwrap();
+    let layer = d.layer_by_name("0").unwrap().0;
+    let nod = d
+        .objects
+        .values()
+        .find(|o| o.type_name == "DICTIONARY" && o.owner.is_null())
+        .map(|o| o.handle)
+        .unwrap();
+    let def_code = d.class_number("IMAGEDEF").unwrap();
+    let rx_code = d.class_number("IMAGEDEF_REACTOR").unwrap();
+    let def = d.new_handle();
+    let rx = d.new_handle();
+    let def_groups = Groups {
+        kind: "IMAGEDEF".into(),
+        items: vec![
+            (100, XrValue::Str("AcDbRasterImageDef".into())),
+            (90, XrValue::Int32(0)),
+            (1, XrValue::Str("plate.png".into())),
+            (10, XrValue::Point(Vec3::new(640.0, 480.0, 0.0))),
+            (11, XrValue::Point(Vec3::new(1.0, 1.0, 0.0))),
+            (280, XrValue::Int8(1)),
+            (281, XrValue::Int8(0)),
+        ],
+    };
+    let mut def_obj = Object::record(def, "IMAGEDEF", def_code, nod, ObjectKind::NonGraphic(NonGraphic::Groups(def_groups.clone())));
+    def_obj.reactors.push(rx);
+    d.objects.insert(def, def_obj);
+    let image = RasterImage {
+        insertion: Vec3::new(5.0, 6.0, 0.0),
+        u: Vec3::new(0.01, 0.0, 0.0),
+        v: Vec3::new(0.0, 0.01, 0.0),
+        size: Vec2::new(640.0, 480.0),
+        clipping: true,
+        clip_type: 2,
+        clip: vec![Vec2::new(-0.5, -0.5), Vec2::new(300.0, -0.5), Vec2::new(150.0, 200.0), Vec2::new(-0.5, -0.5)],
+        definition: def,
+        reactor: rx,
+        brightness: 60,
+        ..Default::default()
+    };
+    let img = d.add_entity(layer, ObjectKind::Image(Box::new(image.clone()))).unwrap();
+    let rx_groups = Groups {
+        kind: "IMAGEDEF_REACTOR".into(),
+        items: vec![(100, XrValue::Str("AcDbRasterImageDefReactor".into())), (90, XrValue::Int32(2))],
+    };
+    d.objects.insert(rx, Object::record(rx, "IMAGEDEF_REACTOR", rx_code, img, ObjectKind::NonGraphic(NonGraphic::Groups(rx_groups.clone()))));
+    let wipeout = RasterImage {
+        insertion: Vec3::new(20.0, 0.0, 0.0),
+        u: Vec3::new(4.0, 0.0, 0.0),
+        v: Vec3::new(0.0, 3.0, 0.0),
+        clipping: true,
+        clip_type: 2,
+        clip: vec![Vec2::new(-0.5, 0.5), Vec2::new(0.5, 0.5), Vec2::new(0.5, -0.5), Vec2::new(-0.5, 0.5)],
+        ..Default::default()
+    };
+    let wo = d.add_entity(layer, ObjectKind::Wipeout(Box::new(wipeout.clone()))).unwrap();
+    let check = |d: &Drawing, what: &str| {
+        assert_eq!(d.objects[&img].kind, ObjectKind::Image(Box::new(image.clone())), "{what}: image");
+        assert_eq!(d.objects[&wo].kind, ObjectKind::Wipeout(Box::new(wipeout.clone())), "{what}: wipeout");
+        assert_eq!(d.objects[&def].kind, ObjectKind::NonGraphic(NonGraphic::Groups(def_groups.clone())), "{what}: IMAGEDEF");
+        assert_eq!(d.objects[&def].reactors, vec![rx], "{what}: IMAGEDEF's reactor");
+        assert_eq!(d.objects[&rx].kind, ObjectKind::NonGraphic(NonGraphic::Groups(rx_groups.clone())), "{what}: reactor");
+        assert_eq!(d.objects[&rx].owner, img, "{what}: the image owns its reactor");
+        for h in [img, wo, def, rx] {
+            assert_eq!(d.objects[&h].raw, None, "{what}: {h:?} decoded, not kept as bytes");
+        }
+    };
+    let out = super::to_bytes(&d).unwrap();
+    assert!(out.left_out.is_empty(), "{:?}", out.notes);
+    let back = super::super::read_bytes(&out.bytes).unwrap();
+    check(&back, "DWG");
+    let dxf = cad_dxf::to_bytes(&back, cad_dxf::DxfFormat::Ascii);
+    assert!(dxf.left_out.is_empty(), "{:?}", dxf.notes);
+    let again = cad_dxf::read_bytes(&dxf.bytes).unwrap();
+    check(&again, "DXF");
+    // A DXF without its CLASSES section (as simple exporters write) still
+    // gives the image classes: the model registers the ones it knows.
+    let text = String::from_utf8(dxf.bytes).unwrap();
+    let lines: Vec<&str> = text.split_inclusive('\n').collect();
+    let at = lines.iter().position(|l| l.trim() == "CLASSES").unwrap();
+    let end = at + lines[at..].iter().position(|l| l.trim() == "ENDSEC").unwrap();
+    // From the "0 SECTION 2" before CLASSES to its ENDSEC.
+    let stripped: String = lines[..at - 3].iter().chain(&lines[end + 1..]).copied().collect();
+    assert!(!stripped.contains("CLASSES"));
+    let bare = cad_dxf::read_bytes(stripped.as_bytes()).unwrap();
+    check(&bare, "DXF without classes");
+}

@@ -81,7 +81,8 @@ pub fn add_like(d: &mut Drawing, src: Handle, kind: ObjectKind) -> R<Handle> {
 /// a new one with the same properties. The handle it ends up with.
 pub fn replace(d: &mut Drawing, h: Handle, kind: ObjectKind) -> R<Handle> {
     let o = d.get(h).ok_or_else(|| no_object(h))?;
-    let same = entity_type(&kind).is_some_and(|(n, c)| n == o.type_name && c == o.type_code);
+    // Class-based kinds have no fixed number (0): the name decides.
+    let same = entity_type(&kind).is_some_and(|(n, c)| n == o.type_name && (c == o.type_code || c == 0));
     if same {
         d.objects.get_mut(&h).expect("checked").kind = kind;
         return Ok(h);

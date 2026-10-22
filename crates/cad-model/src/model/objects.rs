@@ -135,7 +135,8 @@ pub struct Scale {
 /// An object kept as its DXF groups, for the style objects whose fields
 /// the program carries without interpreting them: visual styles,
 /// materials, table styles and their cell style maps, multileader, section
-/// and detail view styles, and dimension associations. `items` are the
+/// and detail view styles, dimension associations, and the objects raster
+/// images use (image definitions, their reactors, raster variables). `items` are the
 /// groups after the common part (from the first subclass marker, 100,
 /// which is kept), in DXF order, points as one item. The DWG reader and
 /// writer convert them with a codec per type (`dwg::styles`).
@@ -148,7 +149,7 @@ pub struct Groups {
 
 impl Groups {
     /// The object types kept this way.
-    pub const KINDS: [&'static str; 8] = [
+    pub const KINDS: [&'static str; 11] = [
         "VISUALSTYLE",
         "MATERIAL",
         "TABLESTYLE",
@@ -157,6 +158,10 @@ impl Groups {
         "ACDBSECTIONVIEWSTYLE",
         "ACDBDETAILVIEWSTYLE",
         "DIMASSOC",
+        // 0.14.0: the objects raster images use.
+        "IMAGEDEF",
+        "IMAGEDEF_REACTOR",
+        "RASTERVARIABLES",
     ];
 }
 

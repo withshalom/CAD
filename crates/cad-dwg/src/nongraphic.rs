@@ -809,8 +809,8 @@ mod table_tests {
 }
 
 /// Turn objects kept as DWG records into the model's records where they
-/// decode: VPORT and DIMSTYLE table records, and the non-graphical objects
-/// above. Their DWG bytes are then dropped; the DWG writer encodes them
+/// decode: VPORT and DIMSTYLE table records, the non-graphical objects
+/// above, and tolerances, images and wipeouts. Their DWG bytes are then dropped; the DWG writer encodes them
 /// again. Objects that do not decode stay as they were. Used by the DWG
 /// reader, and by the native reader for files of format 2.1 and earlier.
 /// A style object (`Groups::KINDS`) from its DWG record.
@@ -863,6 +863,18 @@ pub fn promote(d: &mut Drawing) {
                 }
                 _ => None,
             },
+            // Entities kept as bytes by readers from before their types
+            // were decoded (tolerances, images, wipeouts in older .cad
+            // files): decoded now, when the record fits.
+            (_, ObjectKind::Unsupported)
+                if o.type_code == 0x2E || matches!(o.type_name.as_str(), "IMAGE" | "WIPEOUT") =>
+            {
+                o.raw.as_ref().and_then(|raw| {
+                    let ctx = DecodeCtx { ver: raw.version, codepage, classes: &classes };
+                    let k = object::decode(&ctx, &object::raw_buffer(raw), 0).ok()?.kind;
+                    matches!(k, ObjectKind::Tolerance(_) | ObjectKind::Image(_) | ObjectKind::Wipeout(_)).then_some(k)
+                })
+            }
             (_, ObjectKind::Unsupported) => match decode(o, &classes, codepage) {
                 Some(Ok(n)) => Some(ObjectKind::NonGraphic(n)),
                 _ => match decode_groups(o, &classes, codepage, &lookup) {

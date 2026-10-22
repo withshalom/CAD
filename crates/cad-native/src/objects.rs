@@ -905,3 +905,66 @@ pub(super) fn read_tolerance(r: &mut TagReader) -> Result<Tolerance> {
         r14,
     })
 }
+
+// ----- Format 2.8: IMAGE and WIPEOUT -------------------------------------------------
+
+const P2_BYTES: usize = 3 + 16;
+const ONE2: [f64; 2] = [1.0, 1.0];
+
+pub(super) fn write_raster(w: &mut TagWriter, r: &RasterImage) {
+    w.u32_d(90, r.class_version, 0);
+    w.p3_d(10, r.insertion, ORIGIN3);
+    w.p3_d(11, r.u, X);
+    w.p3_d(12, r.v, Y);
+    w.p2_d(13, r.size, ONE2);
+    w.u16_d(70, r.display, 7);
+    w.bool_d(280, r.clipping, false);
+    w.u8_d(281, r.brightness, 50);
+    w.u8_d(282, r.contrast, 50);
+    w.u8_d(283, r.fade, 0);
+    w.bool_d(290, r.clip_inside, false);
+    w.u16_d(71, r.clip_type, 1);
+    w.count_d(91, r.clip.len());
+    for p in &r.clip {
+        w.p2(14, *p);
+    }
+    w.opt_handle(340, r.definition);
+    w.opt_handle(360, r.reactor);
+}
+
+pub(super) fn read_raster(r: &mut TagReader) -> Result<RasterImage> {
+    let class_version = r.u32_or(90, 0)?;
+    let insertion = r.p3_or(10, ORIGIN3)?;
+    let u = r.p3_or(11, X)?;
+    let v = r.p3_or(12, Y)?;
+    let size = r.p2_or(13, ONE2)?;
+    let display = r.u16_or(70, 7)?;
+    let clipping = r.bool_or(280, false)?;
+    let brightness = r.u8_or(281, 50)?;
+    let contrast = r.u8_or(282, 50)?;
+    let fade = r.u8_or(283, 0)?;
+    let clip_inside = r.bool_or(290, false)?;
+    let clip_type = r.u16_or(71, 1)?;
+    let n = r.count_or(91, P2_BYTES)?;
+    let mut clip = Vec::with_capacity(n);
+    for _ in 0..n {
+        clip.push(r.p2(14)?);
+    }
+    Ok(RasterImage {
+        class_version,
+        insertion,
+        u,
+        v,
+        size,
+        display,
+        clipping,
+        brightness,
+        contrast,
+        fade,
+        clip_inside,
+        clip_type,
+        clip,
+        definition: r.opt_handle(340)?,
+        reactor: r.opt_handle(360)?,
+    })
+}
