@@ -550,6 +550,9 @@ pub static KINDS: &[KindSpec] = &[
             item(49, ty::F64, Req, "dash length: positive dash, negative gap, 0 dot"),
             count(98, "seed point count (2.4)"),
             item(2188, ty::P2, Req, "seed point"),
+            count(2189, "boundary object lists, one per path (2.6)"),
+            item(97, ty::I32, Req, "boundary object count"),
+            item(2190, ty::HANDLE, Req, "boundary object"),
         ],
     },
     KindSpec {

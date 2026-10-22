@@ -651,7 +651,7 @@ pub(crate) fn dimension(s: &mut Streams, code: u16) -> Result<Dimension> {
 
 /// HATCH. Returns the hatch and the number of boundary-object handles in
 /// the handle stream.
-pub(crate) fn hatch(s: &mut Streams) -> Result<(Hatch, u32)> {
+pub(crate) fn hatch(s: &mut Streams) -> Result<(Hatch, Vec<u32>)> {
     let mut h = Hatch::default();
     if s.ver >= V::R2004 {
         h.is_gradient = s.dat.bl()? != 0;
@@ -677,7 +677,7 @@ pub(crate) fn hatch(s: &mut Streams) -> Result<(Hatch, u32)> {
     h.associative = s.dat.b()?;
     let n_paths = s.dat.bl()?;
     let n_paths = s.check_count(n_paths, 8, "hatch path")?;
-    let mut handles = 0u32;
+    let mut handles: Vec<u32> = Vec::with_capacity(n_paths);
     let mut derived = false;
     for _ in 0..n_paths {
         let flags = s.dat.bl()?;
@@ -770,7 +770,7 @@ pub(crate) fn hatch(s: &mut Streams) -> Result<(Hatch, u32)> {
                 vertices,
             });
         }
-        handles = handles.saturating_add(s.dat.bl()?);
+        handles.push(s.dat.bl()?);
     }
     h.style = s.dat.bs()?;
     h.pattern_type = s.dat.bs()?;

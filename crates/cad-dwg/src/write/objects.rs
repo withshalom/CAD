@@ -740,6 +740,11 @@ fn specific(w: &mut ObjW, o: &Object, ctx: &Ctx) -> Result<()> {
         ObjectKind::Hatch(h) => {
             hatch_data(w, h, d, ctx.hatch_lines);
             common_handles(w, o);
+            for i in 0..h.paths.len() {
+                for s in h.sources.get(i).map(Vec::as_slice).unwrap_or_default() {
+                    w.h(Ref::SoftPtr, *s);
+                }
+            }
         }
         ObjectKind::Xline(x) | ObjectKind::Ray(x) => {
             w.dat.bd3(v3(x.base));
@@ -1166,7 +1171,7 @@ fn hatch_data(
     w.dat.b(h.solid_fill);
     w.dat.b(h.associative);
     w.dat.bl(h.paths.len() as u32);
-    for p in &h.paths {
+    for (i, p) in h.paths.iter().enumerate() {
         match p {
             HatchPath::Edges { flags, edges } => {
                 // Bit 4 (made by picking) would call for a pixel size,
@@ -1234,7 +1239,8 @@ fn hatch_data(
                 }
             }
         }
-        w.dat.bl(0); // boundary objects
+        // Boundary objects; their handles follow the common handles.
+        w.dat.bl(h.sources.get(i).map_or(0, Vec::len) as u32);
     }
     w.dat.bs(h.style);
     w.dat.bs(h.pattern_type);

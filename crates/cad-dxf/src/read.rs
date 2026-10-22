@@ -1990,7 +1990,17 @@ impl Reader {
                 }
                 h.paths.push(HatchPath::Edges { flags, edges });
             }
-            let _ = next(&mut k, 97);
+            // The boundary objects: a count (97) and that many handles (330).
+            let n = (next(&mut k, 97).map(vi).unwrap_or(0).max(0) as usize).min(left(k));
+            let mut sources = Vec::with_capacity(n);
+            while sources.len() < n && gs.get(k).is_some_and(|x| x.code == 330) {
+                sources.push(vh(&gs[k].value));
+                k += 1;
+            }
+            h.sources.push(sources);
+        }
+        if h.sources.iter().all(Vec::is_empty) {
+            h.sources.clear();
         }
         let tail_groups = &gs[k.min(gs.len())..];
         let tail = G(tail_groups);

@@ -68,6 +68,10 @@ pub(crate) mod code {
     pub const LEADER_UNKNOWN_SHORT: u16 = 2187;
     /// Format 2.4: a hatch's seed points.
     pub const HATCH_SEED: u16 = 2188;
+    /// HATCH (2.6): the number of boundary object lists, one per path.
+    pub const HATCH_SOURCES: u16 = 2189;
+    /// HATCH (2.6): a boundary object (the record's 330 is its owner).
+    pub const HATCH_SOURCE: u16 = 2190;
 }
 
 use code as o;

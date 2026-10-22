@@ -757,6 +757,8 @@ pub fn hatch(
         pattern_double: double && user,
         pattern_lines: lines,
         seed_points: seed.into_iter().collect(),
+        // Not associative, so no boundary objects.
+        sources: Vec::new(),
     })
 }
 
