@@ -1556,6 +1556,10 @@ impl Reader {
                 let def = kind_name == "ATTDEF";
                 let a = body.sub(if def { "AcDbAttributeDefinition" } else { "AcDbAttribute" });
                 t.v_align = a.i(74, 0) as u16;
+                // Lock position (AutoCAD 2007 and later) is the 280 after the
+                // flags; the 280 before the tag is the subclass version.
+                let lock_position =
+                    a.0.iter().skip_while(|x| x.code != 70).find(|x| x.code == 280).is_some_and(|x| vi(&x.value) != 0);
                 ObjectKind::Attribute(Attribute {
                     text: t,
                     tag: a.s_or(2, ""),
@@ -1563,6 +1567,7 @@ impl Reader {
                     flags: a.i(70, 0) as u8,
                     field_length: a.i(73, 0) as u16,
                     is_definition: def,
+                    lock_position,
                 })
             }
             "MTEXT" => {

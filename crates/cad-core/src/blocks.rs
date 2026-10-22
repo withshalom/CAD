@@ -171,6 +171,7 @@ pub fn insert(d: &mut Drawing, space: Handle, block: Handle, at: Vec2, scale: f6
             flags: a.flags,
             field_length: a.field_length,
             is_definition: false,
+            lock_position: a.lock_position,
         });
         modify::transform(&mut kind, &xf)?;
         // Definitions on layer 0 take the insert's layer.
@@ -239,6 +240,7 @@ pub fn attdef(d: &mut Drawing, space: Handle, tag: &str, prompt: &str, default: 
         flags: 0,
         field_length: 0,
         is_definition: true,
+        lock_position: false,
     });
     d.add_entity_in(space, Handle::NULL, kind).map_err(err)
 }

@@ -274,6 +274,10 @@ pub struct Attribute {
     pub flags: u8,
     pub field_length: u16,
     pub is_definition: bool,
+    /// Lock position (AutoCAD 2007 and later): the attribute stays where
+    /// it is in its block reference, with no grip of its own. A reference's
+    /// attributes take it from their definitions.
+    pub lock_position: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]

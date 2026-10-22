@@ -1,4 +1,4 @@
-# Native file format (`.cad`) — version 2.4
+# Native file format (`.cad`) — version 2.5
 
 This is the byte-level specification of the native drawing format written
 and read by the `cad-native` crate (MIT OR Apache-2.0 since 0.10.0;
@@ -86,6 +86,10 @@ separate decision. It is a draft until the DWG test corpus passes
   a 2.3 reader keeps as fields from a newer writer (§6). Hatches in older
   files have no line families; readers draw them from the pattern
   library by name.
+- **2.5**: ATTRIB / ATTDEF records end with lock position (280, written
+  only when set), which AutoCAD 2007 and later keep with each attribute.
+  A 2.4 reader keeps it as a field from a newer writer (§6); records
+  without it are as 2.4 wrote them.
 
 ## 1. Conventions
 
@@ -146,7 +150,7 @@ Both copies have the same layout.
 |---|---|---|
 | 0 | 8 | Magic `89 43 41 44 0D 0A 1A 0A` (`\x89CAD\r\n\x1a\n`) |
 | 8 | 2 | Format major version (2) |
-| 10 | 2 | Format minor version (4) |
+| 10 | 2 | Format minor version (5) |
 | 12 | 4 | Flags (below) |
 | 16 | 8 | Generation: 1 for a new file, +1 per save of any kind |
 | 24 | 8 | Directory offset from start of file |
@@ -599,7 +603,7 @@ still change before the format is published.
 | 9 | VERTEX | 2100 I16 subkind: 0 2D, 1 3D, 2 mesh, 3 polyface vertex, 4 polyface face; 70 I16 flags *[default 0]*; 10 P3 point; 40 F64 start width *[default 0]*; 41 F64 end width *[default 0]*; 42 F64 bulge *[default 0]*; 50 F64 tangent direction *[default 0]*; 91 I32 vertex id *[default 0]*; 71 I16 face vertex 1 *[default 0]*; 72 I16 face vertex 2 *[default 0]*; 73 I16 face vertex 3 *[default 0]*; 74 I16 face vertex 4 *[default 0]* |
 | 10 | SEQEND | — |
 | 11 | TEXT | 10 P2 insertion point; 11 P2 alignment point; 38 F64 elevation *[default 0]*; 210 P3 extrusion *[default (0, 0, 1)]*; 39 F64 thickness *[default 0]*; 51 F64 oblique angle (radians) *[default 0]*; 50 F64 rotation (radians) *[default 0]*; 40 F64 height; 41 F64 width factor *[default 1]*; 1 STR text; 71 I16 generation flags: 2 backwards, 4 upside down *[default 0]*; 72 I16 horizontal alignment *[default 0]*; 73 I16 vertical alignment *[default 0]*; 2101 HANDLE text style *[absent when null]* |
-| 12 | ATTRIB / ATTDEF | 10 P2 insertion point; 11 P2 alignment point; 38 F64 elevation *[default 0]*; 210 P3 extrusion *[default (0, 0, 1)]*; 39 F64 thickness *[default 0]*; 51 F64 oblique angle (radians) *[default 0]*; 50 F64 rotation (radians) *[default 0]*; 40 F64 height; 41 F64 width factor *[default 1]*; 1 STR text; 71 I16 generation flags: 2 backwards, 4 upside down *[default 0]*; 72 I16 horizontal alignment *[default 0]*; 74 I16 vertical alignment *[default 0]*; 2101 HANDLE text style *[absent when null]*; 2 STR tag; 3 STR prompt *[default empty]*; 70 I16 flags *[default 0]*; 73 I16 field length *[default 0]*; 2102 BOOL is an ATTDEF *[default false]* |
+| 12 | ATTRIB / ATTDEF | 10 P2 insertion point; 11 P2 alignment point; 38 F64 elevation *[default 0]*; 210 P3 extrusion *[default (0, 0, 1)]*; 39 F64 thickness *[default 0]*; 51 F64 oblique angle (radians) *[default 0]*; 50 F64 rotation (radians) *[default 0]*; 40 F64 height; 41 F64 width factor *[default 1]*; 1 STR text; 71 I16 generation flags: 2 backwards, 4 upside down *[default 0]*; 72 I16 horizontal alignment *[default 0]*; 74 I16 vertical alignment *[default 0]*; 2101 HANDLE text style *[absent when null]*; 2 STR tag; 3 STR prompt *[default empty]*; 70 I16 flags *[default 0]*; 73 I16 field length *[default 0]*; 2102 BOOL is an ATTDEF *[default false]*; 280 BOOL lock position (2.5) *[default false]* |
 | 13 | MTEXT | 10 P3 insertion point; 210 P3 extrusion *[default (0, 0, 1)]*; 11 P3 x-axis direction *[default (1, 0, 0)]*; 41 F64 reference width *[default 0]*; 46 F64 reference height *[default 0]*; 40 F64 text height; 71 I16 attachment: 1 top left … 9 bottom right *[default 1]*; 72 I16 drawing direction *[default 1]*; 1 STR contents with formatting codes; 44 F64 line-spacing factor *[default 1]*; 2101 HANDLE text style *[absent when null]* |
 | 14 | INSERT / MINSERT | 10 P3 insertion point; 41 F64 x scale *[default 1]*; 42 F64 y scale *[default 1]*; 43 F64 z scale *[default 1]*; 50 F64 rotation (radians) *[default 0]*; 210 P3 extrusion *[default (0, 0, 1)]*; 66 BOOL has attributes *[default false]*; 2103 HANDLE block record *[absent when null]*; 2111 I32 attribute count *[default 0]*; each: 2112 HANDLE attribute; 2106 HANDLE first attribute *[absent when null]*; 2107 HANDLE last attribute *[absent when null]*; 2108 HANDLE SEQEND *[absent when null]*; 70 I16 MINSERT columns (70, 71, 44, 45 appear together) *[conditional]*; 71 I16 MINSERT rows *[conditional]*; 44 F64 MINSERT column spacing *[conditional]*; 45 F64 MINSERT row spacing *[conditional]* |
 | 15 | SOLID / TRACE | 39 F64 thickness *[default 0]*; 38 F64 elevation *[default 0]*; 10 P2 corner 1; 11 P2 corner 2; 12 P2 corner 3; 13 P2 corner 4; 210 P3 extrusion *[default (0, 0, 1)]*; 2117 BOOL is a TRACE *[default false]* |
