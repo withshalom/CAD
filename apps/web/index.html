@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#121519">
 <meta name="color-scheme" content="dark">
-<meta name="description" content="BlackCAD: drafting that opens .dwg, .dxf and .blk, with a blackboard of shop lessons beside it.">
+<meta name="description" content="BlackCAD: drafting that opens .dwg, .dxf and .blc, with a blackboard of shop lessons beside it.">
 <meta name="application-name" content="BlackCAD">
 <meta name="apple-mobile-web-app-title" content="BlackCAD">
 <link rel="manifest" href="manifest.webmanifest">
@@ -49,7 +49,7 @@
     <div class="chip crumb" id="crumb"></div>
     <div class="chip views" id="views"></div>
     <div id="tip" class="tip" hidden><span class="snaptag" id="snaptag" hidden></span><span class="dyn" id="dyn"></span></div>
-    <div id="drop-hint" hidden><div>Drop a DWG, DXF or .blk file to open it</div></div>
+    <div id="drop-hint" hidden><div>Drop a DWG, DXF or .blc file to open it</div></div>
     <section id="welcome">
       <div class="welcome-card">
         <div class="wmark" id="wmark"></div>
@@ -58,7 +58,7 @@
         <div class="welcome-actions">
           <button class="big" data-act="new-metric"><b>Metric drawing</b><span>Millimetres</span></button>
           <button class="big" data-act="new-imperial"><b>Imperial drawing</b><span>Inches</span></button>
-          <button class="big" data-act="open"><b>Open a file</b><span>DWG, DXF or .blk</span></button>
+          <button class="big" data-act="open"><b>Open a file</b><span>DWG, DXF or .blc</span></button>
           <button class="big" data-act="sample"><b>Sample plate</b><span>P-1042, to try the tools</span></button>
           <button class="big bb-card" data-board><b>Blackboard</b><span>School for drafting, school for shop. Lessons that work on numbers you can move, your shop's own rules, and a check for your drawing.</span><i><u>Drafting</u><u>Shop</u><u>Electronics</u></i></button>
         </div>
@@ -137,6 +137,6 @@
 <div id="menu" role="menu" hidden></div>
 <div id="numpad" hidden></div>
 <div id="toast" role="status" hidden></div>
-<input type="file" id="file-input" accept=".dwg,.dxf,.blk,.cad" hidden>
+<input type="file" id="file-input" accept=".dwg,.dxf,.blc,.cad" hidden>
 </body>
 </html>

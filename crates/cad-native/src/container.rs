@@ -27,9 +27,9 @@ pub const HEADER_LEN: usize = 48;
 
 /// Whose records the file holds (header bytes 40-41, format 2.10). The
 /// container is shared; the records are each program's own.
-/// BlackCAD's (`cad-model`), in `.blk` files; every file before 2.10.
+/// BlackCAD's (`cad-model`), in `.blc` files; every file before 2.10.
 pub const RECORDS_BLACKCAD: u16 = 0;
-/// CADCraft's, in `.blk` files.
+/// CADCraft's, in `.blc` files.
 pub const RECORDS_CADCRAFT: u16 = 1;
 
 /// File header flags.
@@ -526,7 +526,7 @@ pub fn read_entry(bytes: &[u8], e: &DirEntry) -> Result<(Vec<u8>, bool)> {
 impl<'a> Container<'a> {
     pub fn parse(bytes: &'a [u8]) -> Result<Container<'a>> {
         if !looks_native(bytes) {
-            return Err(Error::new(ErrorKind::Format, "not a native file (.blk or .cad)"));
+            return Err(Error::new(ErrorKind::Format, "not a native file (.blc or .cad)"));
         }
         let front = FileHeader::decode(bytes);
         let back = if bytes.len() >= 2 * HEADER_LEN {

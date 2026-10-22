@@ -1,6 +1,6 @@
 # CAD Viewer (Android test app)
 
-A small app for trying the CAD core on Android. It opens a `.blk` or DWG
+A small app for trying the CAD core on Android. It opens a `.blc` or DWG
 file and shows a short summary (format, object counts, units, extents,
 problems) and model space, with pinch zoom. It views only; it does not
 edit or save.

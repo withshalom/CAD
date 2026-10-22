@@ -1,6 +1,6 @@
 [package]
 name = "cad-core"
-description = "Clean-room CAD core: native .blk format, DWG reader, drawing database, geometry and exporters"
+description = "Clean-room CAD core: native .blc format, DWG reader, drawing database, geometry and exporters"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

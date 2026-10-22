@@ -156,11 +156,11 @@ await check("saves in every format and reads its own files back", () => {
   const id = core.sample();
   const n = entities(core, id);
   const magic = { dwg: (t) => t.startsWith("AC1032"), dxf: (t) => /^\s*0\s+SECTION/.test(t), dxfb: (t) => t.startsWith("AutoCAD Binary DXF"), pdf: (t) => t.startsWith("%PDF-"), svg: (t) => /<svg|<\?xml/.test(t) };
-  for (const format of ["blk", "dwg", "dxf", "dxfb", "svg", "pdf"]) {
+  for (const format of ["blc", "dwg", "dxf", "dxfb", "svg", "pdf"]) {
     const { bytes } = core.save(id, format);
     expect(bytes.length > 0, `${format}: no bytes`);
     if (magic[format]) expect(magic[format](textOf(bytes)), `${format}: starts ${JSON.stringify(textOf(bytes).slice(0, 20))}`);
-    if (["blk", "dwg", "dxf", "dxfb"].includes(format)) {
+    if (["blc", "dwg", "dxf", "dxfb"].includes(format)) {
       const back = core.open(bytes);
       const m = entities(core, back);
       expect(m === n, `${format}: ${m} entities read back, ${n} saved`);

@@ -1,8 +1,8 @@
 //! Build a drawing in code on the default layers (the sample plate), save
-//! it as native `.blk`, lock it, make an incremental save, and read it
+//! it as native `.blc`, lock it, make an incremental save, and read it
 //! back.
 //!
-//!     cargo run -p cad-core --example native_demo -- /tmp/plate.blk
+//!     cargo run -p cad-core --example native_demo -- /tmp/plate.blc
 
 use cad_core::geom::Vec2;
 use cad_core::model::*;
@@ -11,7 +11,7 @@ use cad_core::native::{self, lock, Change, ChangeSet};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| "plate.blk".into());
+        .unwrap_or_else(|| "plate.blc".into());
     let mut d = cad_core::samples::plate();
 
     // Lock, save, then save one change incrementally.

@@ -52,7 +52,7 @@ switches (see §9).
 
 Printing is black on white: white (colour 7) prints black, as in DWG, and
 the other colours print black or as set by the plot style. Paper output
-(PNG, SVG, the preview inside `.blk` files) is all black by default;
+(PNG, SVG, the preview inside `.blc` files) is all black by default;
 printing in colour keeps the true colours, with white still black.
 
 ## 3. Default layers
@@ -222,7 +222,7 @@ everything to millimetres.**
   round trips byte for byte. Inch fractions (1/2, 1/64) are exact in the
   file's binary numbers when kept in inches.
 - It is also what binary DXF does: coordinates are unitless 8-byte numbers,
-  and the header names the unit. The `.blk` format already works this way.
+  and the header names the unit. The `.blc` format already works this way.
 - Display format and precision are per drawing: decimal, fractional (to
   1/256), feet and fractional inches (architectural), feet and decimal
   inches (engineering), or scientific (`$LUNITS`, `$LUPREC`). A drawing

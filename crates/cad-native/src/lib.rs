@@ -1,4 +1,4 @@
-//! BlackCAD's native file format (`.blk`).
+//! BlackCAD's native file format (`.blc`).
 //!
 //! A drawing is stored as tagged records in the style of binary DXF (group
 //! codes from the published DXF reference, typed values), inside a
@@ -13,15 +13,15 @@
 //!
 //! The drawing is `cad-model`'s database (re-exported as [`cad_model`]),
 //! the same one `cad-dwg` and `cad-dxf` read and write, so a DWG opens and
-//! saves as `.blk` with nothing in between. The byte-level specification
+//! saves as `.blc` with nothing in between. The byte-level specification
 //! is `docs/FORMAT.md` in the BlackCAD repository.
 //!
 //! ```no_run
 //! let d = cad_dwg::read_bytes(&std::fs::read("part.dwg")?)?;
-//! cad_native::write_file(&d, "part.blk", &Default::default())?;
-//! let again = cad_native::read_file("part.blk")?;
+//! cad_native::write_file(&d, "part.blc", &Default::default())?;
+//! let again = cad_native::read_file("part.blc")?;
 //! // Or open once and look things up without loading everything:
-//! let f = cad_native::NativeFile::open("part.blk")?;
+//! let f = cad_native::NativeFile::open("part.blc")?;
 //! let props = f.properties()?;
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
@@ -92,7 +92,7 @@ use std::sync::OnceLock;
 /// File extension of BlackCAD's native drawings. The format's container is
 /// shared with CADCraft's `.cad` files, which hold CADCraft's own records
 /// (the header says whose: [`container::RECORDS_BLACKCAD`]).
-pub const EXTENSION: &str = "blk";
+pub const EXTENSION: &str = "blc";
 
 /// Target uncompressed size of one object page. Records are never split,
 /// so a single large record can make a page bigger.
@@ -1070,7 +1070,7 @@ fn load(c: &Container) -> Result<(Drawing, bool)> {
         Diagnostic {
             severity: Severity::Info,
             message: format!(
-                "native .blk {}.{}, generation {} ({} copy), {} object pages, {} change sets; source {}",
+                "native .blc {}.{}, generation {} ({} copy), {} object pages, {} change sets; source {}",
                 c.header.major,
                 c.header.minor,
                 c.header.generation,
@@ -1189,7 +1189,7 @@ fn blackcad_records(c: Container<'_>) -> Result<Container<'_>> {
         container::RECORDS_BLACKCAD => Ok(c),
         container::RECORDS_CADCRAFT => Err(Error::new(
             ErrorKind::UnsupportedVersion,
-            "a CADCraft drawing (.cad): its records are CADCraft's; BlackCAD reads its own .blk files",
+            "a CADCraft drawing (.cad): its records are CADCraft's; BlackCAD reads its own .blc files",
         )),
         n => Err(Error::new(ErrorKind::UnsupportedVersion, format!("records of an unknown program (schema {n})"))),
     }

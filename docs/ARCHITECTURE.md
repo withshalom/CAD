@@ -9,11 +9,11 @@ Two things, named and numbered separately.
   title; it is also what a written DWG names as the program that saved it). Its version
   is semver `MAJOR.MINOR.PATCH` and stays below 1.0.0 until release:
   the minor number goes up for any public API change, new feature set or new
-  `.blk` format version; the patch number for fixes only. 1.0.0 waits for the
+  `.blc` format version; the patch number for fixes only. 1.0.0 waits for the
   format freeze, which waits for the real-DWG corpus pass
   (`FORMAT-ROADMAP.md` §4). It is the Cargo workspace version, shown by
   `cad version` and recorded in each file's `$CAD_WRITER`.
-- **The file format** is `.blk` (written "the `.blk` format, version 2.0").
+- **The file format** is `.blc` (written "the `.blc` format, version 2.0").
   Its two-part version says only which readers can open a file (`FORMAT.md`).
   One program build can read and write several format versions.
 
@@ -23,7 +23,7 @@ name the format and its code, not the product.
 ## Goals
 
 - **Own native format, fluent in DWG.** Drawings are saved in the native
-  `.blk` format (see `FORMAT.md`): binary-DXF-style tagged records in a
+  `.blc` format (see `FORMAT.md`): binary-DXF-style tagged records in a
   DWG-style sectioned container, plus a change journal and `.bdl` locks.
   DWG is read on open and, later, written on export. The in-memory
   database mirrors DWG's own object graph (handles, owners, reactors,
@@ -35,9 +35,9 @@ name the format and its code, not the product.
   needs `unsafe`, the bridge to the apps (`crates/cad-ffi`), is small and
   separate.
 - **Open formats, open to others.** The drawing database and the DWG,
-  DXF and `.blk` readers and writers are crates of their own
+  DXF and `.blc` readers and writers are crates of their own
   (`cad-model`, `cad-dwg`, `cad-dxf`, `cad-native`), licensed MIT OR
-  Apache-2.0 so that other programs can read and write DWG and `.blk`
+  Apache-2.0 so that other programs can read and write DWG and `.blc`
   with them; `cad-core` builds on them and keeps everything else. They
   take nothing from the core: where a file needs something only the
   program has (its name, a preview, its font's text widths, its hatch
@@ -66,7 +66,7 @@ name the format and its code, not the product.
  └─────────────────────────────────┬──────────────────────────────────┘
           cad-core, above; the crates below are MIT OR Apache-2.0
  ┌─────────────────────────────────▼──────────────────────────────────┐
- │ cad-native .blk read/write, journal (incremental save), .bdl locks │
+ │ cad-native .blc read/write, journal (incremental save), .bdl locks │
  │           codec: DEFLATE and zlib (RFC 1950/1951), SHA-256          │
  │ cad-dxf   DXF read and write, ASCII and binary                     │
  │ cad-dwg   bits → container → object map → objects → header; writer │
@@ -77,7 +77,7 @@ name the format and its code, not the product.
 
  open(path) sniffs the first bytes: native magic → native reader, DXF
  text or sentinel → DXF reader, else DWG.
- save(drawing, path) always writes native .blk.
+ save(drawing, path) always writes native .blc.
  new_drawing(Metric | Imperial) starts one from a template.
 ```
 
@@ -218,7 +218,7 @@ objects (and ones that failed to decode) also keep their original DWG
 bytes in `Object::raw`, which the native format stores and a DWG writer
 can emit unchanged. Every object also carries its extended data
 (`Object::xdata`: blocks of `XValue`s per application, DXF groups
-1000–1071) and any fields a newer `.blk` writer added
+1000–1071) and any fields a newer `.blc` writer added
 (`Object::unknown_tags`, kept as encoded tags).
 
 Table records the core uses fully have their own kinds: `Layer`,
@@ -323,7 +323,7 @@ apps/web/core.js     loads core.wasm, copies bytes in and out (the only glue)
 cad-ffi/src/web.rs   wasm entry points: numbers in, bytes out (the only unsafe)
 cad-ffi/src/session.rs   open drawings, undo, the command language: safe Rust
 cad-core             everything else: render, display list, snaps, editing
-cad-model, cad-dwg, cad-dxf, cad-native   the drawing database, DWG, DXF and .blk
+cad-model, cad-dwg, cad-dxf, cad-native   the drawing database, DWG, DXF and .blc
 ```
 
 **No dependencies, as everywhere else.** No npm packages, no frameworks,
@@ -360,7 +360,7 @@ object snaps come from `snap.rs` in the core.
 **Files.** Opening reads the file's bytes; saving writes them back to the
 same file where the browser offers file handles (Chromium on desktop),
 or downloads them otherwise. The installed app registers for `.dwg`,
-`.dxf` and `.blk` (manifest `file_handlers`), so a file can be opened
+`.dxf` and `.blc` (manifest `file_handlers`), so a file can be opened
 with it from the operating system.
 
 **Offline.** The service worker caches the app and `core.wasm` and serves
@@ -442,9 +442,9 @@ the editor.
    9/10/20/23 against the spec PDF (see TEST-PLAN.md and PROVENANCE.md).
    Started: the first real file reads cleanly after two fixes
    (TEST-PLAN.md §7).
-   Run `cad verify` on every corpus file: DWG → `.blk` → identical model.
+   Run `cad verify` on every corpus file: DWG → `.blc` → identical model.
 2. Keep more of each decoded DWG object in the model (the remaining
-   fields; extended data is done) so `.blk` holds everything a DWG writer
+   fields; extended data is done) so `.blc` holds everything a DWG writer
    needs.
 3. AC1021 (2007) container.
 4. Paper space and layouts; hatch patterns; TrueType fonts. (Linetypes,
@@ -462,7 +462,7 @@ the editor.
    dimensions, move, copy, rotate, mirror, erase, property edits, layer
    commands, undo and redo. Offset, trim and fillet are next (the
    2026-10-08 advisory, P3-2, asked that they stay on this list).
-7. DWG export (writer), then round-trip tests DWG → `.blk` → DWG.
+7. DWG export (writer), then round-trip tests DWG → `.blc` → DWG.
 8. Desktop app shell with `.bdl` presence. The GUI is built first as the
    browser workbench (`apps/web`, above). Android has a test viewer
    (`apps/android`); its editor waits on the storage decision above. Then

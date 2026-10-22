@@ -59,7 +59,7 @@ const UNDO_STEPS: usize = 1000;
 const HISTORY_BYTES: usize = 64 << 20;
 
 /// Formats [`Session::save`] writes.
-pub const SAVE_FORMATS: [&str; 6] = ["blk", "dwg", "dxf", "dxfb", "svg", "pdf"];
+pub const SAVE_FORMATS: [&str; 6] = ["blc", "dwg", "dxf", "dxfb", "svg", "pdf"];
 
 struct Doc {
     drawing: Drawing,
@@ -70,7 +70,7 @@ struct Doc {
     history: usize,
     /// Edits since the last save.
     dirty: bool,
-    /// What the drawing was opened from: "dwg", "dxf", "blk" or "new".
+    /// What the drawing was opened from: "dwg", "dxf", "blc" or "new".
     source: &'static str,
     /// Model space rendered, kept between queries until the next edit.
     scene: Option<render::Scene>,
@@ -322,11 +322,11 @@ impl Session {
         self.docs.get_mut(&id).ok_or_else(|| format!("no drawing {id} is open"))
     }
 
-    /// Open a drawing (native `.blk`, DXF or DWG, told apart by content).
+    /// Open a drawing (native `.blc`, DXF or DWG, told apart by content).
     pub fn open(&mut self, bytes: &[u8]) -> Result<u32, String> {
         self.room()?;
         let source = if native::looks_native(bytes) {
-            "blk"
+            "blc"
         } else if dxf::looks_like_dxf(bytes) {
             "dxf"
         } else {
@@ -514,7 +514,7 @@ impl Session {
         let doc = &*doc;
         let d = &doc.drawing;
         let out = match format {
-            "blk" => (native::to_bytes(d, &native::WriteOptions::default()), Vec::new()),
+            "blc" => (native::to_bytes(d, &native::WriteOptions::default()), Vec::new()),
             "dwg" => {
                 let o = dwg::write::to_bytes(d).map_err(|e| e.to_string())?;
                 (o.bytes, o.notes)
@@ -560,7 +560,7 @@ impl Session {
             }
             _ => return Err(format!("unknown format {format:?}; one of {}", SAVE_FORMATS.join(", "))),
         };
-        if format == "blk" || format == "dwg" || format == "dxf" || format == "dxfb" {
+        if format == "blc" || format == "dwg" || format == "dxf" || format == "dxfb" {
             self.doc_mut(id)?.dirty = false;
         }
         Ok(out)
@@ -1545,7 +1545,7 @@ mod tests {
     fn units_read_the_same_after_every_save() {
         let mut s = Session::new();
         let id = s.sample().unwrap();
-        for f in ["blk", "dwg", "dxf", "dxfb"] {
+        for f in ["blc", "dwg", "dxf", "dxfb"] {
             let (bytes, _) = s.save(id, f, 0, "").unwrap();
             let back = s.open(&bytes).unwrap();
             let info = s.info(back).unwrap();
@@ -1687,7 +1687,7 @@ mod tests {
         // Every format keeps every object.
         let (items, _) = read_display(&s.display(id).unwrap());
         let count = render::model_space(s.drawing(id).unwrap()).items.len();
-        for f in ["blk", "dwg", "dxf", "dxfb"] {
+        for f in ["blc", "dwg", "dxf", "dxfb"] {
             let (bytes, notes) = s.save(id, f, 1_790_000_000, "tester").unwrap();
             assert!(notes.is_empty(), "{f}: {notes:?}");
             let back = s.open(&bytes).unwrap();

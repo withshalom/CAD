@@ -404,7 +404,7 @@ the drawing is CAD, not CAM (DESIGN.md §1). Those belong to the export.
 | Command | Alias | Keys | Does | Phase | Today |
 |---|---|---|---|---|---|
 | NEW | — | Ctrl+N | New drawing from the Metric or Imperial template. | 1 | `cad new` |
-| OPEN | — | Ctrl+O | Open a `.blk` or DWG file. | 1 | every command |
+| OPEN | — | Ctrl+O | Open a `.blc` or DWG file. | 1 | every command |
 | SAVE | — | Ctrl+S | Save. Small changes append a change set; a full save writes a fresh snapshot. | 1 | `cad save`, core API |
 | SAVEAS | — | Ctrl+Shift+S | Save under a new name or folder. | 1 | `cad save` |
 | CLOSE | — | Ctrl+W | Close the drawing. | 1 | |
