@@ -1,7 +1,7 @@
 {
-  "name": "CAD",
-  "short_name": "CAD",
-  "description": "DWG-native drafting. GUI workbench running the CAD core in WebAssembly.",
+  "name": "BlackCAD",
+  "short_name": "BlackCAD",
+  "description": "BlackCAD: drafting that opens .dwg, .dxf and .cad, with a blackboard of shop lessons beside it. The core runs in the browser as WebAssembly.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

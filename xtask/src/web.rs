@@ -3,9 +3,10 @@
 //! `web` builds `crates/cad-ffi` for `wasm32-unknown-unknown` and puts
 //! the app together in `dist/web/`: the files of `apps/web/` and the core
 //! as `core.wasm`, with the service worker's cache name stamped with a
-//! hash of the build. `serve` runs a small web server over that folder for
-//! testing, on this computer only unless told otherwise. Both use nothing
-//! but the standard library, like the rest of the workspace.
+//! hash of the build. It also writes `dist/BlackCAD.html`, the same app as
+//! one file. `serve` runs a small web server over that folder for testing,
+//! on this computer only unless told otherwise. Both use nothing but the
+//! standard library, like the rest of the workspace.
 
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
@@ -13,14 +14,17 @@ use std::net::{TcpListener, TcpStream};
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 
-pub const USAGE: &str = "    cargo xtask web [--debug]
+pub const USAGE: &str = "    cargo xtask web [--debug] [--core FILE]
         Build the core for WebAssembly (wasm32-unknown-unknown) and put the
         browser workbench together in dist/web/. Also writes
-        dist/cad-test.html: the same workbench as one file (scripts, styles
+        dist/BlackCAD.html: the same workbench as one file (scripts, styles
         and core inlined) for testing the GUI by opening it in a browser; it
         has no service worker, so it does not install or work offline.
+        --core FILE uses a core.wasm built before (by CI, say: the gh-pages
+        branch has one) instead of building it, for working on apps/web
+        without the WebAssembly target installed.
 
-    cargo xtask serve [--port N] [--host ADDR] [--no-build] [--debug]
+    cargo xtask serve [--port N] [--host ADDR] [--no-build] [--debug] [--core FILE]
         Build as `web` does, then serve dist/web/ at http://127.0.0.1:8080/
         until stopped (Ctrl+C). --host 0.0.0.0 serves other devices on the
         network too; browsers install the app and run its service worker
@@ -28,6 +32,14 @@ pub const USAGE: &str = "    cargo xtask web [--debug]
         instead: adb reverse tcp:8080 tcp:8080.";
 
 const TARGET: &str = "wasm32-unknown-unknown";
+
+/// The single-file test page, in `dist/`. Named for the program
+/// (`cad_core::PRODUCT_NAME`).
+const SINGLE_FILE: &str = "BlackCAD.html";
+/// The page's title in `apps/web/index.html`, and the single file's.
+const TITLE: (&str, &str) = ("<title>BlackCAD</title>", "<title>BlackCAD (test build)</title>");
+/// Files in `apps/web/` that are not part of the app.
+const NOT_SHIPPED: [&str; 2] = ["README.md", "tests"];
 
 fn opt<'a>(args: &'a [String], name: &str) -> Result<Option<&'a str>, String> {
     match args.iter().position(|a| a == name) {
@@ -55,15 +67,30 @@ fn check_args(args: &[String], flags: &[&str], valued: &[&str]) -> Result<(), St
 }
 
 pub fn web(root: &Path, args: &[String]) -> Result<(), String> {
-    check_args(args, &["--debug"], &[])?;
-    build(root, !args.iter().any(|a| a == "--debug")).map(|_| ())
+    check_args(args, &["--debug"], &["--core"])?;
+    build(root, !args.iter().any(|a| a == "--debug"), opt(args, "--core")?).map(|_| ())
 }
 
-/// Build and assemble; the folder made.
-fn build(root: &Path, release: bool) -> Result<PathBuf, String> {
+/// Build and assemble; the folder made. With `core`, that file is the core
+/// and nothing is compiled.
+fn build(root: &Path, release: bool, core: Option<&str>) -> Result<PathBuf, String> {
+    let wasm_bytes = match core {
+        Some(path) => {
+            println!("Using the core in {path}");
+            fs::read(path).map_err(|e| format!("{path}: {e}"))?
+        }
+        None => build_core(root, release)?,
+    };
+    check_wasm(&wasm_bytes)?;
+    assemble(root, wasm_bytes)
+}
+
+/// `crates/cad-ffi` built for the browser: the bytes of `cad_ffi.wasm`.
+fn build_core(root: &Path, release: bool) -> Result<Vec<u8>, String> {
     if !target_installed() {
         return Err(format!(
-            "the Rust standard library for {TARGET} is not installed; install it with\n    rustup target add {TARGET}"
+            "the Rust standard library for {TARGET} is not installed; install it with\n    rustup target add {TARGET}\n\
+             (or assemble the app around a core built before: --core FILE)"
         ));
     }
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
@@ -90,9 +117,12 @@ fn build(root: &Path, release: bool) -> Result<PathBuf, String> {
         .join(TARGET)
         .join(if release { "release" } else { "debug" })
         .join("cad_ffi.wasm");
-    let wasm_bytes = fs::read(&wasm).map_err(|e| format!("{}: {e}", wasm.display()))?;
-    check_wasm(&wasm_bytes)?;
+    fs::read(&wasm).map_err(|e| format!("{}: {e}", wasm.display()))
+}
 
+/// `apps/web/` and the core put together in `dist/web/`, and the single
+/// file beside it; the folder made.
+fn assemble(root: &Path, wasm_bytes: Vec<u8>) -> Result<PathBuf, String> {
     let src = root.join("apps").join("web");
     let out = root.join("dist").join("web");
     if out.exists() {
@@ -121,7 +151,7 @@ fn build(root: &Path, release: bool) -> Result<PathBuf, String> {
     }
     let size = files.iter().find(|f| f.0 == Path::new("core.wasm")).map(|f| f.1.len()).unwrap_or(0);
     let single = single_file(&files, &stamp)?;
-    let single_path = root.join("dist").join("cad-test.html");
+    let single_path = root.join("dist").join(SINGLE_FILE);
     fs::write(&single_path, &single).map_err(|e| format!("{}: {e}", single_path.display()))?;
     println!("Built {} (one file, {} KB)", single_path.display(), single.len() / 1024);
     println!(
@@ -200,7 +230,7 @@ fn collect(base: &Path, dir: &Path, out: &mut Vec<(PathBuf, Vec<u8>)>) -> Result
         let e = e.map_err(|e| e.to_string())?;
         let p = e.path();
         let name = e.file_name().to_string_lossy().to_string();
-        if name.starts_with('.') || name == "core.wasm" {
+        if name.starts_with('.') || name == "core.wasm" || (dir == base && NOT_SHIPPED.contains(&name.as_str())) {
             continue;
         }
         if p.is_dir() {
@@ -234,15 +264,16 @@ fn single_file(files: &[(PathBuf, Vec<u8>)], stamp: &str) -> Result<String, Stri
     }
     let script = bundle(&text, "app.js")?;
     let icon = format!("data:image/svg+xml;base64,{}", base64(get("icons/icon.svg")?));
-    let swaps: [(&str, String); 5] = [
+    let swaps: [(&str, String); 6] = [
         ("<link rel=\"manifest\" href=\"manifest.webmanifest\">\n", String::new()),
         ("<link rel=\"apple-touch-icon\" href=\"icons/icon-192.png\">\n", String::new()),
         ("href=\"icons/icon.svg\"", format!("href=\"{icon}\"")),
+        (TITLE.0, TITLE.1.to_string()),
         ("<link rel=\"stylesheet\" href=\"style.css\">", format!("<style>\n{css}</style>")),
         (
             "<script type=\"module\" src=\"app.js\"></script>",
             format!(
-                "<!-- CAD single-file test build {stamp}: no service worker, no install. -->\n\
+                "<!-- BlackCAD single-file test build {stamp}: no service worker, no install. -->\n\
                  <script>globalThis.CAD_CORE_WASM = \"{}\";</script>\n<script type=\"module\">\n{script}</script>",
                 base64(get("core.wasm")?)
             ),
@@ -254,7 +285,6 @@ fn single_file(files: &[(PathBuf, Vec<u8>)], stamp: &str) -> Result<String, Stri
         }
         html = html.replacen(from, &to, 1);
     }
-    html = html.replacen("<title>CAD</title>", "<title>CAD (test build)</title>", 1);
     Ok(html)
 }
 
@@ -358,7 +388,7 @@ impl Fnv {
 }
 
 pub fn serve(root: &Path, args: &[String]) -> Result<(), String> {
-    check_args(args, &["--no-build", "--debug"], &["--port", "--host"])?;
+    check_args(args, &["--no-build", "--debug"], &["--port", "--host", "--core"])?;
     let port: u16 = opt(args, "--port")?
         .map(|p| p.parse().map_err(|_| format!("{p:?} is not a port number")))
         .transpose()?
@@ -367,7 +397,7 @@ pub fn serve(root: &Path, args: &[String]) -> Result<(), String> {
     let dir = if args.iter().any(|a| a == "--no-build") {
         root.join("dist").join("web")
     } else {
-        build(root, !args.iter().any(|a| a == "--debug"))?
+        build(root, !args.iter().any(|a| a == "--debug"), opt(args, "--core")?)?
     };
     if !dir.join("index.html").is_file() {
         return Err(format!("{} has no index.html; run cargo xtask web first", dir.display()));
@@ -513,6 +543,26 @@ mod tests {
         assert!(js.contains("const __b = (() => {\nconst k = 1;\nfunction f()"));
         assert!(js.contains("return { f };") && js.contains("const { f } = __b;") && js.ends_with("f();\n"));
         assert!(bundle(&files, "c.js").unwrap_err().contains("does not export g"));
+    }
+
+    /// The real `apps/web/` makes a whole single file: every swap finds
+    /// what it replaces (`single_file` fails otherwise), and nothing of the
+    /// installable app is left in it.
+    #[test]
+    fn the_single_file_assembles_from_apps_web() {
+        let web = Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("apps").join("web");
+        let mut files = Vec::new();
+        collect(&web, &web, &mut files).unwrap();
+        assert!(files.iter().all(|f| f.0 != Path::new("README.md") && !f.0.starts_with("tests")));
+        files.push((PathBuf::from("core.wasm"), b"\0asm\x01\0\0\0".to_vec()));
+        let html = single_file(&files, "0123456789abcdef").unwrap();
+        assert!(html.contains(TITLE.1) && !html.contains(TITLE.0));
+        assert!(html.contains("globalThis.CAD_CORE_WASM = \"AGFzbQEAAAA=\";"));
+        assert!(html.contains("<link rel=\"icon\" href=\"data:image/svg+xml;base64,"));
+        assert!(html.contains("const __core = (() => {") && html.contains("const __icons = (() => {"));
+        for gone in ["manifest.webmanifest", "icon-192.png", "href=\"style.css\"", "src=\"app.js\"", "\nimport "] {
+            assert!(!html.contains(gone), "{gone} is still in the single file");
+        }
     }
 
     #[test]

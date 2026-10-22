@@ -37,6 +37,15 @@ const P = {
   fillet: '<path d="M5 20V12a7 7 0 0 1 7-7h8"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M4 16V5.5A1.5 1.5 0 0 1 5.5 4H16"/>',
   more: '<circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/>',
+  scale: '<rect x="4" y="11" width="9" height="9"/><path d="M8 7V4h12v12h-3"/><path d="M13 11l5-5M14 6h4v4"/>',
+  array: '<rect x="4" y="4" width="5" height="5"/><rect x="15" y="4" width="5" height="5" stroke-dasharray="2 1.6"/><rect x="4" y="15" width="5" height="5" stroke-dasharray="2 1.6"/><rect x="15" y="15" width="5" height="5" stroke-dasharray="2 1.6"/>',
+  hatch: '<rect x="4" y="4" width="16" height="16"/><path d="M4 12l8-8M4 20L20 4M12 20l8-8"/>',
+  leader: '<path d="M4 20l9-9h7"/><path d="M4 20l1.5-4.5 3 3z" fill="currentColor"/><path d="M14 7h6"/>',
+  mtext: '<path d="M4 5h16M4 10h16M4 15h11M4 20h7"/>',
+  xline: '<path d="M2 18L22 6" stroke-dasharray="3 2"/><circle cx="12" cy="12" r="1.6"/>',
+  block: '<rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><path d="M7 15l3-6 3 4 2-2 2 4"/><circle cx="3.5" cy="20.5" r="1.4" fill="currentColor"/>',
+  layout: '<rect x="3" y="5" width="18" height="14" rx="1"/><rect x="5.5" y="7.5" width="9" height="9"/><path d="M16.5 15.5h2.5"/>',
+  plot: '<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="1.5"/><path d="M7 14h10v7H7z"/>',
 };
 
 export function icon(name) {
