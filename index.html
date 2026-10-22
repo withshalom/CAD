@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#121519">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="BlackCAD: drafting that opens .dwg, .dxf and .blc, with a blackboard of shop lessons beside it.">
+<meta name="application-name" content="BlackCAD">
+<meta name="apple-mobile-web-app-title" content="BlackCAD">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>BlackCAD</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="chalk" x="-5%" y="-10%" width="110%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="7" result="grain"/><feDisplacementMap in="SourceGraphic" in2="grain" scale="3" xChannelSelector="R" yChannelSelector="G" result="rough"/><feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="1" seed="2" result="speck"/><feColorMatrix in="speck" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.4 1.6" result="holes"/><feComposite in="rough" in2="holes" operator="in"/></filter></svg>
+<div id="app" class="no-drawing">
+
+  <!-- Desktop top bar (DESIGN.md §10) -->
+  <header id="top">
+    <button id="mark" class="mark" title="Menu" aria-label="Menu" aria-haspopup="menu"></button>
+    <nav id="tabs" class="tabs" aria-label="Open drawings"></nav>
+    <button id="new-btn" class="iconbtn" title="New drawing (Ctrl+N)" aria-label="New drawing"></button>
+    <span class="grow"></span>
+    <button id="install-btn" class="install" hidden>Install app</button>
+    <button id="undo-btn" class="iconbtn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled></button>
+    <button id="redo-btn" class="iconbtn" title="Redo (Ctrl+Y)" aria-label="Redo" disabled></button>
+    <span id="saved" class="saved"></span>
+    <button id="who" class="who" title="Who has this drawing open"><span class="av" id="who-av">·</span><span id="who-text">This browser</span></button>
+  </header>
+
+  <!-- Phone top bar and aid chips (DESIGN.md §11) -->
+  <header id="pbar">
+    <button id="pmenu" class="iconbtn" aria-label="Menu"></button>
+    <div class="ttl"><b id="ptitle">BlackCAD</b><span id="psub"></span></div>
+    <button id="pundo" class="iconbtn" aria-label="Undo" disabled></button>
+    <button id="predo" class="iconbtn" aria-label="Redo" disabled></button>
+    <button id="players" class="iconbtn" aria-label="Layers"></button>
+  </header>
+  <div id="chips"><div id="chip-aids"></div><span id="ppos" class="pos num"></span></div>
+
+  <aside id="rail" aria-label="Tools"></aside>
+
+  <main id="stage">
+    <canvas id="canvas" tabindex="0" aria-label="Drawing"></canvas>
+    <div class="chip crumb" id="crumb"></div>
+    <div class="chip views" id="views"></div>
+    <div id="tip" class="tip" hidden><span class="snaptag" id="snaptag" hidden></span><span class="dyn" id="dyn"></span></div>
+    <div id="drop-hint" hidden><div>Drop a DWG, DXF or .blc file to open it</div></div>
+    <section id="welcome">
+      <div class="welcome-card">
+        <div class="wmark" id="wmark"></div>
+        <h1><span class="w">Black</span>CAD</h1>
+        <p class="sub num" id="welcome-version">Loading the core…</p>
+        <div class="welcome-actions">
+          <button class="big" data-act="new-metric"><b>Metric drawing</b><span>Millimetres</span></button>
+          <button class="big" data-act="new-imperial"><b>Imperial drawing</b><span>Inches</span></button>
+          <button class="big" data-act="open"><b>Open a file</b><span>DWG, DXF or .blc</span></button>
+          <button class="big" data-act="sample"><b>Sample plate</b><span>P-1042, to try the tools</span></button>
+          <button class="big bb-card" data-board><b>Blackboard</b><span>School for drafting, school for shop. Lessons that work on numbers you can move, your shop's own rules, and a check for your drawing.</span><i><u>Drafting</u><u>Shop</u><u>Electronics</u></i></button>
+        </div>
+        <p class="hint">Or drop a drawing anywhere on this window.</p>
+      </div>
+    </section>
+    <div id="board-scrim"></div>
+    <section id="board" role="dialog" aria-label="Blackboard" aria-hidden="true" inert>
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <filter id="chalk-soft" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="g"/><feDisplacementMap in="SourceGraphic" in2="g" scale="1.4" xChannelSelector="R" yChannelSelector="G" result="r"/><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="1" seed="9" result="sp"/><feColorMatrix in="sp" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.1 1.55" result="h"/><feComposite in="r" in2="h" operator="in"/></filter>
+        <pattern id="bb-hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V9" stroke="#ff8fa3" stroke-width="1.6" opacity=".55"/></pattern>
+        <pattern id="bb-hatch-a" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V7" stroke="#f2a93b" stroke-width="1.6" opacity=".7"/></pattern>
+      </svg>
+      <div class="bb-frame">
+        <nav class="bb-tabs" id="bb-tabs" role="tablist" aria-label="Subjects"></nav>
+        <div class="bb-main">
+          <div class="bb-fig" id="bb-fig"></div>
+          <div class="bb-text" id="bb-text"></div>
+        </div>
+        <footer class="bb-tray">
+          <button class="stick" id="bb-lessons">Lessons</button>
+          <span class="bb-steps" id="bb-steps"></span>
+          <span class="bb-label" id="bb-label"></span>
+          <span class="grow"></span>
+          <button class="stick ghost" id="bb-print" title="Print this lesson as a sheet">Print</button>
+          <button class="stick ghost" id="bb-hc" title="High contrast" aria-pressed="false">Contrast</button>
+          <button class="stick ghost" id="bb-unit" title="Switch units">mm</button>
+          <button class="stick ghost" id="bb-erase" title="Put the numbers back to the lesson's starting values">Eraser</button>
+          <button class="stick" id="bb-back">Back</button>
+          <button class="stick go" id="bb-next">Next</button>
+        </footer>
+      </div>
+      <button class="bb-cord" id="bb-close" aria-label="Close the blackboard" title="Close (Esc)"><i></i><b></b></button>
+    </section>
+  </main>
+
+  <aside id="side" aria-label="Properties, layers and drawing">
+    <div class="side-grab"></div>
+    <section class="sec" id="sec-props">
+      <div class="sech"><h2>Properties</h2></div>
+      <div id="props"></div>
+    </section>
+    <section class="sec" id="sec-layers">
+      <div class="sech"><h2>Layers</h2><button class="iconbtn sm" id="layer-add" title="New layer" aria-label="New layer"></button></div>
+      <div id="layers"></div>
+    </section>
+    <section class="sec" id="sec-drawing">
+      <div class="sech"><h2>Drawing</h2></div>
+      <div id="drawing"></div>
+    </section>
+  </aside>
+
+  <section id="cmd">
+    <div id="history" aria-live="polite"></div>
+    <div class="in">
+      <span id="prompt"></span>
+      <input id="cmd-input" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Command line">
+      <ul id="suggest" hidden></ul>
+    </div>
+  </section>
+
+  <footer id="stat">
+    <span id="coords" class="coords num">0, 0</span>
+    <div id="aids"></div>
+    <span class="grow"></span>
+    <div id="sheets" class="sheets" role="tablist" aria-label="Model and layouts"></div>
+  </footer>
+
+  <div id="sheet">
+    <div class="handle"></div>
+    <div id="sheet-tools" class="tools"></div>
+    <div id="sheet-obj"></div>
+  </div>
+</div>
+
+<div id="menu" role="menu" hidden></div>
+<div id="numpad" hidden></div>
+<div id="toast" role="status" hidden></div>
+<input type="file" id="file-input" accept=".dwg,.dxf,.blc,.cad" hidden>
+</body>
+</html>

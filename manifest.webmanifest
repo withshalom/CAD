@@ -1,0 +1,30 @@
+{
+  "name": "BlackCAD",
+  "short_name": "BlackCAD",
+  "description": "BlackCAD: drafting that opens .dwg, .dxf and .blc, with a blackboard of shop lessons beside it. The core runs in the browser as WebAssembly.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#0d1013",
+  "theme_color": "#0d1013",
+  "orientation": "any",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "application/acad": [".dwg"],
+        "application/dxf": [".dxf"],
+        "application/x-blackcad-drawing": [".blc"]
+      }
+    }
+  ],
+  "launch_handler": { "client_mode": "focus-existing" }
+}
