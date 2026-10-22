@@ -141,12 +141,19 @@ comparison tool (run its binary on our own test files and compare output,
 without reading its source), recorded here if that happens.
 
 **Downstream use, one way (2026-10-21).** The owner's fork of CADCraft
-(`withshalom/dwgcraft`, a CAD program whose DWG support came from acadrust)
-now takes `cad-dwg` and `cad-dxf` from this repository, by git revision,
-as its first DWG reader and writer, and keeps acadrust there as the
-fallback for files these crates do not convert whole. That work happens
-in the fork only. Nothing from dwgcraft, CADCraft or acadrust comes back
-into this repository, and rule 3 above holds here unchanged.
+(`withshalom/cadcraft`, named `withshalom/dwgcraft` until 2026-10-22; a CAD
+program whose DWG support came from acadrust) now takes `cad-dwg` and
+`cad-dxf` from this repository, by git revision, as its first DWG reader
+and writer, and keeps acadrust there as the fallback for files these
+crates do not convert whole. Its `dwg-native` and `cad-native` branches
+also take `cad-native`, and its `blackcad-native` branch takes `cad-core`
+(an experiment, kept in that branch; builds of it are not open source).
+That work happens in the fork only. Nothing from the fork, CADCraft or
+acadrust comes back into this repository, and rule 3 above holds here
+unchanged: the entity types added to `cad-model` from 0.13.0 on
+(tolerances, images, wipeouts, multilines) are the ones that fork
+models, but they were written from the ODA specification and the DXF
+reference, not from its code.
 
 ## A caveat about how the code was written
 
