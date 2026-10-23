@@ -1,11 +1,16 @@
 [package]
-name = "cad-model"
+name = "blackcad-model"
 description = "BlackCAD's drawing database: objects keyed by DWG handles, tables, entities, geometry and text code pages"
 version.workspace = true
+authors = ["WithShalom <design@withshalom.com>"]
 edition.workspace = true
 rust-version.workspace = true
 license = "MIT OR Apache-2.0"
-publish.workspace = true
+publish = true
+repository = "https://github.com/withshalom/CAD"
+readme = "README.md"
+keywords = ["cad", "dwg", "dxf", "drawing", "autocad"]
+categories = ["data-structures", "graphics"]
 
 [dependencies]
 # Intentionally empty: std only.

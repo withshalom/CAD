@@ -375,6 +375,14 @@ pub(crate) struct Writer<'a> {
     d: &'a Drawing,
     hv: Hv<'a>,
     out: Vec<Group>,
+    /// At most how many bytes the file may take, and in which encoding (`within`); no limit
+    /// when `None`.
+    budget: Option<(usize, crate::DxfFormat)>,
+    /// The bytes the groups in `out` take in that encoding (`encode::encoded_len`), with the
+    /// binary sentinel.
+    used: usize,
+    /// The budget was passed: no more groups are kept.
+    over: bool,
     /// Objects kept as DWG records that decode into DXF records.
     ng: BTreeMap<Handle, NonGraphic>,
     /// Every handle that gets a record of its own.
@@ -399,6 +407,9 @@ impl<'a> Writer<'a> {
             hatch_lines,
             hv: Hv::new(d),
             out: Vec::new(),
+            budget: None,
+            used: 0,
+            over: false,
             ng: BTreeMap::new(),
             written: BTreeSet::new(),
             skipped: BTreeMap::new(),
@@ -408,6 +419,34 @@ impl<'a> Writer<'a> {
         };
         w.plan();
         w
+    }
+
+    /// Stop keeping groups once the file, in `format`, would take more than `max_bytes`: the
+    /// writer still walks the drawing, but what it keeps stays within the limit, and
+    /// [`Writer::write`] says the file was not written.
+    pub fn within(mut self, max_bytes: usize, format: crate::DxfFormat) -> Self {
+        self.budget = Some((max_bytes, format));
+        self.used = match format {
+            crate::DxfFormat::Ascii => 0,
+            crate::DxfFormat::Binary => crate::encode::BINARY_SENTINEL.len(),
+        };
+        self
+    }
+
+    /// Keep a group, unless the file would pass the budget.
+    fn push(&mut self, g: Group) {
+        if self.over {
+            return;
+        }
+        if let Some((max, format)) = self.budget {
+            self.used = self.used.saturating_add(crate::encode::encoded_len(&g, format));
+            if self.used > max {
+                self.over = true;
+                self.out = Vec::new();
+                return;
+            }
+        }
+        self.out.push(g);
     }
 
     /// Decide what gets written: tables, records, block contents and the
@@ -529,25 +568,25 @@ impl<'a> Writer<'a> {
     // ----- group helpers ---------------------------------------------------
 
     fn s(&mut self, code: u16, v: impl Into<String>) {
-        self.out.push(Group {
+        self.push(Group {
             code,
             value: Value::Str(v.into()),
         });
     }
     fn r(&mut self, code: u16, v: f64) {
-        self.out.push(Group {
+        self.push(Group {
             code,
             value: Value::Real(v),
         });
     }
     fn i(&mut self, code: u16, v: i64) {
-        self.out.push(Group {
+        self.push(Group {
             code,
             value: Value::Int(v),
         });
     }
     fn h(&mut self, code: u16, h: Handle) {
-        self.out.push(Group {
+        self.push(Group {
             code,
             value: Value::Handle(h.0),
         });
@@ -576,8 +615,9 @@ impl<'a> Writer<'a> {
 
     // ----- sections ------------------------------------------------------------
 
-    /// The groups, the notes, and the objects left out by type.
-    pub fn write(mut self) -> (Vec<Group>, Vec<String>, BTreeMap<String, usize>) {
+    /// The groups, the notes, and the objects left out by type; `None` instead of the groups
+    /// when they would pass the limit given to [`Writer::within`].
+    pub fn write(mut self) -> (Option<Vec<Group>>, Vec<String>, BTreeMap<String, usize>) {
         self.header();
         self.classes();
         self.tables();
@@ -585,7 +625,8 @@ impl<'a> Writer<'a> {
         self.entities();
         self.objects();
         self.s(0, "EOF");
-        (self.out, self.notes, self.skipped)
+        let groups = if self.over { None } else { Some(self.out) };
+        (groups, self.notes, self.skipped)
     }
 
     fn begin(&mut self, name: &str) {
@@ -674,7 +715,7 @@ impl<'a> Writer<'a> {
             };
             self.s(9, name);
             match value {
-                Some(v) => self.out.push(Group { code, value: v }),
+                Some(v) => self.push(Group { code, value: v }),
                 None => {
                     // Points: only a raw variable leaves the value for here.
                     let Src::Raw(dwg) = src else {
@@ -2070,7 +2111,7 @@ impl<'a> Writer<'a> {
                     XValue::Open => self.s(1002, "{"),
                     XValue::Close => self.s(1002, "}"),
                     XValue::Layer(h) => self.s(1003, self.name(*h)),
-                    XValue::Bytes(b) => self.out.push(Group { code: 1004, value: Value::Bytes(b.clone()) }),
+                    XValue::Bytes(b) => self.push(Group { code: 1004, value: Value::Bytes(b.clone()) }),
                     XValue::Handle(h) => self.h(1005, *h),
                     XValue::Point(p) => self.p3(1010, *p),
                     XValue::Position(p) => self.p3(1011, *p),
@@ -2126,7 +2167,7 @@ impl<'a> Writer<'a> {
                 XrValue::Int32(i) => self.i(*code, *i as i64),
                 XrValue::Int64(i) => self.i(*code, *i),
                 XrValue::Bool(b) => self.i(*code, *b as i64),
-                XrValue::Bytes(b) => self.out.push(Group {
+                XrValue::Bytes(b) => self.push(Group {
                     code: *code,
                     value: Value::Bytes(b.clone()),
                 }),

@@ -32,7 +32,7 @@ before commercial release.
 ## Licensing
 
 Since 0.8.0 the drawing database and the DWG and DXF readers and writers
-are crates of their own (`crates/cad-model`, `crates/cad-dwg`,
+are crates of their own (`crates/blackcad-model`, `crates/cad-dwg`,
 `crates/cad-dxf`), licensed MIT OR Apache-2.0; the rest stays
 proprietary (`LICENSE`). Since 0.10.0 the native `.blc` format and the
 DEFLATE, zlib and SHA-256 code it uses are a fourth such crate
@@ -150,7 +150,7 @@ also take `cad-native`, and its `blackcad-native` branch takes `cad-core`
 (an experiment, kept in that branch; builds of it are not open source).
 That work happens in the fork only. Nothing from the fork, CADCraft or
 acadrust comes back into this repository, and rule 3 above holds here
-unchanged: the entity types added to `cad-model` from 0.13.0 on
+unchanged: the entity types added to `blackcad-model` from 0.13.0 on
 (tolerances, images, wipeouts, multilines) are the ones that fork
 models, but they were written from the ODA specification and the DXF
 reference, not from its code.

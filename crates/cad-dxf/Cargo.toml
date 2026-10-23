@@ -2,11 +2,16 @@
 name = "cad-dxf"
 description = "BlackCAD's DXF reader and writer (ASCII and binary, AutoCAD 2018 format)"
 version.workspace = true
+authors = ["WithShalom <design@withshalom.com>"]
 edition.workspace = true
 rust-version.workspace = true
 license = "MIT OR Apache-2.0"
-publish.workspace = true
+publish = true
+repository = "https://github.com/withshalom/CAD"
+readme = "README.md"
+keywords = ["dxf", "cad", "autocad", "drawing", "parser"]
+categories = ["parser-implementations", "encoding", "graphics"]
 
 [dependencies]
-cad-model = { path = "../cad-model" }
-cad-dwg = { path = "../cad-dwg" }
+blackcad-model = { path = "../blackcad-model", version = "0.18.0" }
+cad-dwg = { path = "../cad-dwg", version = "0.18.0" }

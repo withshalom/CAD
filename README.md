@@ -28,7 +28,7 @@ See [Status](#status).
 ## What's here
 
 ```
-crates/cad-model/    the drawing database, geometry and text code pages      (MIT OR Apache-2.0)
+crates/blackcad-model/    the drawing database, geometry and text code pages      (MIT OR Apache-2.0)
 crates/cad-dwg/      the DWG reader and writer                                (MIT OR Apache-2.0)
 crates/cad-dxf/      the DXF reader and writer                                (MIT OR Apache-2.0)
 crates/cad-native/   the native .blc format, and its DEFLATE and SHA-256 code (MIT OR Apache-2.0)
@@ -357,7 +357,7 @@ and `--example native_bench` for size and speed on 200,000 entities
 ## License
 
 BlackCAD is proprietary (see [`LICENSE`](LICENSE)), except the drawing
-database and the file formats: the crates [`cad-model`](crates/cad-model),
+database and the file formats: the crates [`blackcad-model`](crates/blackcad-model),
 [`cad-dwg`](crates/cad-dwg), [`cad-dxf`](crates/cad-dxf) and
 [`cad-native`](crates/cad-native) are licensed under either of the MIT
 License or the Apache License, Version 2.0, at your option. Other programs

@@ -12,7 +12,7 @@ name = "cad_core"
 path = "src/lib.rs"
 
 [dependencies]
-cad-model = { path = "../cad-model" }
+blackcad-model = { path = "../blackcad-model" }
 cad-dwg = { path = "../cad-dwg" }
 cad-dxf = { path = "../cad-dxf" }
 cad-native = { path = "../cad-native" }

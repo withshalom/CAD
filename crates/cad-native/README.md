@@ -18,8 +18,8 @@ adds:
   DWG opened and saved as `.blc` loses nothing.
 - **`.bcl` lock files** for drawings shared on a network folder.
 
-The drawing is [`cad-model`](../cad-model)'s database, the same one
-[`cad-dwg`](../cad-dwg) and [`cad-dxf`](../cad-dxf) read and write.
+The drawing is [`blackcad-model`](https://crates.io/crates/blackcad-model)'s database, the same one
+[`cad-dwg`](https://crates.io/crates/cad-dwg) and [`cad-dxf`](https://crates.io/crates/cad-dxf) read and write.
 
 ```rust,no_run
 let d = cad_dwg::read_bytes(&std::fs::read("part.dwg")?)?;
@@ -61,15 +61,17 @@ assert_eq!(TagReader::new(records(&raw)?[0]).str(0)?, "line");
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-The byte-level specification is [`docs/FORMAT.md`](../../docs/FORMAT.md).
+The byte-level specification is [`docs/FORMAT.md`](https://github.com/withshalom/CAD/blob/main/docs/FORMAT.md).
 
-Rust standard library only, no `unsafe` code; depends on `cad-model` and
+Rust standard library only, no `unsafe` code; depends on `blackcad-model` and
 `cad-dwg`.
 
 ## License
 
-Licensed under either of the [MIT License](LICENSE-MIT) or the
-[Apache License, Version 2.0](LICENSE-APACHE), at your option. The rest of
+Licensed under either of the
+[MIT License](https://github.com/withshalom/CAD/blob/main/crates/cad-native/LICENSE-MIT) or the
+[Apache License, Version 2.0](https://github.com/withshalom/CAD/blob/main/crates/cad-native/LICENSE-APACHE),
+at your option. The rest of
 the BlackCAD repository is proprietary; see its top-level `LICENSE`.
 
 The code was written from published specifications only; the clean-room

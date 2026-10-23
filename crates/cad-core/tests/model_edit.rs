@@ -1,4 +1,4 @@
-//! The drawing database's editing and undo (`cad_model::model::edit`),
+//! The drawing database's editing and undo (`blackcad_model::model::edit`),
 //! tried on drawings made from BlackCAD's templates. The tests live here
 //! because the templates (`cad_core::standards`) are part of the core.
 
