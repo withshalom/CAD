@@ -120,35 +120,90 @@ pub fn to_ascii(groups: &[Group]) -> Vec<u8> {
     let mut o = String::with_capacity(groups.len() * 16);
     for g in groups {
         let _ = write!(o, "{:>3}\r\n", g.code);
-        let k = kind(g.code);
-        match (&g.value, k) {
-            (Value::Str(s), _) => o.push_str(&line_safe(s)),
-            (Value::Handle(h), _) => {
-                let _ = write!(o, "{h:X}");
-            }
-            (Value::Bytes(b), _) => {
-                for x in b {
-                    let _ = write!(o, "{x:02X}");
-                }
-            }
-            (Value::Real(r), Kind::Real) => o.push_str(&real_text(*r)),
-            (v, Kind::I32) => {
-                let _ = write!(o, "{:>9}", int_of(v));
-            }
-            (v, Kind::I64) => {
-                let _ = write!(o, "{:>18}", int_of(v));
-            }
-            (v, Kind::I16 | Kind::Bool) => {
-                let _ = write!(o, "{:>6}", int_of(v));
-            }
-            (Value::Real(r), _) => o.push_str(&real_text(*r)),
-            (v, _) => {
-                let _ = write!(o, "{}", int_of(v));
-            }
-        }
+        ascii_value(&mut o, g);
         o.push_str("\r\n");
     }
     o.into_bytes()
+}
+
+/// The value line of a group in ASCII DXF, without its line end.
+fn ascii_value(o: &mut String, g: &Group) {
+    use std::fmt::Write;
+    match (&g.value, kind(g.code)) {
+        (Value::Str(s), _) => o.push_str(&line_safe(s)),
+        (Value::Handle(h), _) => {
+            let _ = write!(o, "{h:X}");
+        }
+        (Value::Bytes(b), _) => {
+            for x in b {
+                let _ = write!(o, "{x:02X}");
+            }
+        }
+        (Value::Real(r), Kind::Real) => o.push_str(&real_text(*r)),
+        (v, Kind::I32) => {
+            let _ = write!(o, "{:>9}", int_of(v));
+        }
+        (v, Kind::I64) => {
+            let _ = write!(o, "{:>18}", int_of(v));
+        }
+        (v, Kind::I16 | Kind::Bool) => {
+            let _ = write!(o, "{:>6}", int_of(v));
+        }
+        (Value::Real(r), _) => o.push_str(&real_text(*r)),
+        (v, _) => {
+            let _ = write!(o, "{}", int_of(v));
+        }
+    }
+}
+
+/// The bytes `g` takes in a DXF of `format` (after the binary sentinel): exact, except that
+/// text holding control characters (written as spaces) or, in binary, NUL bytes (left out) is
+/// counted at its full length. Used to stop writing a DXF that would pass a size limit before
+/// it is built (`crate::to_bytes_within`).
+pub fn encoded_len(g: &Group, format: crate::DxfFormat) -> usize {
+    match format {
+        crate::DxfFormat::Ascii => {
+            // The code right-aligned in three columns, and two line ends.
+            let code = g.code.to_string().len().max(3);
+            let value = match &g.value {
+                Value::Str(s) => s.len(),
+                Value::Bytes(b) => b.len().saturating_mul(2),
+                _ => {
+                    let mut t = String::new();
+                    ascii_value(&mut t, g);
+                    t.len()
+                }
+            };
+            code.saturating_add(value).saturating_add(4)
+        }
+        crate::DxfFormat::Binary => {
+            let hex = |v: u64| format!("{v:X}").len();
+            let value = match kind(g.code) {
+                Kind::Str => match &g.value {
+                    Value::Str(s) => s.len(),
+                    Value::Real(r) => real_text(*r).len(),
+                    other => int_of(other).to_string().len(),
+                }
+                .saturating_add(1),
+                Kind::Handle => match &g.value {
+                    Value::Handle(h) => hex(*h),
+                    Value::Str(s) => s.len(),
+                    other => format!("{:X}", int_of(other)).len(),
+                }
+                .saturating_add(1),
+                Kind::Real | Kind::I64 => 8,
+                Kind::Bool => 1,
+                Kind::I16 => 2,
+                Kind::I32 => 4,
+                Kind::Bytes => match &g.value {
+                    Value::Bytes(b) => b.len().min(255),
+                    _ => 0,
+                }
+                .saturating_add(1),
+            };
+            value.saturating_add(2)
+        }
+    }
 }
 
 /// The binary DXF sentinel.

@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.18.0 (2026-10-22)
+The open crates are ready for crates.io, and two ways a damaged DWG could
+make them take far more memory than the file is worth are closed. No
+change to the native format (2.10) or to what BlackCAD writes.
+
+- `cad-dwg`: the sizes a 2004–2018 file's section map declares are claims,
+  and the reader allocated each in full (up to 2 GB, for every section).
+  All of a file's sections now share a budget of 64 times the file's size
+  (at least 64 MB); a section past it is refused before anything is
+  allocated, with a message. AutoCAD's own files hold 1.2 to 3.0 times their
+  size (the MI-201 corpus), so no real file comes near it.
+- `cad-dxf`: `to_bytes_within(drawing, format, options, max_bytes)` writes a
+  DXF within a size limit and returns `TooLarge` as soon as the file would
+  pass it, so the file is never built first and measured after. Sizes are
+  counted exactly per format (`encode::encoded_len`); a file within the
+  limit is the one `to_bytes_with` writes. Programs converting DWG to DXF
+  under a limit (CADCraft) use it.
+- Packaging: `cad-model`, `cad-dwg`, `cad-dxf` and `cad-native` carry
+  crates.io metadata (repository, readme, keywords, categories), their
+  path dependencies carry versions, and their READMEs link to crates.io
+  and GitHub instead of relative paths. `.github/workflows/publish-crates.yml`
+  publishes them by hand (dry run by default) with a `CARGO_REGISTRY_TOKEN`
+  secret. The rest of the workspace stays unpublished.
+- Tests: a section larger than its file allows is refused and takes nothing
+  from the budget, and sections share it; a DXF within its limit is written
+  byte for byte as without one, one past it (ASCII and binary) is refused,
+  and each group's counted size equals its encoded size, on the MI-201
+  corpus and on values at their longest.
+
 ## 0.17.0 (2026-10-22)
 The native format's container and tagged records are public, so CADCraft's
 `.cad` can keep its own records in the same container. No change to the

@@ -19,6 +19,19 @@ const DATA_PAGE_TYPE: u32 = 0x4163_043B;
 const PAGE_MASK: u32 = 0x4164_536B;
 /// Refuse to allocate absurd section sizes from corrupt maps.
 const MAX_SECTION: u64 = 2 * 1024 * 1024 * 1024;
+/// What all of a file's sections together may declare, as a multiple of the file's size. A
+/// section's size is only a claim of its map: a damaged or hostile map can declare gigabytes in
+/// a file of a few kilobytes. AutoCAD's own files hold one to three times their size (the MI-201
+/// corpus, 2004 to 2018, measured 1.2 to 3.0), so 64 times leaves room for drawings that compress
+/// far better while keeping what a file can make the reader allocate in proportion to the file.
+const MAX_EXPANSION: u64 = 64;
+/// The least that budget is, so small files are never refused for it.
+const MIN_BUDGET: u64 = 64 << 20;
+
+/// The bytes all of `file`'s sections may decompress to (`MAX_EXPANSION`).
+fn section_budget(file: &[u8]) -> u64 {
+    (file.len() as u64).saturating_mul(MAX_EXPANSION).max(MIN_BUDGET)
+}
 
 fn u32_at(d: &[u8], o: usize) -> Option<u32> {
     Some(u32::from_le_bytes(d.get(o..o + 4)?.try_into().ok()?))
@@ -239,31 +252,32 @@ pub(crate) fn read(file: &[u8], ver: DwgVersion) -> Result<Container> {
         .collect();
 
     let find = |name: &str| descs.iter().find(|d| d.name == name);
-    let load = |name: &str, notes: &mut Vec<Diagnostic>| -> Result<Option<Vec<u8>>> {
+    let mut budget = section_budget(file);
+    let load = |name: &str, notes: &mut Vec<Diagnostic>, budget: &mut u64| -> Result<Option<Vec<u8>>> {
         match find(name) {
             None => Ok(None),
-            Some(d) => assemble(file, d, &pages, notes)
+            Some(d) => assemble(file, d, &pages, notes, budget)
                 .map(Some)
                 .map_err(|e| e.context(name)),
         }
     };
-    let header = load("AcDb:Header", &mut notes).unwrap_or_else(|e| {
+    let header = load("AcDb:Header", &mut notes, &mut budget).unwrap_or_else(|e| {
         notes.push(Diagnostic {
             severity: Severity::Warning,
             message: e.to_string(),
         });
         None
     });
-    let classes = load("AcDb:Classes", &mut notes).unwrap_or_else(|e| {
+    let classes = load("AcDb:Classes", &mut notes, &mut budget).unwrap_or_else(|e| {
         notes.push(Diagnostic {
             severity: Severity::Warning,
             message: e.to_string(),
         });
         None
     });
-    let handles = load("AcDb:Handles", &mut notes)?
+    let handles = load("AcDb:Handles", &mut notes, &mut budget)?
         .ok_or_else(|| Error::format("no AcDb:Handles section"))?;
-    let objects = load("AcDb:AcDbObjects", &mut notes)?
+    let objects = load("AcDb:AcDbObjects", &mut notes, &mut budget)?
         .ok_or_else(|| Error::format("no AcDb:AcDbObjects section"))?;
     let mut others = Vec::new();
     for d in &descs {
@@ -276,7 +290,7 @@ pub(crate) fn read(file: &[u8], ver: DwgVersion) -> Result<Container> {
             continue;
         }
         let mut quiet = Vec::new();
-        if let Ok(bytes) = assemble(file, d, &pages, &mut quiet) {
+        if let Ok(bytes) = assemble(file, d, &pages, &mut quiet, &mut budget) {
             others.push((d.name.clone(), bytes));
         }
     }
@@ -385,12 +399,14 @@ pub(crate) fn describe(file: &[u8]) -> String {
     o
 }
 
-/// Reassemble one section from its pages.
+/// Reassemble one section from its pages, taking its size from what is left of the file's
+/// `budget` (`section_budget`).
 fn assemble(
     file: &[u8],
     d: &SectionDesc,
     pages: &HashMap<i32, Page>,
     notes: &mut Vec<Diagnostic>,
+    budget: &mut u64,
 ) -> Result<Vec<u8>> {
     if d.encrypted == 1 {
         return Err(Error::new(
@@ -404,7 +420,16 @@ fn assemble(
             d.size
         )));
     }
-    let mut buf = vec![0u8; d.size as usize];
+    if d.size > *budget {
+        return Err(Error::format(format!(
+            "section size {} is more than a file of {} bytes holds (its sections may hold {} more)",
+            d.size,
+            file.len(),
+            *budget
+        )));
+    }
+    *budget -= d.size;
+    let mut buf = vec![0u8; usize::try_from(d.size).map_err(|_| Error::format("section size is implausible"))?];
     for pr in &d.pages {
         let page = pages
             .get(&pr.number)
@@ -457,6 +482,36 @@ fn assemble(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn section(size: u64) -> SectionDesc {
+        SectionDesc { name: "AcDb:AcDbObjects".into(), size, max_decompressed: 0x7400, compressed: 2, encrypted: 0, pages: Vec::new() }
+    }
+
+    /// A section map's sizes are claims: one larger than the file can hold is refused before
+    /// anything is allocated for it (a few kilobytes can't make the reader take gigabytes).
+    #[test]
+    fn a_section_larger_than_the_file_allows_is_refused_before_allocating() {
+        let file = [0u8; 1000];
+        let mut budget = section_budget(&file);
+        assert_eq!(budget, MIN_BUDGET);
+        let e = assemble(&file, &section(1 << 30), &HashMap::new(), &mut Vec::new(), &mut budget).unwrap_err();
+        assert!(e.to_string().contains("more than a file of 1000 bytes holds"), "{e}");
+        assert_eq!(budget, MIN_BUDGET, "nothing was taken");
+        // A large file's budget grows with it.
+        assert_eq!(section_budget(&vec![0u8; 2 << 20]), 128 << 20);
+    }
+
+    /// The budget is shared: many sections can't each claim the whole of it.
+    #[test]
+    fn every_section_takes_from_the_same_budget() {
+        let file = [0u8; 16];
+        let mut budget = 100;
+        assert_eq!(assemble(&file, &section(60), &HashMap::new(), &mut Vec::new(), &mut budget).unwrap().len(), 60);
+        assert_eq!(budget, 40);
+        assert!(assemble(&file, &section(60), &HashMap::new(), &mut Vec::new(), &mut budget).is_err());
+        assert_eq!(assemble(&file, &section(40), &HashMap::new(), &mut Vec::new(), &mut budget).unwrap().len(), 40);
+        assert_eq!(budget, 0);
+    }
 
     #[test]
     fn magic_sequence_starts_as_documented_lcg() {

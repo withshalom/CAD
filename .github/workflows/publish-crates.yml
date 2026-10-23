@@ -1,0 +1,52 @@
+# Publishes BlackCAD's open crates to crates.io: cad-model, cad-dwg, cad-dxf and cad-native
+# (MIT OR Apache-2.0), in dependency order. The rest of the repository is proprietary and is never
+# published (`publish = false` in the workspace).
+#
+# Runs only by hand: Actions → "Publish crates" → Run workflow. It needs the repository secret
+# CARGO_REGISTRY_TOKEN, a crates.io API token (crates.io → Account Settings → API Tokens) with the
+# "publish-new" and "publish-update" scopes, limited to the cad-* crates. With "dry run" ticked (the
+# default) it only packages and checks the crates; untick it to publish. A published version can't
+# be deleted or replaced, only yanked, so publish from a commit whose version is new.
+name: Publish crates
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: package and check only, publish nothing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-crates
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy
+          rustup default stable
+      - name: Lint and test the open crates
+        run: |
+          cargo clippy -p cad-model -p cad-dwg -p cad-dxf -p cad-native --all-targets -- -D warnings
+          cargo test --release -p cad-model -p cad-dwg -p cad-dxf -p cad-native
+      - name: Package (dry run)
+        if: ${{ inputs.dry_run }}
+        run: cargo publish --dry-run -p cad-model -p cad-dwg -p cad-dxf -p cad-native
+      - name: Publish
+        if: ${{ !inputs.dry_run }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "::error::The CARGO_REGISTRY_TOKEN secret isn't set (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+          cargo publish -p cad-model -p cad-dwg -p cad-dxf -p cad-native
