@@ -1,4 +1,4 @@
-# Publishes BlackCAD's open crates to crates.io: cad-model, cad-dwg, cad-dxf and cad-native
+# Publishes BlackCAD's open crates to crates.io: blackcad-model, cad-dwg, cad-dxf and cad-native
 # (MIT OR Apache-2.0), in dependency order. The rest of the repository is proprietary and is never
 # published (`publish = false` in the workspace).
 #
@@ -35,11 +35,11 @@ jobs:
           rustup default stable
       - name: Lint and test the open crates
         run: |
-          cargo clippy -p cad-model -p cad-dwg -p cad-dxf -p cad-native --all-targets -- -D warnings
-          cargo test --release -p cad-model -p cad-dwg -p cad-dxf -p cad-native
+          cargo clippy -p blackcad-model -p cad-dwg -p cad-dxf -p cad-native --all-targets -- -D warnings
+          cargo test --release -p blackcad-model -p cad-dwg -p cad-dxf -p cad-native
       - name: Package (dry run)
         if: ${{ inputs.dry_run }}
-        run: cargo publish --dry-run -p cad-model -p cad-dwg -p cad-dxf -p cad-native
+        run: cargo publish --dry-run -p blackcad-model -p cad-dwg -p cad-dxf -p cad-native
       - name: Publish
         if: ${{ !inputs.dry_run }}
         env:
@@ -49,4 +49,4 @@ jobs:
             echo "::error::The CARGO_REGISTRY_TOKEN secret isn't set (Settings → Secrets and variables → Actions)."
             exit 1
           fi
-          cargo publish -p cad-model -p cad-dwg -p cad-dxf -p cad-native
+          cargo publish -p blackcad-model -p cad-dwg -p cad-dxf -p cad-native

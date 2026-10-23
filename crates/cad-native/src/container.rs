@@ -27,7 +27,7 @@ pub const HEADER_LEN: usize = 48;
 
 /// Whose records the file holds (header bytes 40-41, format 2.10). The
 /// container is shared; the records are each program's own.
-/// BlackCAD's (`cad-model`), in `.blc` files; every file before 2.10.
+/// BlackCAD's (`blackcad-model`), in `.blc` files; every file before 2.10.
 pub const RECORDS_BLACKCAD: u16 = 0;
 /// CADCraft's, in `.blc` files.
 pub const RECORDS_CADCRAFT: u16 = 1;

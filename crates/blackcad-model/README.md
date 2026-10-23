@@ -1,4 +1,4 @@
-# cad-model
+# blackcad-model
 
 BlackCAD's drawing database: every object keyed by its DWG-style handle,
 with its owner, reactors and extension dictionary; the tables, entities,
@@ -14,8 +14,8 @@ Rust standard library only, no `unsafe` code, no dependencies.
 ## License
 
 Licensed under either of the
-[MIT License](https://github.com/withshalom/CAD/blob/main/crates/cad-model/LICENSE-MIT) or the
-[Apache License, Version 2.0](https://github.com/withshalom/CAD/blob/main/crates/cad-model/LICENSE-APACHE),
+[MIT License](https://github.com/withshalom/CAD/blob/main/crates/blackcad-model/LICENSE-MIT) or the
+[Apache License, Version 2.0](https://github.com/withshalom/CAD/blob/main/crates/blackcad-model/LICENSE-APACHE),
 at your option. The rest of
 the BlackCAD repository is proprietary; see its top-level `LICENSE`.
 

@@ -36,7 +36,7 @@ name the format and its code, not the product.
   separate.
 - **Open formats, open to others.** The drawing database and the DWG,
   DXF and `.blc` readers and writers are crates of their own
-  (`cad-model`, `cad-dwg`, `cad-dxf`, `cad-native`), licensed MIT OR
+  (`blackcad-model`, `cad-dwg`, `cad-dxf`, `cad-native`), licensed MIT OR
   Apache-2.0 so that other programs can read and write DWG and `.blc`
   with them; `cad-core` builds on them and keeps everything else. They
   take nothing from the core: where a file needs something only the
@@ -70,7 +70,7 @@ name the format and its code, not the product.
  │           codec: DEFLATE and zlib (RFC 1950/1951), SHA-256          │
  │ cad-dxf   DXF read and write, ASCII and binary                     │
  │ cad-dwg   bits → container → object map → objects → header; writer │
- │ cad-model model: Drawing, objects by handle, layers, blocks,       │
+ │ blackcad-model model: Drawing, objects by handle, layers, blocks,       │
  │           header, edits · geom: Vec2/Vec3, transforms, OCS,        │
  │           bulges, NURBS · text: code pages, MTEXT codes            │
  └────────────────────────────────────────────────────────────────────┘
@@ -206,7 +206,7 @@ change sets on top of the snapshot; `cad compact` folds them back in.
 Change sets are also the natural unit for live collaboration later: send
 the same records between copies of the app.
 
-## Model (`crates/cad-model`)
+## Model (`crates/blackcad-model`)
 
 `Drawing` holds every object in a `BTreeMap<Handle, Object>`. An `Object`
 has its handle, type, owner, reactors, extension dictionary, the common
@@ -323,7 +323,7 @@ apps/web/core.js     loads core.wasm, copies bytes in and out (the only glue)
 cad-ffi/src/web.rs   wasm entry points: numbers in, bytes out (the only unsafe)
 cad-ffi/src/session.rs   open drawings, undo, the command language: safe Rust
 cad-core             everything else: render, display list, snaps, editing
-cad-model, cad-dwg, cad-dxf, cad-native   the drawing database, DWG, DXF and .blc
+blackcad-model, cad-dwg, cad-dxf, cad-native   the drawing database, DWG, DXF and .blc
 ```
 
 **No dependencies, as everywhere else.** No npm packages, no frameworks,

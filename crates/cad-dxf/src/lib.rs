@@ -1,7 +1,7 @@
 //! BlackCAD's DXF reader and writer.
 //!
 //! Reading: [`read_bytes`] takes ASCII or binary DXF of any version into a
-//! [`Drawing`] (`cad-model`'s database, re-exported as [`cad_model`]).
+//! [`Drawing`] (`blackcad-model`'s database, re-exported as [`blackcad_model`]).
 //! Writing: [`to_bytes`] writes the whole drawing database as an AC1032
 //! (AutoCAD 2018) DXF, ASCII or binary, with every table, block, entity
 //! and the objects the model can express; [`to_bytes_within`] does the
@@ -25,10 +25,10 @@
     )
 )]
 
-pub use cad_model;
+pub use blackcad_model;
 use cad_dwg as dwg;
-use cad_model::{error, geom, model, text};
-use cad_model::{Error, Result};
+use blackcad_model::{error, geom, model, text};
+use blackcad_model::{Error, Result};
 
 pub mod encode;
 pub mod read;

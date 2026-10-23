@@ -11,7 +11,7 @@
 //! describes every record, a SHA-256 hash chain over the snapshot and the
 //! change sets, and recovery data that rebuilds damaged bytes.
 //!
-//! The drawing is `cad-model`'s database (re-exported as [`cad_model`]),
+//! The drawing is `blackcad-model`'s database (re-exported as [`blackcad_model`]),
 //! the same one `cad-dwg` and `cad-dxf` read and write, so a DWG opens and
 //! saves as `.blc` with nothing in between. The byte-level specification
 //! is `docs/FORMAT.md` in the BlackCAD repository.
@@ -46,11 +46,11 @@
     )
 )]
 
-pub use cad_model;
+pub use blackcad_model;
 // The DWG crate and the model's modules, under the names this code has
 // always used for them.
 use cad_dwg as dwg;
-use cad_model::{error, geom, model};
+use blackcad_model::{error, geom, model};
 
 pub mod codec;
 

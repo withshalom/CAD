@@ -2,6 +2,7 @@
 name = "cad-native"
 description = "BlackCAD's native .blc drawing format: DWG-style container, DXF-coded records, change journal, hash chain, recovery data"
 version.workspace = true
+authors = ["WithShalom <design@withshalom.com>"]
 edition.workspace = true
 rust-version.workspace = true
 license = "MIT OR Apache-2.0"
@@ -12,5 +13,5 @@ keywords = ["cad", "drawing", "file-format", "dwg"]
 categories = ["parser-implementations", "encoding"]
 
 [dependencies]
-cad-model = { path = "../cad-model", version = "0.18.0" }
+blackcad-model = { path = "../blackcad-model", version = "0.18.0" }
 cad-dwg = { path = "../cad-dwg", version = "0.18.0" }

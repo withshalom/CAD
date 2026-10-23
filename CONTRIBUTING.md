@@ -56,7 +56,7 @@ cargo test --release
 `crates/cad-ffi/src/web.rs` compiles only for WebAssembly; CI's web job
 lints and builds it.
 
-The open crates (`cad-model`, `cad-dwg`, `cad-dxf`) take nothing from the
+The open crates (`blackcad-model`, `cad-dwg`, `cad-dxf`) take nothing from the
 rest of the workspace, and outside their tests they deny the calls that
 can panic (`unwrap`, `expect`, `panic!`, `unreachable!`…): other programs
 read untrusted files with them. Counts read from a file are claims, never

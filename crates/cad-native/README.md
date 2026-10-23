@@ -18,7 +18,7 @@ adds:
   DWG opened and saved as `.blc` loses nothing.
 - **`.bcl` lock files** for drawings shared on a network folder.
 
-The drawing is [`cad-model`](https://crates.io/crates/cad-model)'s database, the same one
+The drawing is [`blackcad-model`](https://crates.io/crates/blackcad-model)'s database, the same one
 [`cad-dwg`](https://crates.io/crates/cad-dwg) and [`cad-dxf`](https://crates.io/crates/cad-dxf) read and write.
 
 ```rust,no_run
@@ -63,7 +63,7 @@ assert_eq!(TagReader::new(records(&raw)?[0]).str(0)?, "line");
 
 The byte-level specification is [`docs/FORMAT.md`](https://github.com/withshalom/CAD/blob/main/docs/FORMAT.md).
 
-Rust standard library only, no `unsafe` code; depends on `cad-model` and
+Rust standard library only, no `unsafe` code; depends on `blackcad-model` and
 `cad-dwg`.
 
 ## License

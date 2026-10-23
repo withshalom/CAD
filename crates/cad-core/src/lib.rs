@@ -53,7 +53,7 @@
 // The drawing database and the file formats other programs read are
 // crates of their own, licensed MIT OR Apache-2.0 (see LICENSE): their
 // modules appear here under the names they always had.
-pub use cad_model::{error, geom, model, text};
+pub use blackcad_model::{error, geom, model, text};
 pub use cad_native::codec;
 
 pub mod blocks;

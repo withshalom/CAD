@@ -6,8 +6,8 @@
 //! Writing: [`write::to_bytes`] writes a drawing as an AutoCAD 2018
 //! (AC1032) file.
 //!
-//! The drawing is `cad-model`'s database, re-exported here as
-//! [`cad_model`].
+//! The drawing is `blackcad-model`'s database, re-exported here as
+//! [`blackcad_model`].
 //!
 //! Reading, step by step: detect the version → extract sections from the
 //! container
@@ -31,9 +31,9 @@
     )
 )]
 
-pub use cad_model;
-pub use cad_model::version;
-use cad_model::{error, geom, model, text};
+pub use blackcad_model;
+pub use blackcad_model::version;
+use blackcad_model::{error, geom, model, text};
 
 pub mod bits;
 pub mod crc;

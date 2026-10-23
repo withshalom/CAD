@@ -17,7 +17,7 @@ change to the native format (2.10) or to what BlackCAD writes.
   counted exactly per format (`encode::encoded_len`); a file within the
   limit is the one `to_bytes_with` writes. Programs converting DWG to DXF
   under a limit (CADCraft) use it.
-- Packaging: `cad-model`, `cad-dwg`, `cad-dxf` and `cad-native` carry
+- Packaging: `blackcad-model`, `cad-dwg`, `cad-dxf` and `cad-native` carry
   crates.io metadata (repository, readme, keywords, categories), their
   path dependencies carry versions, and their READMEs link to crates.io
   and GitHub instead of relative paths. `.github/workflows/publish-crates.yml`
@@ -80,7 +80,7 @@ dropped from DXF; now it's read, written and stored with every vertex,
 miter and element parameter, through DWG, DXF and `.cad`, as the CADCraft
 fork models it. The `.cad` format is 2.9.
 
-- `cad-model`: `MLine` and `MLineVertex` (`ObjectKind::MLine`): style,
+- `blackcad-model`: `MLine` and `MLineVertex` (`ObjectKind::MLine`): style,
   scale, justification, start point, extrusion, flags (open, closed,
   caps suppressed), the style's element count, and per vertex its point,
   direction, miter and each element's segment and fill parameters.
@@ -105,7 +105,7 @@ from DXF, as were image definitions; now they're read, written and stored
 as what they are, through DWG, DXF and `.cad`, as the CADCraft fork models
 them. The `.cad` format is 2.8.
 
-- `cad-model`: `RasterImage` (`ObjectKind::Image`, `ObjectKind::Wipeout`):
+- `blackcad-model`: `RasterImage` (`ObjectKind::Image`, `ObjectKind::Wipeout`):
   placement by pixel vectors, size, display flags, brightness, contrast,
   fade, the clip boundary and mode, and the image's definition and
   reactor. IMAGEDEF, IMAGEDEF_REACTOR and RASTERVARIABLES are kept as
@@ -137,7 +137,7 @@ entity types the CADCraft fork models and BlackCAD kept only as DWG bytes
 it is, so the two programs carry the same tolerance frames through DWG,
 DXF and `.cad`. The `.cad` format is 2.7.
 
-- `cad-model`: `Tolerance` (`ObjectKind::Tolerance`): insertion point, X
+- `blackcad-model`: `Tolerance` (`ObjectKind::Tolerance`): insertion point, X
   direction, extrusion, frame text in the DXF reference's GD&T codes, the
   dimension style, and the short, text height and gap that only R13 and
   R14 DWG files store.
@@ -165,7 +165,7 @@ and ignored DXF's 97 and 330 groups, so every associative hatch it passed
 on came out detached. Found by the CADCraft fork's hatch associativity
 test once its saves went through BlackCAD. The `.cad` format is 2.6.
 
-- `cad-model`: `Hatch::sources`, the boundary objects of each path.
+- `blackcad-model`: `Hatch::sources`, the boundary objects of each path.
 - `cad-dwg`: read and written, path by path (soft pointers after the
   common handles).
 - `cad-dxf`: read from and written to each path's 97 and 330 groups.
@@ -197,7 +197,7 @@ every DWG, and neither read nor wrote it in DXF or `.cad`. It showed when
 the CADCraft fork's 2018 saves started going through BlackCAD (0.10.1):
 the fork's own test of attribute modes failed. The `.cad` format is 2.5.
 
-- `cad-model`: `Attribute::lock_position`. A reference's attributes take
+- `blackcad-model`: `Attribute::lock_position`. A reference's attributes take
   it from their definitions (`cad-core`'s INSERT).
 - `cad-dwg`: read and written for AutoCAD 2007 and later.
 - `cad-dxf`: read from the 280 after the flags (the 280 before the tag is
@@ -233,7 +233,7 @@ raw bytes. Found by the fork's round-trip test on the MI-201 corpus.
 ## 0.10.0 (2026-10-22)
 The native `.cad` format is open source: it moves out of the core into a
 crate of its own, `cad-native`, licensed MIT OR Apache-2.0 like
-`cad-model`, `cad-dwg` and `cad-dxf`, so other programs can read and write
+`blackcad-model`, `cad-dwg` and `cad-dxf`, so other programs can read and write
 `.cad` without the rest of BlackCAD. The first is the owner's fork of
 CADCraft. The format itself (2.4) is unchanged: files written before and
 after read the same.
@@ -335,13 +335,13 @@ byte-identical SVG, PNG, DXF and DWG files for every corpus drawing. The
 `.cad` format stays at 2.4.
 
 Licensing:
-- `crates/cad-model`, `crates/cad-dwg` and `crates/cad-dxf` are licensed
+- `crates/blackcad-model`, `crates/cad-dwg` and `crates/cad-dxf` are licensed
   under either of the MIT License or the Apache License, Version 2.0; each
   holds both texts. Everything else stays proprietary, and `LICENSE` names
   the three crates as the exception.
 
 Build:
-- `cad-model`: the drawing database (`model`), `geom`, `text`, `error` and
+- `blackcad-model`: the drawing database (`model`), `geom`, `text`, `error` and
   the DWG version codes. `cad-dwg`: the DWG reader and writer. `cad-dxf`:
   the DXF reader and writer. All three use the standard library only.
 - `cad-core` depends on them and keeps every path: `cad_core::model`,
@@ -384,7 +384,7 @@ Tests:
 - 1 + 163 + 6 + 2 + 4 + 5 + 58 + 9 + 26 + 1 + 16 + 12 tests and 1
   doc-test pass, 20 ignored (cad-cli; cad-core and its tests corpus,
   dwg_header_vars, dxf_minimal_files, model_edit; cad-dwg; cad-dxf;
-  cad-ffi and damaged inputs; cad-model; xtask).
+  cad-ffi and damaged inputs; blackcad-model; xtask).
 
 Docs:
 - README, ARCHITECTURE, CONTRIBUTING and PROVENANCE describe the three

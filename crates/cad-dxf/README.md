@@ -2,7 +2,7 @@
 
 BlackCAD's DXF reader and writer.
 
-- **Reads** ASCII and binary DXF into a [`cad-model`](https://crates.io/crates/cad-model)
+- **Reads** ASCII and binary DXF into a [`blackcad-model`](https://crates.io/crates/blackcad-model)
   drawing, from AutoCAD's own files down to files with nothing but an
   ENTITIES section.
 - **Writes** the whole drawing database as an AutoCAD 2018 (AC1032) DXF,
@@ -27,7 +27,7 @@ match cad_dxf::to_bytes_within(&drawing, cad_dxf::DxfFormat::Ascii, &opts, 256 <
 }
 ```
 
-Rust standard library only, no `unsafe` code; depends on `cad-model` and
+Rust standard library only, no `unsafe` code; depends on `blackcad-model` and
 `cad-dwg`.
 
 ## License
